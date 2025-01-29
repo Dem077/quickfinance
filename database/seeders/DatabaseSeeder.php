@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Departments;
 use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -13,7 +14,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        Departments::factory(2)->create();
 
         $user = \App\Models\User::factory()->create([
             'name' => 'Admin',
