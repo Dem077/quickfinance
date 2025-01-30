@@ -13,9 +13,9 @@ return new class extends Migration
     {
         Schema::create('budget_accounts', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('code');
-            $table->string('amount');
+            $table->string('expenditure_type');
+            $table->string('account');
+            $table->string('name')->nullable();
             $table->timestamps();
         });
     }

@@ -10,8 +10,6 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class BudgetAccountsResource extends Resource
 {
@@ -23,14 +21,13 @@ class BudgetAccountsResource extends Resource
     {
         return $form
             ->schema([
+                Forms\Components\TextInput::make('expenditure_type')
+                    ->required()
+                    ->maxLength(255),
+                Forms\Components\TextInput::make('account')
+                    ->required()
+                    ->maxLength(255),
                 Forms\Components\TextInput::make('name')
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('code')
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('amount')
-                    ->required()
                     ->maxLength(255),
             ]);
     }
@@ -39,11 +36,11 @@ class BudgetAccountsResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\TextColumn::make('expenditure_type')
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('account')
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('name')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('code')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('amount')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
@@ -70,7 +67,7 @@ class BudgetAccountsResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            RelationManagers\SubBudgetAccountsRelationManager::class,
         ];
     }
 

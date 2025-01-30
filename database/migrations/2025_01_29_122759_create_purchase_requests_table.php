@@ -16,7 +16,8 @@ return new class extends Migration
             $table->string('pr_no');
             $table->date('date');
             $table->foreignId('budget_account_id')->constrained();
-            $table->foreignId('user_id')->constrained();//Requested by User
+            $table->foreignId('user_id')->constrained(); // Requested by User
+            $table->foreignId(('department_id'))->constrained();
             $table->timestamps();
         });
     }

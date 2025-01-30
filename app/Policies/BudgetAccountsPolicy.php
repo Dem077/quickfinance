@@ -2,11 +2,11 @@
 
 namespace App\Policies;
 
+use App\Models\BudgetAccounts;
 use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
-use Spatie\Permission\Models\Role;
 
-class RolePolicy
+class BudgetAccountsPolicy
 {
     use HandlesAuthorization;
 
@@ -15,15 +15,15 @@ class RolePolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->can('view_any_role');
+        return $user->can('view_any_budget::accounts');
     }
 
     /**
      * Determine whether the user can view the model.
      */
-    public function view(User $user, Role $role): bool
+    public function view(User $user, BudgetAccounts $budgetAccounts): bool
     {
-        return $user->can('view_role');
+        return $user->can('view_budget::accounts');
     }
 
     /**
@@ -31,23 +31,23 @@ class RolePolicy
      */
     public function create(User $user): bool
     {
-        return $user->can('create_role');
+        return $user->can('create_budget::accounts');
     }
 
     /**
      * Determine whether the user can update the model.
      */
-    public function update(User $user, Role $role): bool
+    public function update(User $user, BudgetAccounts $budgetAccounts): bool
     {
-        return $user->can('update_role');
+        return $user->can('update_budget::accounts');
     }
 
     /**
      * Determine whether the user can delete the model.
      */
-    public function delete(User $user, Role $role): bool
+    public function delete(User $user, BudgetAccounts $budgetAccounts): bool
     {
-        return $user->can('delete_role');
+        return $user->can('delete_budget::accounts');
     }
 
     /**
@@ -55,13 +55,13 @@ class RolePolicy
      */
     public function deleteAny(User $user): bool
     {
-        return $user->can('delete_any_role');
+        return $user->can('delete_any_budget::accounts');
     }
 
     /**
      * Determine whether the user can permanently delete.
      */
-    public function forceDelete(User $user, Role $role): bool
+    public function forceDelete(User $user, BudgetAccounts $budgetAccounts): bool
     {
         return $user->can('{{ ForceDelete }}');
     }
@@ -77,7 +77,7 @@ class RolePolicy
     /**
      * Determine whether the user can restore.
      */
-    public function restore(User $user, Role $role): bool
+    public function restore(User $user, BudgetAccounts $budgetAccounts): bool
     {
         return $user->can('{{ Restore }}');
     }
@@ -93,7 +93,7 @@ class RolePolicy
     /**
      * Determine whether the user can replicate.
      */
-    public function replicate(User $user, Role $role): bool
+    public function replicate(User $user, BudgetAccounts $budgetAccounts): bool
     {
         return $user->can('{{ Replicate }}');
     }

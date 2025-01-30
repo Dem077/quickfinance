@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('address');
+            $table->string('bank');
             $table->string('account_no');
             $table->string('mobile');
             $table->string('gst_no');

@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PurchaseRequestDetails extends Model
 {
-    
     protected $fillable = [
         'item',
         'unit',
@@ -15,7 +14,7 @@ class PurchaseRequestDetails extends Model
         'pr_id',
     ];
 
-    public function purchaseRequest():BelongsTo
+    public function purchaseRequest(): BelongsTo
     {
         return $this->belongsTo(PurchaseRequests::class, 'pr_id');
     }

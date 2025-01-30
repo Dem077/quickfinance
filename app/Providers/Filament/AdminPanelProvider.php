@@ -27,6 +27,7 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
+            ->databaseTransactions()
             ->spa(true)
             ->login()
             ->passwordReset()
@@ -46,6 +47,7 @@ class AdminPanelProvider extends PanelProvider
                 \Awcodes\Overlook\Widgets\OverlookWidget::class,
             ])
             ->plugins([
+                \EightyNine\Approvals\ApprovalPlugin::make(),
                 \Jeffgreco13\FilamentBreezy\BreezyCore::make()
                     ->myProfile(
                         shouldRegisterUserMenu: true,

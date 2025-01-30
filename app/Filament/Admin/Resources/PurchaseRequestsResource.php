@@ -3,15 +3,12 @@
 namespace App\Filament\Admin\Resources;
 
 use App\Filament\Admin\Resources\PurchaseRequestsResource\Pages;
-use App\Filament\Admin\Resources\PurchaseRequestsResource\RelationManagers;
 use App\Models\PurchaseRequests;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class PurchaseRequestsResource extends Resource
 {
@@ -24,12 +21,21 @@ class PurchaseRequestsResource extends Resource
         return $form
             ->schema([
                 Forms\Components\TextInput::make('pr_no')
-                    ->required()
+                    ->disabled()
                     ->maxLength(255),
                 Forms\Components\DatePicker::make('date')
+                    ->date()
+                    ->required(),
+                Forms\Components\Select::make('department_id')
+                    ->relationship('department', 'name')
                     ->required(),
                 Forms\Components\Select::make('budget_account_id')
-                    ->relationship('budgetAccount', 'name')
+                    ->relationship('budgetAccount', 'name', function ($query) {
+                        $query->selectRaw("CONCAT(code, ' - ', budget_accounts.name, ' (', budget_accounts.expenditure_type, ' - ', budget_accounts.account, ')') AS display_name, budget_accounts.id")
+                              ->join('budget_accounts', 'sub_budget_accounts.budget_account_id', '=', 'budget_accounts.id');
+                    })
+                    ->getOptionLabelFromRecordUsing(fn ($record) => $record->display_name)
+                    ->searchable(['budget_accounts.name', 'code', 'budget_accounts.expenditure_type', 'budget_accounts.account'])
                     ->required(),
                 Forms\Components\Select::make('user_id')
                     ->relationship('user', 'name')
@@ -46,7 +52,11 @@ class PurchaseRequestsResource extends Resource
                 Tables\Columns\TextColumn::make('date')
                     ->date()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('budgetAccount.name')
+                    Tables\Columns\TextColumn::make('budget_account_id')
+                    ->label('Budget Code')
+                    ->getStateUsing(fn ($record) => $record->budgetAccount->code ?? '-')
+                    ->searchable(['budget_accounts.name', 'budget_accounts.code', 'budget_accounts.expenditure_type', 'budget_accounts.account']),
+                Tables\Columns\TextColumn::make('department.name')
                     ->numeric()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('user.name')

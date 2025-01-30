@@ -66,9 +66,8 @@ class User extends Authenticatable implements FilamentUser, HasAvatar
         return true;
     }
 
-    
-    public function department():BelongsTo
+    public function department(): BelongsTo
     {
-        return $this->belongsTo(Departments::class);
+        return $this->belongsTo(Departments::class, 'department_id');
     }
 }

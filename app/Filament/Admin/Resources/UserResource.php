@@ -54,6 +54,10 @@ class UserResource extends Resource
                             ->maxLength(255)
                             ->columnSpan('full')
                             ->required(),
+                        Forms\Components\Select::make('department_id')
+                            ->relationship('department', 'name')
+                            ->required()
+                            ->native(false),
                         Forms\Components\FileUpload::make('avatar_url')
                             ->label('Avatar')
                             ->image()

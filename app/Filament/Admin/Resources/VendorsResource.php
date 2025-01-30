@@ -3,15 +3,15 @@
 namespace App\Filament\Admin\Resources;
 
 use App\Filament\Admin\Resources\VendorsResource\Pages;
-use App\Filament\Admin\Resources\VendorsResource\RelationManagers;
 use App\Models\Vendors;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
+use Ysfkaya\FilamentPhoneInput\PhoneInputNumberType;
+use Ysfkaya\FilamentPhoneInput\Tables\PhoneColumn;
 
 class VendorsResource extends Resource
 {
@@ -29,12 +29,14 @@ class VendorsResource extends Resource
                 Forms\Components\TextInput::make('address')
                     ->required()
                     ->maxLength(255),
+                Forms\Components\Select::make('bank')
+                    ->required()
+                    ->options(['BML', 'MIB', 'CBM', 'SBI'])
+                    ->native(false),
                 Forms\Components\TextInput::make('account_no')
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('mobile')
-                    ->required()
-                    ->maxLength(255),
+                    ->required(),
+                PhoneInput::make('mobile')
+                    ->required(),
                 Forms\Components\TextInput::make('gst_no')
                     ->required()
                     ->maxLength(255),
@@ -49,9 +51,11 @@ class VendorsResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('address')
                     ->searchable(),
+                Tables\Columns\TextColumn::make('bank')
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('account_no')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('mobile')
+                PhoneColumn::make('mobile')->displayFormat(PhoneInputNumberType::NATIONAL)
                     ->searchable(),
                 Tables\Columns\TextColumn::make('gst_no')
                     ->searchable(),

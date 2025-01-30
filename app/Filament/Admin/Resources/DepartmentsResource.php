@@ -3,15 +3,12 @@
 namespace App\Filament\Admin\Resources;
 
 use App\Filament\Admin\Resources\DepartmentsResource\Pages;
-use App\Filament\Admin\Resources\DepartmentsResource\RelationManagers;
 use App\Models\Departments;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class DepartmentsResource extends Resource
 {

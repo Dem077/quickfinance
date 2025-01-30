@@ -7,16 +7,16 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Vendors extends Model
 {
-   
     protected $fillable = [
         'name',
         'address',
         'account_no',
         'mobile',
         'gst_no',
+        'bank',
     ];
 
-    public function purchaseOrders():HasMany
+    public function purchaseOrders(): HasMany
     {
         return $this->hasMany(PurchaseOrders::class);
     }
