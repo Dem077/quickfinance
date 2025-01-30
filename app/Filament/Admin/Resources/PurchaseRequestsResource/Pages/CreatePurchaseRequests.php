@@ -3,9 +3,44 @@
 namespace App\Filament\Admin\Resources\PurchaseRequestsResource\Pages;
 
 use App\Filament\Admin\Resources\PurchaseRequestsResource;
+use App\Models\PurchaseRequestDetails;
+use App\Models\PurchaseRequests;
 use Filament\Resources\Pages\CreateRecord;
 
 class CreatePurchaseRequests extends CreateRecord
 {
     protected static string $resource = PurchaseRequestsResource::class;
+    
+    protected function mutateFormDataBeforeCreate(array $data): array
+    {
+        $year = date('Y');
+        $count = PurchaseRequests::whereYear('created_at', $year)->count() + 1;
+        
+        do {
+            $pr_no = sprintf('PR/AGRO/%s/%04d', $year, $count);
+            $exists = PurchaseRequests::where('pr_no', $pr_no)->exists();
+            if ($exists) {
+                $count++;
+            }
+        } while ($exists);
+        
+        $data['pr_no'] = $pr_no;
+
+        return $data;
+    }
+
+    protected function afterCreate(): void
+    {
+        $purchaseOrderDetails = $this->data['purchaseOrderDetails'] ?? [];
+        
+        foreach ($purchaseOrderDetails as $detail) {
+            PurchaseRequestDetails::create([
+                'pr_id' => $this->record->id,
+                'item' => $detail['item'],
+                'unit' => $detail['unit'],
+                'amount' => $detail['amount'],
+            ]);
+        }
+    }
+    
 }

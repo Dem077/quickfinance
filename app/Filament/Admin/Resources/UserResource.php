@@ -70,8 +70,12 @@ class UserResource extends Resource
                         Forms\Components\TextInput::make('email')
                             ->required()
                             ->prefixIcon('heroicon-m-envelope')
-                            ->columnSpan('full')
+                            ->columnSpan(1)
                             ->email(),
+                        Forms\Components\TextInput::make('mobile')
+                            ->required()
+                            ->prefixIcon('heroicon-m-phone')
+                            ->columnSpan(1),
 
                         Forms\Components\TextInput::make('password')
                             ->password()

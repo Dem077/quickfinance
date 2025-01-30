@@ -2,8 +2,8 @@
 
 namespace App\Policies;
 
-use App\Models\BudgetAccounts;
 use App\Models\User;
+use App\Models\BudgetAccounts;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class BudgetAccountsPolicy

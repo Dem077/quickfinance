@@ -2,8 +2,8 @@
 
 namespace App\Policies;
 
-use App\Models\PurchaseOrders;
 use App\Models\User;
+use App\Models\PurchaseOrders;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class PurchaseOrdersPolicy

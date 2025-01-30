@@ -3,12 +3,16 @@
 namespace App\Filament\Admin\Resources;
 
 use App\Filament\Admin\Resources\PurchaseRequestsResource\Pages;
+use App\Filament\Admin\Resources\PurchaseRequestsResource\RelationManagers;
 use App\Models\PurchaseRequests;
 use Filament\Forms;
+use Filament\Forms\Components\Section;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 
 class PurchaseRequestsResource extends Resource
 {
@@ -21,10 +25,12 @@ class PurchaseRequestsResource extends Resource
         return $form
             ->schema([
                 Forms\Components\TextInput::make('pr_no')
+                    ->hidden(fn (string $operation): bool => $operation === 'create')
                     ->disabled()
                     ->maxLength(255),
                 Forms\Components\DatePicker::make('date')
-                    ->date()
+                    ->native(false)
+                    ->closeOnDateSelection()
                     ->required(),
                 Forms\Components\Select::make('department_id')
                     ->relationship('department', 'name')
@@ -36,10 +42,36 @@ class PurchaseRequestsResource extends Resource
                     })
                     ->getOptionLabelFromRecordUsing(fn ($record) => $record->display_name)
                     ->searchable(['budget_accounts.name', 'code', 'budget_accounts.expenditure_type', 'budget_accounts.account'])
+                    ->preload()
                     ->required(),
-                Forms\Components\Select::make('user_id')
-                    ->relationship('user', 'name')
+                Forms\Components\Hidden::make('user_id')
+                    ->default(fn () => Auth::id())
                     ->required(),
+                Section::make('Items')
+                    ->schema([
+                        Forms\Components\Repeater::make('purchaseOrderDetails')
+                        ->schema([
+                            Forms\Components\Grid::make()
+                                ->columns(7)
+                                ->schema([
+                                    Forms\Components\TextInput::make('item')
+                                        ->required()
+                                        ->maxLength(255)
+                                        ->columnSpan(2),
+                                    Forms\Components\TextInput::make('unit')
+                                        ->required()
+                                        ->maxLength(255)
+                                        ->columnSpan(3),
+                                    Forms\Components\TextInput::make('amount')
+                                        ->required()
+                                        ->numeric()
+                                        ->columnSpan(2),
+                                ])
+                        ])
+                        ->required(fn (string $operation): bool => $operation === 'create')
+                        
+                        ->minItems(1),
+                    ])->hidden(fn (string $operation): bool => $operation === 'edit')
             ]);
     }
 
@@ -52,7 +84,7 @@ class PurchaseRequestsResource extends Resource
                 Tables\Columns\TextColumn::make('date')
                     ->date()
                     ->sortable(),
-                    Tables\Columns\TextColumn::make('budget_account_id')
+                Tables\Columns\TextColumn::make('budget_account_id')
                     ->label('Budget Code')
                     ->getStateUsing(fn ($record) => $record->budgetAccount->code ?? '-')
                     ->searchable(['budget_accounts.name', 'budget_accounts.code', 'budget_accounts.expenditure_type', 'budget_accounts.account']),
@@ -70,9 +102,10 @@ class PurchaseRequestsResource extends Resource
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+                
             ])
             ->filters([
-                //
+                
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
@@ -87,7 +120,7 @@ class PurchaseRequestsResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            RelationManagers\PurchaseRequestDetailsRelationManager::class,
         ];
     }
 

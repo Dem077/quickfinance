@@ -3,10 +3,10 @@
 namespace App\Policies;
 
 use App\Models\User;
-use App\Models\PurchaseRequests;
+use RingleSoft\LaravelProcessApproval\Models\ProcessApprovalFlow;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
-class PurchaseRequestsPolicy
+class ProcessApprovalFlowPolicy
 {
     use HandlesAuthorization;
 
@@ -15,15 +15,15 @@ class PurchaseRequestsPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->can('view_any_purchase::requests');
+        return $user->can('view_any_approval::flow');
     }
 
     /**
      * Determine whether the user can view the model.
      */
-    public function view(User $user, PurchaseRequests $purchaseRequests): bool
+    public function view(User $user, ProcessApprovalFlow $processApprovalFlow): bool
     {
-        return $user->can('view_purchase::requests');
+        return $user->can('view_approval::flow');
     }
 
     /**
@@ -31,23 +31,23 @@ class PurchaseRequestsPolicy
      */
     public function create(User $user): bool
     {
-        return $user->can('create_purchase::requests');
+        return $user->can('create_approval::flow');
     }
 
     /**
      * Determine whether the user can update the model.
      */
-    public function update(User $user, PurchaseRequests $purchaseRequests): bool
+    public function update(User $user, ProcessApprovalFlow $processApprovalFlow): bool
     {
-        return $user->can('update_purchase::requests');
+        return $user->can('update_approval::flow');
     }
 
     /**
      * Determine whether the user can delete the model.
      */
-    public function delete(User $user, PurchaseRequests $purchaseRequests): bool
+    public function delete(User $user, ProcessApprovalFlow $processApprovalFlow): bool
     {
-        return $user->can('delete_purchase::requests');
+        return $user->can('delete_approval::flow');
     }
 
     /**
@@ -55,13 +55,13 @@ class PurchaseRequestsPolicy
      */
     public function deleteAny(User $user): bool
     {
-        return $user->can('delete_any_purchase::requests');
+        return $user->can('delete_any_approval::flow');
     }
 
     /**
      * Determine whether the user can permanently delete.
      */
-    public function forceDelete(User $user, PurchaseRequests $purchaseRequests): bool
+    public function forceDelete(User $user, ProcessApprovalFlow $processApprovalFlow): bool
     {
         return $user->can('{{ ForceDelete }}');
     }
@@ -77,7 +77,7 @@ class PurchaseRequestsPolicy
     /**
      * Determine whether the user can restore.
      */
-    public function restore(User $user, PurchaseRequests $purchaseRequests): bool
+    public function restore(User $user, ProcessApprovalFlow $processApprovalFlow): bool
     {
         return $user->can('{{ Restore }}');
     }
@@ -93,7 +93,7 @@ class PurchaseRequestsPolicy
     /**
      * Determine whether the user can replicate.
      */
-    public function replicate(User $user, PurchaseRequests $purchaseRequests): bool
+    public function replicate(User $user, ProcessApprovalFlow $processApprovalFlow): bool
     {
         return $user->can('{{ Replicate }}');
     }

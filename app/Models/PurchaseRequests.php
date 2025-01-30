@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-class PurchaseRequests  extends Model
+class PurchaseRequests extends Model
 {
     protected $fillable = [
         'pr_no',
@@ -16,16 +16,6 @@ class PurchaseRequests  extends Model
         'user_id',
     ];
 
-    protected static function boot()
-    {
-        parent::boot();
-
-        static::creating(function ($model) {
-            $year = date('Y');
-            $count = self::whereYear('created_at', $year)->count() + 1;
-            $model->pr_no = sprintf('PR/AGRO/%s/%04d', $year, $count);
-        });
-    }
 
     public function budgetAccount(): BelongsTo
     {
@@ -39,7 +29,7 @@ class PurchaseRequests  extends Model
 
     public function purchaseRequestDetails(): HasOne
     {
-        return $this->hasOne(PurchaseRequestDetails::class);
+        return $this->hasOne(PurchaseRequestDetails::class , 'pr_id');
     }
 
     public function department(): BelongsTo

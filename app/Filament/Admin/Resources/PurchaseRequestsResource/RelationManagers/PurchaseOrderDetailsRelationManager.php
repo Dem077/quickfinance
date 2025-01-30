@@ -10,17 +10,29 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
-class PurchaseOrderDetailsRelationManager extends RelationManager
+class PurchaseRequestDetailsRelationManager extends RelationManager
 {
-    protected static string $relationship = 'PurchaseOrderDetails';
-
+    protected static string $relationship = 'purchaseRequestDetails';
     public function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('desc')
-                    ->required()
-                    ->maxLength(255),
+                Forms\Components\Grid::make()
+                ->columns(6)
+                ->schema([
+                    Forms\Components\TextInput::make('item')
+                        ->required()
+                        ->maxLength(255)
+                        ->columnSpan(2),
+                    Forms\Components\TextInput::make('unit')
+                        ->required()
+                        ->maxLength(255)
+                        ->columnSpan(2),
+                    Forms\Components\TextInput::make('amount')
+                        ->required()
+                        ->maxLength(255)
+                        ->columnSpan(2),
+                ])
             ]);
     }
 
@@ -29,13 +41,16 @@ class PurchaseOrderDetailsRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('desc')
             ->columns([
-                Tables\Columns\TextColumn::make('desc'),
+                Tables\Columns\TextColumn::make('item'),
+                Tables\Columns\TextColumn::make('unit'),
+                Tables\Columns\TextColumn::make('amount'),
             ])
             ->filters([
                 //
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make(),
+                Tables\Actions\CreateAction::make()
+                ->label('Add Item'),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
