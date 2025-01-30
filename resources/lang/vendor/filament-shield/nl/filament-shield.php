@@ -7,11 +7,11 @@ return [
     |--------------------------------------------------------------------------
     */
 
-    'column.name' => 'Name',
-    'column.guard_name' => 'Guard Name',
-    'column.roles' => 'Roles',
-    'column.permissions' => 'Permissions',
-    'column.updated_at' => 'Updated At',
+    'column.name' => 'Naam',
+    'column.guard_name' => 'Guard Naam',
+    'column.roles' => 'Rollen',
+    'column.permissions' => 'Permissies',
+    'column.updated_at' => 'Aangepast op',
 
     /*
     |--------------------------------------------------------------------------
@@ -19,11 +19,11 @@ return [
     |--------------------------------------------------------------------------
     */
 
-    'field.name' => 'Name',
-    'field.guard_name' => 'Guard Name',
-    'field.permissions' => 'Permissions',
-    'field.select_all.name' => 'Select All',
-    'field.select_all.message' => 'Enable all Permissions currently <span class="text-primary font-medium">Enabled</span> for this role',
+    'field.name' => 'Naam',
+    'field.guard_name' => 'Guard Naam',
+    'field.permissions' => 'Permissies',
+    'field.select_all.name' => 'Selecteer alles',
+    'field.select_all.message' => 'Zet alle permissies aan, die momenteel <span class="text-primary font-medium">aangevinkt</span> staan voor deze rol.',
 
     /*
     |--------------------------------------------------------------------------
@@ -31,11 +31,11 @@ return [
     |--------------------------------------------------------------------------
     */
 
-    'nav.group' => 'Administration',
-    'nav.role.label' => 'Roles',
+    'nav.group' => 'Filament Shield',
+    'nav.role.label' => 'Rollen',
     'nav.role.icon' => 'heroicon-o-shield-check',
-    'resource.label.role' => 'Role',
-    'resource.label.roles' => 'Roles',
+    'resource.label.role' => 'Rol',
+    'resource.label.roles' => 'Rollen',
 
     /*
     |--------------------------------------------------------------------------
@@ -43,11 +43,11 @@ return [
     |--------------------------------------------------------------------------
     */
 
-    'section' => 'Entities',
+    'section' => 'Entiteiten',
     'resources' => 'Resources',
     'widgets' => 'Widgets',
-    'pages' => 'Pages',
-    'custom' => 'Custom Permissions',
+    'pages' => 'Pagina\'s',
+    'custom' => 'Andere permissies',
 
     /*
     |--------------------------------------------------------------------------
@@ -55,7 +55,7 @@ return [
     |--------------------------------------------------------------------------
     */
 
-    'forbidden' => 'You do not have permission to access',
+    'forbidden' => 'Je hebt geen toegang',
 
     /*
     |--------------------------------------------------------------------------
@@ -64,21 +64,17 @@ return [
     */
 
     'resource_permission_prefixes_labels' => [
-        'view' => 'View',
-        'view_any' => 'View Any',
-        'create' => 'Create',
-        'update' => 'Update',
-        'delete' => 'Delete',
-        'delete_any' => 'Delete Any',
-        'force_delete' => 'Force Delete',
-        'force_delete_any' => 'Force Delete Any',
-        'restore' => 'Restore',
-        'reorder' => 'Reorder',
-        'restore_any' => 'Restore Any',
-        'replicate' => 'Replicate',
-        'approve' => 'Approve Purchase Requests',
-        'send_approval' => 'Send for Approval',
+        'view' => 'Bekijken',
+        'view_any' => 'Bekijk elke',
+        'create' => 'Aanmaken',
+        'update' => 'Bewerken',
+        'delete' => 'Verwijderen',
+        'delete_any' => 'Verwijder elke',
+        'force_delete' => 'Forceer verwijderen',
+        'force_delete_any' => 'Forceer verwijderen elke',
+        'restore' => 'Herstellen',
+        'restore_any' => 'Herstel elke',
+        'replicate' => 'Repliceren',
+        // 'reorder' => 'Reorder',
     ],
-
-
 ];

@@ -16,6 +16,11 @@ return new class extends Migration
             $table->string('pr_no');
             $table->date('date');
             $table->foreignId('budget_account_id')->constrained();
+            $table->boolean('is_submited')->default(false);
+            $table->boolean('is_approved')->default(false);
+            $table->foreignId('approved_by')->nullable()->constrained();
+            $table->boolean('is_canceled')->default(false);
+            $table->text('cancel_remark')->nullable();
             $table->foreignId('user_id')->constrained(); // Requested by User
             $table->foreignId(('department_id'))->constrained();
             $table->timestamps();

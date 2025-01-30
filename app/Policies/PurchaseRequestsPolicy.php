@@ -5,10 +5,22 @@ namespace App\Policies;
 use App\Models\User;
 use App\Models\PurchaseRequests;
 use Illuminate\Auth\Access\HandlesAuthorization;
+use Illuminate\Support\Facades\Auth;
 
 class PurchaseRequestsPolicy
 {
     use HandlesAuthorization;
+
+    public function send_approval(User $user): bool
+    {
+        return $user->can('send_approval_purchase::requests');
+    }
+
+    
+    public function approve(User $user): bool
+    {
+        return $user->can('approve_purchase::requests');
+    }
 
     /**
      * Determine whether the user can view any models.
@@ -39,7 +51,13 @@ class PurchaseRequestsPolicy
      */
     public function update(User $user, PurchaseRequests $purchaseRequests): bool
     {
-        return $user->can('update_purchase::requests');
+        // dd($this->send_approval(Auth::user()));
+        // dd($this->send_approval($user));
+        // return $user->can('update_purchase::requests');
+        if ($purchaseRequests->is_approved || ($purchaseRequests->is_submited && $this->send_approval(Auth::user()))) {
+            return false;
+        }
+        return true;
     }
 
     /**

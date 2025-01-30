@@ -10,12 +10,12 @@ use Filament\Resources\Pages\CreateRecord;
 class CreatePurchaseRequests extends CreateRecord
 {
     protected static string $resource = PurchaseRequestsResource::class;
-    
+
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         $year = date('Y');
         $count = PurchaseRequests::whereYear('created_at', $year)->count() + 1;
-        
+
         do {
             $pr_no = sprintf('PR/AGRO/%s/%04d', $year, $count);
             $exists = PurchaseRequests::where('pr_no', $pr_no)->exists();
@@ -23,7 +23,7 @@ class CreatePurchaseRequests extends CreateRecord
                 $count++;
             }
         } while ($exists);
-        
+
         $data['pr_no'] = $pr_no;
 
         return $data;
@@ -32,7 +32,7 @@ class CreatePurchaseRequests extends CreateRecord
     protected function afterCreate(): void
     {
         $purchaseOrderDetails = $this->data['purchaseOrderDetails'] ?? [];
-        
+
         foreach ($purchaseOrderDetails as $detail) {
             PurchaseRequestDetails::create([
                 'pr_id' => $this->record->id,
@@ -42,5 +42,4 @@ class CreatePurchaseRequests extends CreateRecord
             ]);
         }
     }
-    
 }

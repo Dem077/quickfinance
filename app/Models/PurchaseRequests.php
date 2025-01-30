@@ -14,8 +14,11 @@ class PurchaseRequests extends Model
         'budget_account_id',
         'department_id',
         'user_id',
+        'is_submited',
+        'is_approved',
+        'is_canceled',
+        'cancel_remark',
     ];
-
 
     public function budgetAccount(): BelongsTo
     {
@@ -29,7 +32,7 @@ class PurchaseRequests extends Model
 
     public function purchaseRequestDetails(): HasOne
     {
-        return $this->hasOne(PurchaseRequestDetails::class , 'pr_id');
+        return $this->hasOne(PurchaseRequestDetails::class, 'pr_id');
     }
 
     public function department(): BelongsTo
@@ -37,6 +40,8 @@ class PurchaseRequests extends Model
         return $this->belongsTo(Departments::class, 'department_id');
     }
 
-
-
+    public function approvedby():BelongsTo
+    {
+        return $this->belongsTo(User::class , 'approved_by');
+    }
 }

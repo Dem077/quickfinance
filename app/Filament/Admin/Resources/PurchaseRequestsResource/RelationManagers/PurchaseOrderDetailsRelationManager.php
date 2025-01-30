@@ -7,32 +7,35 @@ use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 
 class PurchaseRequestDetailsRelationManager extends RelationManager
 {
     protected static string $relationship = 'purchaseRequestDetails';
+
     public function form(Form $form): Form
     {
         return $form
             ->schema([
                 Forms\Components\Grid::make()
-                ->columns(6)
-                ->schema([
-                    Forms\Components\TextInput::make('item')
-                        ->required()
-                        ->maxLength(255)
-                        ->columnSpan(2),
-                    Forms\Components\TextInput::make('unit')
-                        ->required()
-                        ->maxLength(255)
-                        ->columnSpan(2),
-                    Forms\Components\TextInput::make('amount')
-                        ->required()
-                        ->maxLength(255)
-                        ->columnSpan(2),
-                ])
+                    ->columns(6)
+                    ->schema([
+                        Forms\Components\TextInput::make('item')
+                            ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests'))
+                            ->required()
+                            ->maxLength(255)
+                            ->columnSpan(2),
+                        Forms\Components\TextInput::make('unit')
+                            ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests'))
+                            ->required()
+                            ->maxLength(255)
+                            ->columnSpan(2),
+                        Forms\Components\TextInput::make('amount')
+                            ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests'))
+                            ->required()
+                            ->maxLength(255)
+                            ->columnSpan(2),
+                    ]),
             ]);
     }
 
@@ -50,16 +53,15 @@ class PurchaseRequestDetailsRelationManager extends RelationManager
             ])
             ->headerActions([
                 Tables\Actions\CreateAction::make()
-                ->label('Add Item'),
+                    ->label('Add Item')
+                    ->visible(fn ($record) => Auth::user()->can('send_approval_purchase::requests')),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->visible(fn ($record) => Auth::user()->can('send_approval_purchase::requests')),
             ])
+            ->recordUrl(false)
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
             ]);
     }
 }

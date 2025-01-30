@@ -8,6 +8,7 @@ use Filament\Models\Contracts\HasAvatar;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
@@ -69,5 +70,10 @@ class User extends Authenticatable implements FilamentUser, HasAvatar
     public function department(): BelongsTo
     {
         return $this->belongsTo(Departments::class, 'department_id');
+    }
+
+    public function approved_by():HasOne
+    {
+        return $this->hasOne(User::class, 'approved_by');
     }
 }

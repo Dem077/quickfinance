@@ -7,11 +7,11 @@ return [
     |--------------------------------------------------------------------------
     */
 
+    'column.guard_name' => 'Guard-Name',
     'column.name' => 'Name',
-    'column.guard_name' => 'Guard Name',
-    'column.roles' => 'Roles',
-    'column.permissions' => 'Permissions',
-    'column.updated_at' => 'Updated At',
+    'column.permissions' => 'Berechtigungen',
+    'column.roles' => 'Rollen',
+    'column.updated_at' => 'Aktualisiert am',
 
     /*
     |--------------------------------------------------------------------------
@@ -19,11 +19,11 @@ return [
     |--------------------------------------------------------------------------
     */
 
+    'field.guard_name' => 'Guard-Name',
     'field.name' => 'Name',
-    'field.guard_name' => 'Guard Name',
-    'field.permissions' => 'Permissions',
-    'field.select_all.name' => 'Select All',
-    'field.select_all.message' => 'Enable all Permissions currently <span class="text-primary font-medium">Enabled</span> for this role',
+    'field.permissions' => 'Berechtigungen',
+    'field.select_all.message' => 'Aktivierung aller Berechtigungen, die derzeit für diese Rolle <span class="text-primary font-medium">aktiviert</span> sind',
+    'field.select_all.name' => 'Alle auswählen',
 
     /*
     |--------------------------------------------------------------------------
@@ -31,11 +31,11 @@ return [
     |--------------------------------------------------------------------------
     */
 
-    'nav.group' => 'Administration',
-    'nav.role.label' => 'Roles',
+    'nav.group' => 'Filament Shield',
     'nav.role.icon' => 'heroicon-o-shield-check',
-    'resource.label.role' => 'Role',
-    'resource.label.roles' => 'Roles',
+    'nav.role.label' => 'Rollen',
+    'resource.label.role' => 'Rolle',
+    'resource.label.roles' => 'Rollen',
 
     /*
     |--------------------------------------------------------------------------
@@ -43,11 +43,11 @@ return [
     |--------------------------------------------------------------------------
     */
 
-    'section' => 'Entities',
-    'resources' => 'Resources',
+    'section' => 'Entitäten',
+    'resources' => 'Ressourcen',
     'widgets' => 'Widgets',
-    'pages' => 'Pages',
-    'custom' => 'Custom Permissions',
+    'pages' => 'Seiten',
+    'custom' => 'benutzerdefinierte Berechtigungen',
 
     /*
     |--------------------------------------------------------------------------
@@ -55,7 +55,7 @@ return [
     |--------------------------------------------------------------------------
     */
 
-    'forbidden' => 'You do not have permission to access',
+    'forbidden' => 'Sie haben keine Zugangsberechtigung',
 
     /*
     |--------------------------------------------------------------------------
@@ -64,21 +64,17 @@ return [
     */
 
     'resource_permission_prefixes_labels' => [
-        'view' => 'View',
-        'view_any' => 'View Any',
-        'create' => 'Create',
-        'update' => 'Update',
-        'delete' => 'Delete',
-        'delete_any' => 'Delete Any',
-        'force_delete' => 'Force Delete',
-        'force_delete_any' => 'Force Delete Any',
-        'restore' => 'Restore',
-        'reorder' => 'Reorder',
-        'restore_any' => 'Restore Any',
-        'replicate' => 'Replicate',
-        'approve' => 'Approve Purchase Requests',
-        'send_approval' => 'Send for Approval',
+        'view' => 'Anzeigen',
+        'view_any' => 'Alle anzeigen',
+        'create' => 'Erstellen',
+        'update' => 'Bearbeiten',
+        'delete' => 'Löschen',
+        'delete_any' => 'Alle löschen',
+        'force_delete' => 'Endgültig löschen',
+        'force_delete_any' => 'Alle endgültig löschen',
+        // 'reorder' => 'Reorder',
+        // 'replicate' => 'Replicate',
+        'restore' => 'Wiederherstellen',
+        'restore_any' => 'Alle wiederherstellen',
     ],
-
-
 ];

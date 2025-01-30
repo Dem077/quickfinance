@@ -7,11 +7,11 @@ return [
     |--------------------------------------------------------------------------
     */
 
-    'column.name' => 'Name',
-    'column.guard_name' => 'Guard Name',
-    'column.roles' => 'Roles',
-    'column.permissions' => 'Permissions',
-    'column.updated_at' => 'Updated At',
+    'column.name' => 'Název',
+    'column.guard_name' => 'Název guardu',
+    'column.roles' => 'Role',
+    'column.permissions' => 'Oprávnění',
+    'column.updated_at' => 'Změněno dne',
 
     /*
     |--------------------------------------------------------------------------
@@ -19,11 +19,11 @@ return [
     |--------------------------------------------------------------------------
     */
 
-    'field.name' => 'Name',
-    'field.guard_name' => 'Guard Name',
-    'field.permissions' => 'Permissions',
-    'field.select_all.name' => 'Select All',
-    'field.select_all.message' => 'Enable all Permissions currently <span class="text-primary font-medium">Enabled</span> for this role',
+    'field.name' => 'Název',
+    'field.guard_name' => 'Název guardu',
+    'field.permissions' => 'Oprávnění',
+    'field.select_all.name' => 'Vybrat vše',
+    'field.select_all.message' => 'Povolit všechny oprávnení právě <span class="text-primary font-medium">Dostupné</span> pro tuto roli',
 
     /*
     |--------------------------------------------------------------------------
@@ -31,11 +31,11 @@ return [
     |--------------------------------------------------------------------------
     */
 
-    'nav.group' => 'Administration',
-    'nav.role.label' => 'Roles',
+    'nav.group' => 'Filament Shield',
+    'nav.role.label' => 'Role',
     'nav.role.icon' => 'heroicon-o-shield-check',
     'resource.label.role' => 'Role',
-    'resource.label.roles' => 'Roles',
+    'resource.label.roles' => 'Role',
 
     /*
     |--------------------------------------------------------------------------
@@ -43,11 +43,11 @@ return [
     |--------------------------------------------------------------------------
     */
 
-    'section' => 'Entities',
-    'resources' => 'Resources',
-    'widgets' => 'Widgets',
-    'pages' => 'Pages',
-    'custom' => 'Custom Permissions',
+    'section' => 'Entity',
+    'resources' => 'Zdroje',
+    'widgets' => 'Widgety',
+    'pages' => 'Stránky',
+    'custom' => 'Vlastní oprávnění',
 
     /*
     |--------------------------------------------------------------------------
@@ -55,7 +55,7 @@ return [
     |--------------------------------------------------------------------------
     */
 
-    'forbidden' => 'You do not have permission to access',
+    'forbidden' => 'Nemáte oprávnění k přístupu',
 
     /*
     |--------------------------------------------------------------------------
@@ -64,21 +64,17 @@ return [
     */
 
     'resource_permission_prefixes_labels' => [
-        'view' => 'View',
-        'view_any' => 'View Any',
-        'create' => 'Create',
-        'update' => 'Update',
-        'delete' => 'Delete',
-        'delete_any' => 'Delete Any',
-        'force_delete' => 'Force Delete',
-        'force_delete_any' => 'Force Delete Any',
-        'restore' => 'Restore',
-        'reorder' => 'Reorder',
-        'restore_any' => 'Restore Any',
-        'replicate' => 'Replicate',
-        'approve' => 'Approve Purchase Requests',
-        'send_approval' => 'Send for Approval',
+        'view' => 'Zobrazit',
+        'view_any' => 'Zobrazit jakýkoliv',
+        'create' => 'Vyvořit',
+        'update' => 'Upravit',
+        'delete' => 'Smazat',
+        'delete_any' => 'Smazat jakýkoliv',
+        'force_delete' => 'Trvale smazat',
+        'force_delete_any' => 'Trvale smazat jakýkoliv',
+        'restore' => 'Obnovit',
+        'reorder' => 'Změnit pořadí',
+        'restore_any' => 'Obnovit jakýkoliv',
+        'replicate' => 'Duplikovat',
     ],
-
-
 ];
