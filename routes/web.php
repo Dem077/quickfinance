@@ -52,3 +52,19 @@ Route::get('purchase-requests/{record}/preview', function ( PurchaseRequests $re
         ->header('Content-Disposition', 'inline; filename="preview.pdf"');
 })->name('purchase-requests.preview');
 
+Route::get('purchase-orders.advance-form.download', function () {
+    $mpdf = new \Mpdf\Mpdf([
+        'mode' => 'utf-8',
+        'format' => 'A4',
+        'margin_header' => '0',
+        'margin_top' => '15',
+        'margin_bottom' => '30',
+        'margin_footer' => '10',
+    ]);
+    $html = view('pdf.purchase-order-advance-form')->render();
+    $mpdf->WriteHTML($html);
+    
+    return response($mpdf->Output('', \Mpdf\Output\Destination::INLINE))
+        ->header('Content-Type', 'application/pdf')
+        ->header('Content-Disposition', 'inline; filename="advance-form.pdf"');
+})->name('purchase-orders.advance-form.download');

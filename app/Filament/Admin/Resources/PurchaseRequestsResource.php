@@ -8,6 +8,7 @@ use App\Models\PurchaseRequests;
 use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
 use Filament\Forms;
 use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Tabs\Tab;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
@@ -94,7 +95,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                     ->required(),
                 Section::make('Details')
                     ->schema([
-                        Forms\Components\Repeater::make('purchaseOrderDetails')
+                        Forms\Components\Repeater::make('purchaseRequestDetails')
                             ->label('Items / Services')
                             ->schema([
                                 Forms\Components\Grid::make()
@@ -117,7 +118,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                             ])
                             ->required(fn (string $operation): bool => $operation === 'create')
                             ->minItems(1),
-                    ])->hidden(fn (string $operation): bool => $operation === 'edit'),
+                ])->hidden(fn (string $operation): bool => $operation === 'edit'),
             ]);
     }
 
@@ -145,16 +146,18 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                     ->numeric()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('status')
-                    ->label('Status') // Add a label for better readability
-                    ->getStateUsing(fn ($record) => $record->is_approved ? 'Approved' :
+                    ->label('Status')
+                    ->getStateUsing(fn ($record) => $record->is_approved ? 
+                        ($record->uploaded_document ? 'Document Uploaded' : 'Approved') :
                         ($record->is_canceled ? 'Canceled' :
                         ($record->is_submited ? 'Submitted' : 'Draft'))
                     )
-                    ->sortable() // Allow sorting by this column
-                    ->searchable() // Optional: Allow searching by this column
-                    ->badge() // Optional: Display the status as a badge for better UI
+                    ->sortable()
+                    ->searchable()
+                    ->badge()
                     ->color(fn ($state) => match ($state) {
                         'Approved' => 'success',
+                        'Document Uploaded' => 'info',
                         'Canceled' => 'danger',
                         'Submitted' => 'warning',
                         'Draft' => 'gray',
@@ -231,20 +234,39 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                             'approved_canceled_by' => Auth::id(),
                         ]);
                         Notification::make()
-                            ->title('PR Approved successfully')
-                            ->success()
+                            ->title('PR Canceled successfully')
+                            ->warning()
                             ->send();
                     }),
+                    Tables\Actions\Action::make('upload_document')
+                        ->label('Upload Document')
+                        ->icon('heroicon-o-document')
+                        ->visible(fn ($record) => $record->is_approved && $record->uploaded_document == Null && Auth::user()->can('send_approval_purchase::requests'))
+                        ->form([
+                            Forms\Components\FileUpload::make('uploaded_document')
+                                ->label('Document')
+                                ->required(),
+                        ])
+                        ->action(function (PurchaseRequests $record, array $data) {
+                            $record->update([
+                                'uploaded_document' => $data['uploaded_document'],
+                            ]);
+                            Notification::make()
+                                ->title('Document uploaded successfully')
+                                ->success()
+                                ->send();
+                        }),
+
                     Tables\Actions\Action::make('download_pdf')
                         ->label('Download PDF')
                         ->icon('heroicon-o-eye')
-                        ->visible(fn ($record) => $record->is_approved)
+                        ->visible(fn ($record) => $record->is_approved  && $record->uploaded_document == Null && Auth::user()->can('send_approval_purchase::requests'))
                         ->url(fn (PurchaseRequests $record) => route('purchase-requests.preview', $record))
                         ->openUrlInNewTab(),
                 
 
                 Tables\Actions\EditAction::make()
-                    ->visible(fn ($record) => (! $record->is_canceled && $record->is_submited && ! $record->is_approved && Auth::user()->can('approve_purchase::requests')) || (! $record->is_submited && Auth::user()->can('send_approval_purchase::requests'))),
+                    ->visible(fn ($record) => (! $record->is_canceled && $record->is_submited && ! $record->is_approved && $record->uploaded_document == Null &&  Auth::user()->can('approve_purchase::requests')) || (! $record->is_submited && Auth::user()->can('send_approval_purchase::requests'))),
             ])
             ->recordUrl(false)
             ->bulkActions([

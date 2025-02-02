@@ -29,4 +29,5 @@ class PurchaseOrders extends Model
     {
         return $this->hasOne(PurchaseOrderDetails::class, 'po_id');
     }
+    
 }

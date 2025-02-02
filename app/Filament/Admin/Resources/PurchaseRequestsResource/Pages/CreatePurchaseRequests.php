@@ -31,9 +31,9 @@ class CreatePurchaseRequests extends CreateRecord
 
     protected function afterCreate(): void
     {
-        $purchaseOrderDetails = $this->data['purchaseOrderDetails'] ?? [];
+        $purchaserequestDetails = $this->data['purchaseRequestDetails'] ?? [];
 
-        foreach ($purchaseOrderDetails as $detail) {
+        foreach ($purchaserequestDetails as $detail) {
             PurchaseRequestDetails::create([
                 'pr_id' => $this->record->id,
                 'item' => $detail['item'],
