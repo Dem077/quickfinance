@@ -5,9 +5,9 @@ namespace Database\Factories;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Departments>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Location>
  */
-class DepartmentsFactory extends Factory
+class LocationFactory extends Factory
 {
     /**
      * Define the model's default state.
@@ -18,8 +18,6 @@ class DepartmentsFactory extends Factory
     {
         return [
             'name' => fake()->name(),
-            'hod' => fake()->name(),   
-            'hod_designation' => fake()->jobTitle(),
         ];
     }
 }

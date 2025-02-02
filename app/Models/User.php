@@ -8,6 +8,7 @@ use Filament\Models\Contracts\HasAvatar;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -29,6 +30,7 @@ class User extends Authenticatable implements FilamentUser, HasAvatar
         'avatar_url',
         'department_id',
         'password',
+        'desingation',
     ];
 
     /**
@@ -72,8 +74,13 @@ class User extends Authenticatable implements FilamentUser, HasAvatar
         return $this->belongsTo(Departments::class, 'department_id');
     }
 
-    public function approved_by():HasOne
+    public function approved_by(): HasMany
     {
-        return $this->hasOne(User::class, 'approved_by');
+        return $this->HasMany(User::class, 'approved_canceled_by');
+    }
+
+    public function location(): BelongsTo
+    {
+        return $this->belongsTo(Location::class, 'location_id');
     }
 }

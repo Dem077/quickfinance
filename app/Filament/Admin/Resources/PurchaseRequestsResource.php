@@ -12,10 +12,10 @@ use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Actions\ActionGroup;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Gate;
 
 class PurchaseRequestsResource extends Resource implements HasShieldPermissions
 {
@@ -33,19 +33,24 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
             'delete',
             'delete_any',
             'send_approval',
-            'approve'
+            'approve',
         ];
     }
 
     public static function getEloquentQuery(): Builder
     {
-        if(Auth::user()->can('approve_purchase::requests')){
+        if (Auth::user()->can('approve_purchase::requests')) {
             return parent::getEloquentQuery()->where('is_submited', true);
-        }else if(Auth::user()->can('send_approval_purchase::requests')){
-            return parent::getEloquentQuery()->where('department_id', Auth::user()->department_id || parent::getEloquentQuery()->where('user_id', Auth::id()));
-        }else {
+        } else if (Auth::user()->can('send_approval_purchase::requests')) {
+            return parent::getEloquentQuery()
+            ->where(function ($query) {
+                $query->where('user_id', Auth::id())
+                      ->orWhere('location_id', Auth::user()->location_id);
+            });
+        } else {
             return parent::getEloquentQuery();
         }
+        
     }
 
     public static function form(Form $form): Form
@@ -61,10 +66,15 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                     ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests'))
                     ->closeOnDateSelection()
                     ->required(),
-                Forms\Components\Select::make('department_id')
-                    ->relationship('department', 'name')
+                Forms\Components\Select::make('location_id')
+                    ->relationship('location', 'name')
+                    ->native(false)
                     ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests'))
                     ->required(),
+                Forms\Components\Select::make('project_id')
+                    ->relationship('project', 'name')
+                    ->native(false)
+                    ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests')),
                 Forms\Components\Select::make('budget_account_id')
                     ->relationship('budgetAccount', 'name', function ($query) {
                         $query->selectRaw("CONCAT(code, ' - ', budget_accounts.name, ' (', budget_accounts.expenditure_type, ' - ', budget_accounts.account, ')') AS display_name, budget_accounts.id")
@@ -74,18 +84,24 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                     ->searchable(['budget_accounts.name', 'code', 'budget_accounts.expenditure_type', 'budget_accounts.account'])
                     ->preload()
                     ->required(),
+                Forms\Components\TextInput::make('purpose')
+                    ->label('Purpose / Reason')
+                    ->required()
+                    ->maxLength(255),
                 Forms\Components\Hidden::make('user_id')
                     ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests'))
                     ->default(fn () => Auth::id())
                     ->required(),
-                Section::make('Items')
+                Section::make('Details')
                     ->schema([
                         Forms\Components\Repeater::make('purchaseOrderDetails')
+                            ->label('Items / Services')
                             ->schema([
                                 Forms\Components\Grid::make()
                                     ->columns(7)
                                     ->schema([
                                         Forms\Components\TextInput::make('item')
+                                            ->label('Item / Service')
                                             ->required()
                                             ->maxLength(255)
                                             ->columnSpan(2),
@@ -118,18 +134,20 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                     ->label('Budget Code')
                     ->getStateUsing(fn ($record) => $record->budgetAccount->code ?? '-')
                     ->searchable(['budget_accounts.name', 'budget_accounts.code', 'budget_accounts.expenditure_type', 'budget_accounts.account']),
-                Tables\Columns\TextColumn::make('department.name')
+                Tables\Columns\TextColumn::make('location.name')
+                    ->numeric()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('project.name')
                     ->numeric()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('user.name')
                     ->label('Requested By')
                     ->numeric()
                     ->sortable(),
-                    Tables\Columns\TextColumn::make('status')
+                Tables\Columns\TextColumn::make('status')
                     ->label('Status') // Add a label for better readability
-                    ->getStateUsing(fn ($record) => 
-                        $record->is_approved ? 'Approved' : 
-                        ($record->is_canceled ? 'Canceled' : 
+                    ->getStateUsing(fn ($record) => $record->is_approved ? 'Approved' :
+                        ($record->is_canceled ? 'Canceled' :
                         ($record->is_submited ? 'Submitted' : 'Draft'))
                     )
                     ->sortable() // Allow sorting by this column
@@ -160,8 +178,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                     ->label('Submit for Approval')
                     ->icon('heroicon-o-paper-airplane')
                     ->color('warning')
-                    ->visible(fn ($record) => 
-                        !$record->is_submited && 
+                    ->visible(fn ($record) => ! $record->is_submited &&
                         Auth::user()->can('send_approval_purchase::requests')
                     )
                     ->action(function (PurchaseRequests $record) {
@@ -177,15 +194,15 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                     ->label('Approve')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
-                    ->visible(fn ($record) => 
-                        $record->is_submited &&
-                        !$record->is_canceled && 
-                        !$record->is_approved && 
+                    ->visible(fn ($record) => $record->is_submited &&
+                        ! $record->is_canceled &&
+                        ! $record->is_approved &&
                         Auth::user()->can('approve_purchase::requests')
                     )
                     ->action(function (PurchaseRequests $record) {
                         $record->update([
                             'is_approved' => true,
+                            'approved_canceled_by' => Auth::id(),
                         ]);
                         Notification::make()
                             ->title('PR Approved successfully')
@@ -200,28 +217,36 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                         Forms\Components\Textarea::make('cancel_remark')
                             ->label('Cancellation Reason')
                             ->required()
-                            ->maxLength(255)
+                            ->maxLength(255),
                     ])
-                    ->visible(fn ($record) => 
-                        $record->is_submited &&
-                        !$record->is_approved && 
-                        !$record->is_canceled && 
+                    ->visible(fn ($record) => $record->is_submited &&
+                        ! $record->is_approved &&
+                        ! $record->is_canceled &&
                         Auth::user()->can('approve_purchase::requests')
                     )
-                    ->action(function (PurchaseRequests $record ,array $data) {
+                    ->action(function (PurchaseRequests $record, array $data) {
                         $record->update([
                             'is_canceled' => true,
-                            'cancel_remark' => $data['cancel_remark']
+                            'cancel_remark' => $data['cancel_remark'],
+                            'approved_canceled_by' => Auth::id(),
                         ]);
                         Notification::make()
                             ->title('PR Approved successfully')
                             ->success()
                             ->send();
                     }),
+                    Tables\Actions\Action::make('download_pdf')
+                        ->label('Download PDF')
+                        ->icon('heroicon-o-eye')
+                        ->visible(fn ($record) => $record->is_approved)
+                        ->url(fn (PurchaseRequests $record) => route('purchase-requests.preview', $record))
+                        ->openUrlInNewTab(),
+                
+
                 Tables\Actions\EditAction::make()
-                    ->visible(fn ($record) => (!$record->is_canceled && $record->is_submited && !$record->is_approved && Auth::user()->can('approve_purchase::requests') )|| (!$record->is_submited &&  Auth::user()->can('send_approval_purchase::requests'))),
+                    ->visible(fn ($record) => (! $record->is_canceled && $record->is_submited && ! $record->is_approved && Auth::user()->can('approve_purchase::requests')) || (! $record->is_submited && Auth::user()->can('send_approval_purchase::requests'))),
             ])
-            ->recordUrl(false) 
+            ->recordUrl(false)
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
@@ -244,6 +269,4 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
             'edit' => Pages\EditPurchaseRequests::route('/{record}/edit'),
         ];
     }
-
-
 }

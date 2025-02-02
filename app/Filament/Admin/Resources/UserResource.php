@@ -54,8 +54,16 @@ class UserResource extends Resource
                             ->maxLength(255)
                             ->columnSpan('full')
                             ->required(),
+                        Forms\Components\TextInput::make('desingation')
+                            ->minLength(2)
+                            ->maxLength(255)
+                            ->required(),
                         Forms\Components\Select::make('department_id')
                             ->relationship('department', 'name')
+                            ->required()
+                            ->native(false),
+                        Forms\Components\Select::make('location_id')
+                            ->relationship('location', 'name')
                             ->required()
                             ->native(false),
                         Forms\Components\FileUpload::make('avatar_url')

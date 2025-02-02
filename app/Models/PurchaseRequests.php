@@ -12,12 +12,15 @@ class PurchaseRequests extends Model
         'pr_no',
         'date',
         'budget_account_id',
-        'department_id',
+        'location_id',
+        'project_id',
+        'purpose',
         'user_id',
         'is_submited',
         'is_approved',
         'is_canceled',
         'cancel_remark',
+        'uploaded_document',
     ];
 
     public function budgetAccount(): BelongsTo
@@ -35,13 +38,18 @@ class PurchaseRequests extends Model
         return $this->hasOne(PurchaseRequestDetails::class, 'pr_id');
     }
 
-    public function department(): BelongsTo
+    public function location(): BelongsTo
     {
-        return $this->belongsTo(Departments::class, 'department_id');
+        return $this->belongsTo(Location::class, 'location_id');
     }
 
-    public function approvedby():BelongsTo
+    public function approvedby(): BelongsTo
     {
-        return $this->belongsTo(User::class , 'approved_by');
+        return $this->belongsTo(User::class, 'approved_canceled_by');
+    }
+
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
     }
 }
