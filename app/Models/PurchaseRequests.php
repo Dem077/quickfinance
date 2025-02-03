@@ -21,6 +21,7 @@ class PurchaseRequests extends Model
         'is_canceled',
         'cancel_remark',
         'uploaded_document',
+        'approved_canceled_by',
     ];
 
     public function budgetAccount(): BelongsTo
@@ -52,4 +53,10 @@ class PurchaseRequests extends Model
     {
         return $this->belongsTo(Project::class);
     }
+
+    public function items(): BelongsTo
+    {
+        return $this->belongsTo(Item::class);
+    }
+
 }

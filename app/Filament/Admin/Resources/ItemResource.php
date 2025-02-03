@@ -2,17 +2,20 @@
 
 namespace App\Filament\Admin\Resources;
 
-use App\Filament\Admin\Resources\DepartmentsResource\Pages;
-use App\Models\Departments;
+use App\Filament\Admin\Resources\ItemResource\Pages;
+use App\Filament\Admin\Resources\ItemResource\RelationManagers;
+use App\Models\Item;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 
-class DepartmentsResource extends Resource
+class ItemResource extends Resource
 {
-    protected static ?string $model = Departments::class;
+    protected static ?string $model = Item::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
@@ -20,17 +23,10 @@ class DepartmentsResource extends Resource
     {
         return $form
             ->schema([
+                Forms\Components\TextInput::make('item_code')
+                    ->required()
+                    ->maxLength(255),
                 Forms\Components\TextInput::make('name')
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('hod')
-                    ->label('Head of Department')
-                    ->helperText('Full name of the Head of Department')
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('hod_designation')
-                    ->label('HOD Designation')
-                    ->helperText('Designation of the Head of Department')
                     ->required()
                     ->maxLength(255),
             ]);
@@ -40,9 +36,9 @@ class DepartmentsResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('name')
+                Tables\Columns\TextColumn::make('item_code')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('hod')
+                Tables\Columns\TextColumn::make('name')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
@@ -76,9 +72,9 @@ class DepartmentsResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListDepartments::route('/'),
-            'create' => Pages\CreateDepartments::route('/create'),
-            'edit' => Pages\EditDepartments::route('/{record}/edit'),
+            'index' => Pages\ListItems::route('/'),
+            'create' => Pages\CreateItem::route('/create'),
+            'edit' => Pages\EditItem::route('/{record}/edit'),
         ];
     }
 }

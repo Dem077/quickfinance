@@ -13,6 +13,7 @@ class PurchaseOrders extends Model
         'po_no',
         'date',
         'pr_id',
+        'payment_method',
     ];
 
     public function vendor(): BelongsTo

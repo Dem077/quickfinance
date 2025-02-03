@@ -36,7 +36,7 @@ class CreatePurchaseRequests extends CreateRecord
         foreach ($purchaserequestDetails as $detail) {
             PurchaseRequestDetails::create([
                 'pr_id' => $this->record->id,
-                'item' => $detail['item'],
+                'item_id' => $detail['item'],
                 'unit' => $detail['unit'],
                 'amount' => $detail['amount'],
             ]);

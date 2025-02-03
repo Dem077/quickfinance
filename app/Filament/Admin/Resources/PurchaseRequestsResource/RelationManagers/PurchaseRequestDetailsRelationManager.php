@@ -20,10 +20,10 @@ class PurchaseRequestDetailsRelationManager extends RelationManager
                 Forms\Components\Grid::make()
                     ->columns(6)
                     ->schema([
-                        Forms\Components\TextInput::make('item')
+                        Forms\Components\Select::make('item')
+                            ->relationship('item', 'name')
                             ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests'))
                             ->required()
-                            ->maxLength(255)
                             ->columnSpan(2),
                         Forms\Components\TextInput::make('unit')
                             ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests'))
@@ -44,7 +44,7 @@ class PurchaseRequestDetailsRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('desc')
             ->columns([
-                Tables\Columns\TextColumn::make('item'),
+                Tables\Columns\TextColumn::make('item.name')->label('Item Name'),
                 Tables\Columns\TextColumn::make('unit'),
                 Tables\Columns\TextColumn::make('amount'),
             ])

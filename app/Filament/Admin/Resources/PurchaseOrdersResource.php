@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Resources;
 
 use App\Filament\Admin\Resources\PurchaseOrdersResource\Pages;
+use App\Filament\Admin\Resources\PurchaseOrdersResource\RelationManagers;
 use App\Models\PurchaseOrders;
 use App\Models\PurchaseRequestDetails;
 use App\Models\PurchaseRequests;
@@ -70,11 +71,13 @@ class PurchaseOrdersResource extends Resource
                                     ->color('info')
                                     ->tooltip('Generate Total Amount')
                                     ->action(function (Get $get, Set $set) {
-                                        $items = $get('purchaseRequestDetails');
+                                        $items = $get('purchaseOrderDetails');
+                                        if (!is_array($items)) return;
+                                        
                                         foreach ($items as $key => $item) {
                                             $qty = (float) ($item['qty'] ?? 0);
                                             $unitPrice = (float) ($item['unit_price'] ?? 0);
-                                            $set("purchaseRequestDetails.{$key}.amount", $qty * $unitPrice);
+                                            $set("purchaseOrderDetails.{$key}.amount", $qty * $unitPrice);
                                         }
                                     })
                             ])
@@ -85,9 +88,11 @@ class PurchaseOrdersResource extends Resource
                                         Forms\Components\TextInput::make('itemcode')
                                             ->label('Item Code')
                                             ->required()
-                                            ->maxLength(255)
+                                            ->disabled()
+                                            ->live()
+                                            ->dehydrated(false)
                                             ->columnSpan(2),
-                                            Forms\Components\Select::make('desc')
+                                        Forms\Components\Select::make('desc')
                                             ->label('Description')
                                             ->options(function (Get $get, $state, $record) {
                                                 $prId = $get('../../pr_id');
@@ -107,20 +112,26 @@ class PurchaseOrdersResource extends Resource
                                                     ->toArray();
                                                 
                                                 return PurchaseRequestDetails::where('pr_id', $prId)
-                                                    ->whereNotIn('item', $selectedItems)
-                                                    ->pluck('item', 'item')
+                                                    ->whereNotIn('item_id', $selectedItems)
+                                                    ->with('item')  // Eager load items relationship
+                                                    ->get()
+                                                    ->pluck('item.name', 'item.name')  // Use the correct relationship and column
                                                     ->toArray();
                                             })
                                             ->live()
                                             ->afterStateUpdated(function ($state, Get $get, Set $set) {
                                                 if ($state) {
                                                     $prItem = PurchaseRequestDetails::where('pr_id', $get('../../pr_id'))
-                                                        ->where('item', $state)
+                                                        ->whereHas('item', function ($query) use ($state) {
+                                                            $query->where('name', $state);
+                                                        })
+                                                        ->with('item')
                                                         ->first();
                                                     
                                                     if ($prItem) {
                                                         $set('unit_measure', $prItem->unit);
                                                         $set('qty', $prItem->amount);
+                                                        $set('itemcode', $prItem->item->item_code);
                                                     }
                                                 }
                                             })
@@ -147,6 +158,7 @@ class PurchaseOrdersResource extends Resource
                                         Forms\Components\TextInput::make('amount')
                                             ->label('Amount')
                                             ->numeric()
+                                            ->required()
                                             ->disabled()
                                             ->columnSpan(2),
                                     ]),
@@ -197,7 +209,7 @@ class PurchaseOrdersResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            RelationManagers\PurchaseOrderDetailsRelationManager::class,
         ];
     }
 

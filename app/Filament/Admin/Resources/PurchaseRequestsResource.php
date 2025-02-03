@@ -101,10 +101,12 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                                 Forms\Components\Grid::make()
                                     ->columns(7)
                                     ->schema([
-                                        Forms\Components\TextInput::make('item')
+                                        Forms\Components\Select::make('item')
                                             ->label('Item / Service')
+                                            ->options(
+                                                \App\Models\Item::all()->pluck('name', 'id')
+                                            )
                                             ->required()
-                                            ->maxLength(255)
                                             ->columnSpan(2),
                                         Forms\Components\TextInput::make('unit')
                                             ->required()

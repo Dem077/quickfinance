@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('avatar_url')->nullable();
             $table->foreignId('department_id')->constrained();
             $table->foreignId('location_id')->constrained();
-            $table->string('desingation');
+            $table->string('designation');
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();

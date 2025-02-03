@@ -176,9 +176,9 @@
             </thead>
             <tbody>
                 @foreach ($items as $item)
-                   <tr>
+                   <tr> 
                     <td>{{$loop->iteration}}</td>
-                    <td>{{$item->item}}</td>
+                    <td>{{$item->item->name}}</td>
                     <td>{{$record->budgetAccount->code}}</td>
                     <td>{{$item->unit}}</td>
                     <td>{{$item->amount}}</td>
@@ -212,8 +212,8 @@
                     <td style="padding: 0%; text-align:center; width:33%;"><strong></strong></td>
                 </tr>
                 <tr>
-                    <td style="padding: 0%; text-align:center; height:30px; width:33%; border-right: 1px solid #000">{{$record->user->department->hod_desingation}}</td>
-                    <td style="padding: 0%; text-align:center; height:30px; width:33%; border-right: 1px solid #000">{{$record->user->desingation}}</td>
+                    <td style="padding: 0%; text-align:center; height:30px; width:33%; border-right: 1px solid #000">{{$record->user->department->hod_designation}}</td>
+                    <td style="padding: 0%; text-align:center; height:30px; width:33%; border-right: 1px solid #000">{{$record->approvedby->designation}}</td>
                     <td style="padding: 0%; text-align:center; height:30px; width:33%;">Managing Director / DMD /GM</td>
                 </tr>
         </table>

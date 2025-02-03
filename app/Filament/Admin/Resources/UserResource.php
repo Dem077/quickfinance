@@ -54,7 +54,7 @@ class UserResource extends Resource
                             ->maxLength(255)
                             ->columnSpan('full')
                             ->required(),
-                        Forms\Components\TextInput::make('desingation')
+                        Forms\Components\TextInput::make('designation')
                             ->minLength(2)
                             ->maxLength(255)
                             ->required(),

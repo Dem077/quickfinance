@@ -32,7 +32,8 @@ Route::get('purchase-requests/{record}/preview', function ( PurchaseRequests $re
 
     $record->load(['project','location', 'budgetAccount', 'user' , 'approvedby']);
 
-    $items = $record->purchaseRequestDetails()->get();
+    $items = $record->purchaseRequestDetails()->with('item')->get();
+
     $html = view('pdf.purchase-request', ['record' => $record , 'items' => $items])->render();
     
     $mpdf = new \Mpdf\Mpdf([

@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('vendor_id')->constrained();
             $table->string('po_no');
+            $table->string('payment_method');
             $table->date('date');
             $table->foreignId('pr_id');
             $table->timestamps();
