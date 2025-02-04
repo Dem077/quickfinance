@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Resources;
 
 use App\Filament\Admin\Resources\PurchaseRequestsResource\Pages;
 use App\Filament\Admin\Resources\PurchaseRequestsResource\RelationManagers;
+use App\Models\PurchaseOrders;
 use App\Models\PurchaseRequests;
 use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
 use Filament\Forms;
@@ -157,15 +158,20 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                     ->sortable(),
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')
-                    ->getStateUsing(fn ($record) => $record->is_approved ? 
-                        ($record->uploaded_document ? 'Document Uploaded' : 'Approved') :
-                        ($record->is_canceled ? 'Canceled' :
-                        ($record->is_submited ? 'Submitted' : 'Draft'))
+                    ->getStateUsing(fn ($record) => 
+                        $record->is_closed ? 'Closed' :
+                        ($record->is_approved ? 
+                            ($record->uploaded_document ? 'Document Uploaded' : 'Approved') :
+                            ($record->is_canceled ? 'Canceled' :
+                                ($record->is_submited ? 'Submitted' : 'Draft')
+                            )
+                        )
                     )
                     ->sortable()
                     ->searchable()
                     ->badge()
                     ->color(fn ($state) => match ($state) {
+                        'Closed' => 'success',
                         'Approved' => 'success',
                         'Document Uploaded' => 'info',
                         'Canceled' => 'danger',
@@ -254,14 +260,26 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                         ->color('danger')
                         ->requiresConfirmation()
                         ->modalDescription('Are you sure you want to close this PR? This action cannot be undone.')
-                        ->visible(fn ($record) => $record->is_approved && !$record->uploaded_document == Null &&
+                        ->visible(fn ($record) => $record->is_approved && !$record->uploaded_document == Null && !$record->is_closed &&
                             Auth::user()->can('approve_purchase::requests')
                         )
                         ->action(function (PurchaseRequests $record) {
+                          
                             $record->update([
                                 'is_closed' => true,
                                 'is_closed_by' => Auth::id(),
                             ]);
+                            $po = PurchaseOrders::where('is_closed', false)->where('pr_id', $record->id)->get();
+                            if(!$po){
+                                foreach($po as $p){
+                                    $p->update([
+                                        'is_closed' => true,
+                                        'is_closed_by' => Auth::id(),
+                                    ]);
+                                }
+                            }
+                            
+
                             Notification::make()
                                 ->title('PR Closed successfully')
                                 ->success()
