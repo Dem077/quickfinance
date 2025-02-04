@@ -24,4 +24,14 @@ class SubBudgetAccounts extends Model
     {
         return $this->hasMany(PurchaseRequests::class, 'budget_account_id');
     }
+
+    public function budgetTransferFrom(): HasMany
+    {
+        return $this->hasMany(BudgetTransfer::class, 'from_budget_id');
+    }
+
+    public function budgetTransferTo(): HasMany
+    {
+        return $this->hasMany(BudgetTransfer::class, 'to_budget_id');
+    }
 }

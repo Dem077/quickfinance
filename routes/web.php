@@ -77,3 +77,7 @@ Route::get('advance-form/{record}/download', function (PurchaseOrders $record) {
         ->header('Content-Type', 'application/pdf')
         ->header('Content-Disposition', 'inline; filename="advance-form.pdf"');
 })->name('purchase-orders.advance-form.download');
+
+// Route::get('mail/preview', function () {
+//     return new App\Mail\TestEmail();
+// });

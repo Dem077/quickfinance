@@ -38,7 +38,7 @@ class SubBudgetAccountsRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('code'),
                 Tables\Columns\TextColumn::make('name'),
                 Tables\Columns\TextColumn::make('amount')
-                    ->money('MVR', locale: 'nl'),
+                    ->money('MVR', locale: 'us'),
             ])
             ->filters([
                 //

@@ -89,5 +89,10 @@ class User extends Authenticatable implements FilamentUser, HasAvatar
     {
         return $this->hasMany(AdvanceForm::class, 'generated_by');  
     }
+
+    public function budgetTransfer(): HasMany
+    {
+        return $this->hasMany(BudgetTransfer::class, 'user_id');
+    }
     
 }
