@@ -72,8 +72,8 @@ class PurchaseOrdersResource extends Resource
                         ->inlineLabel(false)
                         ->default('0')
                         ->options([
-                            '0' => 'No',
-                            '1' => 'Yes',
+                            0 => 'No',
+                            1 => 'Yes',
                         ])
                         ->visible(fn (Get $get) => $get('payment_method') === 'purchase_order')
                         ->required(),
@@ -216,7 +216,7 @@ class PurchaseOrdersResource extends Resource
                     ->getStateUsing(fn ($record) => $record->payment_method === 'purchase_order' ? 'Purchase Order' : 'Petty Cash')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('date')
-                    ->date()
+                    ->date('d-m-Y')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')
@@ -248,6 +248,12 @@ class PurchaseOrdersResource extends Resource
             ->actions([
                 Tables\Actions\EditAction::make()
                     ->visible(fn ($record) => ($record->is_closed == false && $record->is_submitted == false && Auth::user()->can('send_approval_purchase::requests'))),
+                Tables\Actions\Action::make('view_advance_form')
+                    ->label('View Advance Form')
+                    ->icon('heroicon-o-eye')
+                    ->visible(fn ($record): bool => !empty($record->advance_form_id))
+                    ->url(fn ($record): string => route('purchase-orders.advance-form.download', $record->advance_form_id))
+                    ->openUrlInNewTab(),
                 Tables\Actions\Action::make('approve_purchase_close')
                     ->label('Close')
                     ->icon('heroicon-o-check-circle')
@@ -313,11 +319,9 @@ class PurchaseOrdersResource extends Resource
                         Forms\Components\TextInput::make('expected_delivery')
                             ->label('Expected Delivery In Days')
                             ->required(),
-                        Forms\Components\TextInput::make('advance_percentage')
-                            ->label('Advance Percentage')
-                            ->suffix('%')
-                            ->required(),
                         Forms\Components\TextInput::make('advance_amount')
+                            ->label('Advance Amount')
+                            ->numeric()
                             ->required(),
                         // Add additional fields as needed
                     ])
@@ -337,8 +341,8 @@ class PurchaseOrdersResource extends Resource
                         $advanceForm = $record->advanceForm()->create([
                             'qoation_no' => $data['qoation_no'],
                             'expected_delivery' => $data['expected_delivery'],
-                            'advance_percentage' => (($data('advance_amount') / $record->purchaseOrderDetails()->sum('amount')) * 100 ). "%",
-                            'advance_amount' => $data('advance_amount'),
+                            'advance_percentage' => ((($data['advance_amount']) / $record->purchaseOrderDetails()->sum('amount')) * 100),
+                            'advance_amount' => $data['advance_amount'],
                             'request_number' => $request_number,
                             'vendors_id' => $record->vendor_id,
                             'balance_amount' => $record->purchaseOrderDetails()->sum('amount') - $data['advance_amount'],
@@ -349,8 +353,8 @@ class PurchaseOrdersResource extends Resource
                         ]);
 
                         // Redirect to the route that generates the PDF with the advance form data
-                        return redirect()->route('purchase-orders.advance-form.download')
-                            ->with('advanceForm', $advanceForm);
+                        return redirect()->route('purchase-orders.advance-form.download', $record->advance_form_id);
+                           
                     }),
                 Tables\Actions\Action::make('upload_document')
                     ->label('Upload Support')
@@ -369,7 +373,13 @@ class PurchaseOrdersResource extends Resource
                             ->title('Document uploaded successfully')
                             ->success()
                             ->send();
-                    }),    
+                    }), 
+                Tables\Actions\Action::make('supporting_document')
+                    ->label('View Document')
+                    ->icon('heroicon-o-eye')
+                    ->visible(fn ($record) => $record->supporting_document)
+                    ->url(fn ($record) => asset('storage/' . $record->supporting_document))
+                    ->openUrlInNewTab(), 
             
                     ])
             ->recordUrl(false)

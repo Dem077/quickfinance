@@ -139,7 +139,7 @@
                         </tr>
                         <tr>
                             <td style="background-color: #d6d6d6; text-align:center;"><strong>Date:</strong></td>
-                            <td>{{$record->created_at->format('Y-m-d')}}</td>
+                            <td>{{$record->created_at->format('d-m-Y')}}</td>
                         </tr>
                         <tr>
                     </table>
@@ -178,7 +178,7 @@
                 </tr>
                 <tr>
                     <th>ADVANCE PAYMENT %</th>
-                    <td>{{$record->advance_percentage}}</td>
+                    <td>{{ number_format($record->advance_percentage, 0) }}%</td>
                 </tr>
                 <tr>
                     <th>ADVANCE PAYMENT AMOUNT</th>

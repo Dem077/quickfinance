@@ -303,6 +303,12 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                                 ->success()
                                 ->send();
                         }),
+                        Tables\Actions\Action::make('view_document')
+                            ->label('View Document')
+                            ->icon('heroicon-o-eye')
+                            ->visible(fn ($record) => $record->uploaded_document)
+                            ->url(fn ($record) => asset('storage/' . $record->uploaded_document))
+                            ->openUrlInNewTab(),
 
                     Tables\Actions\Action::make('download_pdf')
                         ->label('Download PDF')

@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\AdvanceForm;
+use App\Models\PurchaseOrders;
 use App\Models\PurchaseRequests;
 use Illuminate\Support\Facades\Route;
 use Mpdf\Tag\Pre;
@@ -54,8 +55,8 @@ Route::get('purchase-requests/{record}/preview', function ( PurchaseRequests $re
         ->header('Content-Disposition', 'inline; filename="preview.pdf"');
 })->name('purchase-requests.preview');
 
-Route::get('advance-form/{record}/download', function (AdvanceForm $record) {
-
+Route::get('advance-form/{record}/download', function (PurchaseOrders $record) {
+    // dd($record);
     $mpdf = new \Mpdf\Mpdf([
         'mode' => 'utf-8',
         'format' => 'A4',
@@ -64,7 +65,9 @@ Route::get('advance-form/{record}/download', function (AdvanceForm $record) {
         'margin_bottom' => '30',
         'margin_footer' => '50',
     ]);
-
+    
+    $record=AdvanceForm::where('id', $record->advance_form_id)->first();
+    // dd($record);
     $record->load(['user','vendor', 'purchaseOrder']);
 
     $html = view('pdf.purchase-order-advance-form' , ['record' => $record ])->render();
