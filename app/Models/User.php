@@ -84,4 +84,10 @@ class User extends Authenticatable implements FilamentUser, HasAvatar
     {
         return $this->belongsTo(Location::class, 'location_id');
     }
+
+    public function advanceforms(): HasMany
+    {
+        return $this->hasMany(AdvanceForm::class, 'generated_by');  
+    }
+    
 }

@@ -2,169 +2,233 @@
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Local Advance Payment Request</title>
+    <title>Advance Form</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             font-size: 12px;
+            line-height: 1.5;
             margin: 0;
             padding: 0;
         }
-
         .container {
             padding: 20px;
         }
-
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .header img {
-            height: 50px;
-        }
-
-        .header .title {
+        h1 {
             text-align: center;
-            font-size: 14px;
-            font-weight: bold;
-            text-decoration: underline;
+            font-size: 25px;
+            margin: 0 0 20px 0;
         }
-
-        .header .info {
-            text-align: right;
-            font-size: 12px;
-        }
-
-        .info span {
-            display: block;
-        }
-
-        .table {
+        .header-content {
             width: 100%;
+            margin-top: 30rem;
             border-collapse: collapse;
-            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+       
+        .logo-cell {
+            
+            width: 120px;
+           
+        }
+        .logo {
+            padding: 0;
+            width: 120px;
+            height: auto;
+        }
+        .details-cell {
+            padding: 10px;
+            text-align: right;
+            vertical-align: top;
+        }
+        .details-table {
+            width: 60%;  /* Reduce width to 50% */
+            text-align: left;
+            border-collapse: collapse;
+            margin: 0;   /* Remove any default margins */
+            float: right; /* Align to left */
+        }
+        .details-table td {
+            padding: 5px;
+            border: 1px solid #000;
+        }
+        .details-table td:first-child {
+            width: 30%;  /* Control first column width */
+        }
+        .name-cell { 
+            /* text-align: center; */
+            padding-left: 60px;
+            padding-top: 30px;
+            vertical-align: center;
+        }
+        .name-table {
+            width: 100%;  /* Reduce width to 50% */
+            border-collapse: collapse;
+            margin: 0;   /* Remove any default margins */
+            float: right; /* Align to left */
+            margin-bottom: 10px;
+        }
+        .name-table td {
+            padding: 5px;
+        }
+        .name-table td:first-child {
+            width: 30%;  /* Control first column width */
+        }
+        .items-table {
+            width: 100%;
+           margin-top: 100rem;
+            border-collapse: collapse;
             margin-bottom: 20px;
         }
-
-        .table th, .table td {
+        .items-table th {
             border: 1px solid #000;
-            padding: 8px;
+            padding: 5px;
+            height: 40px;
+            width: 35%;
+            
+            font-size: 13px;
+            text-align: left;
+        } 
+        .items-table td {
+            border: 1px solid #000;
+            padding: 5px;
+            width: 65%;
+            font-size: 15px;
             text-align: left;
         }
-
-        .table th {
-            font-weight: bold;
-            background-color: #f2f2f2;
+        .items-table th {
+            background-color: #d6d6d6;
         }
-
-        .footer {
-            margin-top: 30px;
-            font-size: 12px;
+        .footer-table {
+            border: 1px solid #000;
+            width: 100%;
+            border-collapse: collapse;
         }
-
-        .footer .signatures {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 20px;
+        .footer-table thead th{
+            height: 30px;
+            background-color: #d6d6d6;
+            border: 1px solid #000;
         }
-
-        .footer .signatures div {
-            text-align: center;
-        }
-
-        .footer .signatures div span {
-            display: block;
-            margin-top: 5px;
-            font-weight: bold;
-            font-size: 12px;
-        }
-
-        .footer .signatures div small {
-            font-size: 10px;
+        .footer-table td {
+            padding: 5px;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <img src="path/to/logo.png" alt="Agro NAT Logo">
-            <div class="title">Local Advance Payment Request</div>
-            <div class="info">
-                <span><strong>Req No:</strong> <span style="color: red;">LADV/PROC/1079</span></span>
-                <span><strong>Date:</strong> 13 January 2025</span>
+    <!--mpdf
+    <htmlpageheader name="custom-header">
+            <div class="header">
+               <img class="logo" src="images/agro/agrologo.png" alt="Logo">
             </div>
-        </div>
-
-        <!-- Table -->
-        <table class="table">
+        </htmlpageheader>
+    <sethtmlpageheader name="custom-header" value="on" show-this-page="1" />
+    mpdf-->
+    <div class="container">
+        <h1>Local Advance Payment Request</h1>
+        {{-- {{$record}} --}}
+        <table class="header-content">
             <tr>
-                <td style="width: 30%;"><strong>SUPPLIER NAME</strong></td>
-                <td></td>
-            </tr>
-            <tr>
-                <td><strong>ACCOUNT NUMBER</strong></td>
-                <td></td>
-            </tr>
-            <tr>
-                <td><strong>PURCHASE ORDER NO.</strong></td>
-                <td>PO-00000807</td>
-            </tr>
-            <tr>
-                <td><strong>PURCHASE ORDER DATE</strong></td>
-                <td>13/01/2025</td>
-            </tr>
-            <tr>
-                <td><strong>PURCHASE ORDER TOTAL</strong></td>
-                <td></td>
-            </tr>
-            <tr>
-                <td><strong>QUOTATION NO.</strong></td>
-                <td></td>
-            </tr>
-            <tr>
-                <td><strong>EXPECTED DELIVERY</strong></td>
-                <td>1 Day</td>
-            </tr>
-            <tr>
-                <td><strong>ADVANCE PAYMENT %</strong></td>
-                <td><strong>100%</strong></td>
-            </tr>
-            <tr>
-                <td><strong>ADVANCE PAYMENT AMOUNT</strong></td>
-                <td></td>
-            </tr>
-            <tr>
-                <td><strong>BALANCE PAYMENT</strong></td>
-                <td>-</td>
+                <td class="logo-cell">
+                    
+                </td>
+                <td class="details-cell">
+                    <table class="details-table" >
+                        <tr>
+                            <td style="background-color: #d6d6d6; text-align:center;"><strong>Req No:</strong></td>
+                            <td>{{$record->request_number}}</td>
+                        </tr>
+                        <tr>
+                            <td style="background-color: #d6d6d6; text-align:center;"><strong>Date:</strong></td>
+                            <td>{{$record->created_at->format('Y-m-d')}}</td>
+                        </tr>
+                        <tr>
+                    </table>
+                </td>
             </tr>
         </table>
 
-        <!-- Footer -->
-        <div class="footer">
-            <div>
-                <span>Prepared by:</span>
-                <span>Approved by:</span>
-                <span>Approved by:</span>
-            </div>
-            <div class="signatures">
-                <div>
-                    <span>Myhaan Mubeen</span>
-                    <small>Procurement Coordinator</small>
-                </div>
-                <div>
-                    <span>Mariyam Abdul Raheem</span>
-                    <small>Assistant General Manager</small>
-                </div>
-                <div>
-                    <span>Hussain Didi</span>
-                    <small>Managing Director</small>
-                </div>
-            </div>
-        </div>
+        <table class="items-table">
+                <tr>
+                    <th>SUPPLIER NAME</th>
+                    <td>{{$record->vendor->name}}</td>
+                </tr>
+                <tr>
+                    <th>ACCOUNT NUMBER</th>
+                    <td>{{$record->vendor->account_no}}</td>
+                </tr>
+                <tr>
+                    <th>PURCHASE ORDER NO.</th>
+                    <td>{{$record->purchaseOrder->po_no}}</td>
+                </tr>
+                <tr>
+                    <th>PURCHASE ORDER DATE</th>
+                    <td>{{$record->purchaseOrder->date}}</td>
+                </tr>
+                <tr>
+                    <th>PURCHASE ORDER TOTAL</th>
+                    <td>{{$record->purchaseOrder->purchaseOrderDetails()->sum('amount')}}</td>
+                </tr>
+                <tr>
+                    <th>QUOTATION NO</th>
+                    <td>{{$record->qoation_no}}</td>
+                </tr>
+                <tr>
+                    <th>EXPECTED DELIVERY</th>
+                    <td>{{$record->expected_delivery}} Days</td>
+                </tr>
+                <tr>
+                    <th>ADVANCE PAYMENT %</th>
+                    <td>{{$record->advance_percentage}}</td>
+                </tr>
+                <tr>
+                    <th>ADVANCE PAYMENT AMOUNT</th>
+                    <td>{{$record->advance_amount}}</td>
+                </tr>
+                <tr>
+                    <th>BALANCE PAYMENT</th>
+                    <td>{{$record->balance_amount}}</td>
+                </tr>
+                {{-- @foreach ($items as $item)
+                   <tr> 
+                    <td>{{$loop->iteration}}</td>
+                    <td>{{$item->item->name}}</td>
+                    <td>{{$record->budgetAccount->code}}</td>
+                    <td>{{$item->unit}}</td>
+                    <td>{{$item->amount}}</td>
+                @endforeach --}}
+        </table>
+
+        <!--mpdf
+    <htmlpagefooter name="custom-footer">
+        <table class="footer-table">
+            <thead>
+                <tr>
+                    <th>Prepared by:</th>
+                    <th>Approved By:</th>
+                    <th>Approved By:</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr > 
+                    <td style="height: 70px; border-right: 1px solid #000"></td>
+                    <td style="height: 70px; border-right: 1px solid #000"></td>
+                    <td style="height: 70px;"></td>
+                </tr>
+                <tr>
+                    <td style="padding: 0%; text-align:center; width:33%; border-right: 1px solid #000"><strong>{{$record->user->name}}</strong></td>
+                    <td style="padding: 0%; text-align:center; width:33%; border-right: 1px solid #000"><strong>{{$record->user->department->hod}}</strong></td>
+                    <td style="padding: 0%; text-align:center; width:33%;"><strong></strong></td>
+                </tr>
+                <tr>
+                    <td style="padding: 0%; text-align:center; height:30px; width:33%; border-right: 1px solid #000">{{$record->user->designation}}</td>
+                    <td style="padding: 0%; text-align:center; height:30px; width:33%; border-right: 1px solid #000">{{$record->user->department->hod_designation}}</td>
+                    <td style="padding: 0%; text-align:center; height:30px; width:33%;">Managing Director / DMD /GM</td>
+                </tr>
+        </table>
     </div>
+      
+    </htmlpagefooter>
+    <sethtmlpagefooter name="custom-footer" value="on" />
+    mpdf-->
 </body>
 </html>

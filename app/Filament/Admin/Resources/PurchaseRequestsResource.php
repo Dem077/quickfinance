@@ -108,11 +108,19 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                                             )
                                             ->required()
                                             ->columnSpan(2),
-                                        Forms\Components\TextInput::make('unit')
+                                        Forms\Components\Select::make('unit')
                                             ->required()
-                                            ->maxLength(255)
+                                            ->native(false)
+                                            ->options([
+                                                'Kg' => 'Kg',
+                                                'Case' => 'Case',
+                                                'Pcs' => 'Pcs',
+                                                'Ltr' => 'Ltr',
+                                                'Each' => 'Each',
+                                            ])
                                             ->columnSpan(3),
                                         Forms\Components\TextInput::make('amount')
+                                        ->label('Quantity') 
                                             ->required()
                                             ->numeric()
                                             ->columnSpan(2),
@@ -179,67 +187,86 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
 
             ])
             ->actions([
-                Tables\Actions\Action::make('submit_for_approval')
-                    ->label('Submit for Approval')
-                    ->icon('heroicon-o-paper-airplane')
-                    ->color('warning')
-                    ->visible(fn ($record) => ! $record->is_submited &&
-                        Auth::user()->can('send_approval_purchase::requests')
-                    )
-                    ->action(function (PurchaseRequests $record) {
-                        $record->update([
-                            'is_submited' => true,
-                        ]);
-                        Notification::make()
-                            ->title('Submitted for approval successfully')
-                            ->success()
-                            ->send();
-                    }),
-                Tables\Actions\Action::make('approve_purchase_request')
-                    ->label('Approve')
-                    ->icon('heroicon-o-check-circle')
-                    ->color('success')
-                    ->visible(fn ($record) => $record->is_submited &&
-                        ! $record->is_canceled &&
-                        ! $record->is_approved &&
-                        Auth::user()->can('approve_purchase::requests')
-                    )
-                    ->action(function (PurchaseRequests $record) {
-                        $record->update([
-                            'is_approved' => true,
-                            'approved_canceled_by' => Auth::id(),
-                        ]);
-                        Notification::make()
-                            ->title('PR Approved successfully')
-                            ->success()
-                            ->send();
-                    }),
-                Tables\Actions\Action::make('cancel_purchase_request')
-                    ->label('Cancel')
-                    ->icon('heroicon-o-check-circle')
-                    ->color('danger')
-                    ->form([
-                        Forms\Components\Textarea::make('cancel_remark')
-                            ->label('Cancellation Reason')
-                            ->required()
-                            ->maxLength(255),
-                    ])
-                    ->visible(fn ($record) => $record->is_submited &&
-                        ! $record->is_approved &&
-                        ! $record->is_canceled &&
-                        Auth::user()->can('approve_purchase::requests')
-                    )
-                    ->action(function (PurchaseRequests $record, array $data) {
-                        $record->update([
-                            'is_canceled' => true,
-                            'cancel_remark' => $data['cancel_remark'],
-                            'approved_canceled_by' => Auth::id(),
-                        ]);
-                        Notification::make()
-                            ->title('PR Canceled successfully')
-                            ->warning()
-                            ->send();
-                    }),
+                    Tables\Actions\Action::make('submit_for_approval')
+                        ->label('Submit for Approval')
+                        ->icon('heroicon-o-paper-airplane')
+                        ->color('warning')
+                        ->visible(fn ($record) => ! $record->is_submited &&
+                            Auth::user()->can('send_approval_purchase::requests')
+                        )
+                        ->action(function (PurchaseRequests $record) {
+                            $record->update([
+                                'is_submited' => true,
+                            ]);
+                            Notification::make()
+                                ->title('Submitted for approval successfully')
+                                ->success()
+                                ->send();
+                        }),
+                    Tables\Actions\Action::make('approve_purchase_request')
+                        ->label('Approve')
+                        ->icon('heroicon-o-check-circle')
+                        ->color('success')
+                        ->visible(fn ($record) => $record->is_submited &&
+                            ! $record->is_canceled &&
+                            ! $record->is_approved &&
+                            Auth::user()->can('approve_purchase::requests')
+                        )
+                        ->action(function (PurchaseRequests $record) {
+                            $record->update([
+                                'is_approved' => true,
+                                'approved_canceled_by' => Auth::id(),
+                            ]);
+                            Notification::make()
+                                ->title('PR Approved successfully')
+                                ->success()
+                                ->send();
+                        }),
+                    Tables\Actions\Action::make('cancel_purchase_request')
+                        ->label('Cancel')
+                        ->icon('heroicon-o-check-circle')
+                        ->color('danger')
+                        ->form([
+                            Forms\Components\Textarea::make('cancel_remark')
+                                ->label('Cancellation Reason')
+                                ->required()
+                                ->maxLength(255),
+                        ])
+                        ->visible(fn ($record) => $record->is_submited &&
+                            ! $record->is_approved &&
+                            ! $record->is_canceled &&
+                            Auth::user()->can('approve_purchase::requests')
+                        )
+                        ->action(function (PurchaseRequests $record, array $data) {
+                            $record->update([
+                                'is_canceled' => true,
+                                'cancel_remark' => $data['cancel_remark'],
+                                'approved_canceled_by' => Auth::id(),
+                            ]);
+                            Notification::make()
+                                ->title('PR Canceled successfully')
+                                ->warning()
+                                ->send();
+                        }),
+                    Tables\Actions\Action::make('approve_purchase_close')
+                        ->label('Close')
+                        ->icon('heroicon-o-check-circle')
+                        ->color('danger')
+                        ->requiresConfirmation()
+                        ->modalDescription('Are you sure you want to close this PR? This action cannot be undone.')
+                        ->visible(fn ($record) => $record->is_approved && !$record->uploaded_document == Null &&
+                            Auth::user()->can('approve_purchase::requests')
+                        )
+                        ->action(function (PurchaseRequests $record) {
+                            $record->update([
+                                'is_closed' => true,
+                                'is_closed_by' => Auth::id(),
+                            ]);
+                            Notification::make()
+                                ->title('PR Closed successfully')
+                                ->success()
+                                ->send();
+                        }),
                     Tables\Actions\Action::make('upload_document')
                         ->label('Upload Document')
                         ->icon('heroicon-o-document')

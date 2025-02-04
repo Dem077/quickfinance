@@ -178,7 +178,7 @@
                 @foreach ($items as $item)
                    <tr> 
                     <td>{{$loop->iteration}}</td>
-                    <td>{{$item->item->name}}</td>
+                    <td>{{$item->items->name}}</td>
                     <td>{{$record->budgetAccount->code}}</td>
                     <td>{{$item->unit}}</td>
                     <td>{{$item->amount}}</td>

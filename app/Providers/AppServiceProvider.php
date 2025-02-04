@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Models\PurchaseRequestDetails;
 use App\Models\PurchaseRequests;
+use App\Observers\PurchaseRequestDetailsObserver;
 use App\Policies\ActivityPolicy;
 use App\Policies\PurchaseRequestsPolicy;
 use Illuminate\Support\Facades\Gate;
@@ -26,5 +28,6 @@ class AppServiceProvider extends ServiceProvider
     {
         Gate::policy(PurchaseRequests::class, PurchaseRequestsPolicy::class);
         Gate::policy(Activity::class, ActivityPolicy::class);
+        PurchaseRequestDetails::observe(PurchaseRequestDetailsObserver::class);
     }
 }

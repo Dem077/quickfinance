@@ -20,4 +20,9 @@ class Vendors extends Model
     {
         return $this->hasMany(PurchaseOrders::class);
     }
+
+    public function advanceForms(): HasMany
+    {
+        return $this->hasMany(AdvanceForm::class , 'vendors_id');
+    }
 }

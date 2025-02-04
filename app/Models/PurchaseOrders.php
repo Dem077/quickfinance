@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class PurchaseOrders extends Model
@@ -14,6 +15,12 @@ class PurchaseOrders extends Model
         'date',
         'pr_id',
         'payment_method',
+        'is_submitted',
+        'is_closed',
+        'is_closed_by',
+        'supporting_document',
+        'advance_form_id',
+        'is_advance_form_required',
     ];
 
     public function vendor(): BelongsTo
@@ -26,9 +33,14 @@ class PurchaseOrders extends Model
         return $this->belongsTo(PurchaseRequests::class, 'pr_id');
     }
 
-    public function purchaseOrderDetails(): HasOne
+    public function purchaseOrderDetails(): HasMany
     {
-        return $this->hasOne(PurchaseOrderDetails::class, 'po_id');
+        return $this->hasMany(PurchaseOrderDetails::class, 'po_id');
+    }
+
+    public function advanceForm(): BelongsTo
+    {
+        return $this->belongsTo(AdvanceForm::class , 'advance_form_id');
     }
     
 }

@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PurchaseRequests extends Model
 {
@@ -22,6 +22,8 @@ class PurchaseRequests extends Model
         'cancel_remark',
         'uploaded_document',
         'approved_canceled_by',
+        'is_closed',
+        'is_closed_by',
     ];
 
     public function budgetAccount(): BelongsTo
@@ -34,9 +36,9 @@ class PurchaseRequests extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function purchaseRequestDetails(): HasOne
+    public function purchaseRequestDetails(): HasMany
     {
-        return $this->hasOne(PurchaseRequestDetails::class, 'pr_id');
+        return $this->HasMany(PurchaseRequestDetails::class, 'pr_id');
     }
 
     public function location(): BelongsTo
@@ -59,4 +61,30 @@ class PurchaseRequests extends Model
         return $this->belongsTo(Item::class);
     }
 
+    public static function checkAndUpdateClosedStatus($id)
+    {
+        $purchaseRequest = self::find($id);
+        if (!$purchaseRequest) {
+            return;
+        }
+
+        // Get all details
+        $details = $purchaseRequest->purchaseRequestDetails;
+        
+        // Only proceed if there are details
+        if ($details->isEmpty()) {
+            return;
+        }
+
+        // Alternative method to check if all details are utilized
+        $totalDetails = $details->count();
+        $utilizedDetails = PurchaseRequestDetails::where('is_utilized' , true)->where('pr_id', $purchaseRequest->id)->count();
+        
+        if ($totalDetails === $utilizedDetails) {
+            $purchaseRequest->update([
+                'is_closed' => true,
+                'is_closed_by' => 1,
+            ]);
+        }
+    }
 }

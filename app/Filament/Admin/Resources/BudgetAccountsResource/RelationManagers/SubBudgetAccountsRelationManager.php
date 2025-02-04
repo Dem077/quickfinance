@@ -24,7 +24,9 @@ class SubBudgetAccountsRelationManager extends RelationManager
                     ->maxLength(255),
                 Forms\Components\TextInput::make('amount')
                     ->required()
-                    ->maxLength(255),
+                    ->numeric()
+                    ->visibleOn('create')
+                    ->inputMode('decimal'),
             ]);
     }
 
@@ -35,7 +37,8 @@ class SubBudgetAccountsRelationManager extends RelationManager
             ->columns([
                 Tables\Columns\TextColumn::make('code'),
                 Tables\Columns\TextColumn::make('name'),
-                Tables\Columns\TextColumn::make('amount'),
+                Tables\Columns\TextColumn::make('amount')
+                    ->money('MVR', locale: 'nl'),
             ])
             ->filters([
                 //
