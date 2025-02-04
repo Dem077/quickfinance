@@ -87,10 +87,9 @@ class AdminPanelProvider extends PanelProvider
                 \Njxqlus\FilamentProgressbar\FilamentProgressbarPlugin::make()->color('#29b'),
             ])
             ->navigationGroups([
-
-                NavigationGroup::make()
-                    ->label('Administration')
-                    ->icon('heroicon-o-cog-8-tooth'),
+                'Record Management',
+                'Settings',
+                'Admin Settings',
             ])
             ->resources([
                 config('filament-logger.activity_resource'),

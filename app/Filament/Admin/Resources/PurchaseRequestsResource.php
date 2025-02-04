@@ -23,7 +23,9 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
 {
     protected static ?string $model = PurchaseRequests::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-document-currency-dollar';
+
+    protected static ?int $navigationSort = 2;
 
     public static function getPermissionPrefixes(): array
     {

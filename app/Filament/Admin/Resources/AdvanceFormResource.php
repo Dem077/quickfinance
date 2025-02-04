@@ -17,7 +17,9 @@ class AdvanceFormResource extends Resource
 {
     protected static ?string $model = AdvanceForm::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationGroup = 'Record Management';
+
+    protected static ?string $navigationIcon = 'heroicon-o-circle-stack';
 
     public static function form(Form $form): Form
     {

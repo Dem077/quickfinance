@@ -34,7 +34,7 @@ return [
     |--------------------------------------------------------------------------
     */
 
-    'nav.group' => 'Filament Shield',
+    'nav.group' => 'Admin Settings',
     'nav.role.label' => 'Roles',
     'nav.role.icon' => 'heroicon-o-shield-check',
     'resource.label.role' => 'Role',
