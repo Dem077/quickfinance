@@ -4,8 +4,10 @@ namespace App\Filament\Admin\Resources;
 
 use App\Filament\Admin\Resources\PurchaseRequestsResource\Pages;
 use App\Filament\Admin\Resources\PurchaseRequestsResource\RelationManagers;
+use App\Mail\StatusEmail;
 use App\Models\PurchaseOrders;
 use App\Models\PurchaseRequests;
+use App\Models\User;
 use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
 use Filament\Forms;
 use Filament\Forms\Components\Section;
@@ -18,6 +20,7 @@ use Filament\Tables\Actions\ActionGroup;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 
 class PurchaseRequestsResource extends Resource implements HasShieldPermissions
 {
@@ -110,6 +113,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                                                 \App\Models\Item::all()->pluck('name', 'id')
                                             )
                                             ->required()
+                                            ->disableOptionsWhenSelectedInSiblingRepeaterItems()
                                             ->columnSpan(2),
                                         Forms\Components\Select::make('unit')
                                             ->required()
@@ -202,10 +206,15 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                         ->visible(fn ($record) => ! $record->is_submited &&
                             Auth::user()->can('send_approval_purchase::requests')
                         )
-                        ->action(function (PurchaseRequests $record) {
+                        ->action(function (PurchaseRequests $record , User $user) {
                             $record->update([
                                 'is_submited' => true,
                             ]);
+                            // $approvalusers = $user::permission('approve_purchase::requests')->get();
+                            
+                            // foreach($approvalusers as $user){
+                            //     Mail::to($user->email)->send(new StatusEmail('Purchase Request', config('app.url')."/admin/purchase-orders", 'Submitted', $record->pr_no, 'Purchase Request'));
+                            // }
                             Notification::make()
                                 ->title('Submitted for approval successfully')
                                 ->success()

@@ -11,12 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('departments', function (Blueprint $table) {
+        Schema::create('petty_cash_reimbursments', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('hod');
-            $table->string('hod_designation');
-            $table->decimal('petty_cash_float_amount', 15, 0)->nullable();
+            $table->date('date');
+            $table->foreignId('user_id')->constrained();
+            $table->enum('status', ['submited', 'dep_approved', 'fin_approved', 'rembursed', 'fin_reject','dep_reject', 'draft'])->default('draft');
             $table->timestamps();
         });
     }
@@ -26,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('departments');
+        Schema::dropIfExists('petty_cash_reimbursments');
     }
 };

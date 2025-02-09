@@ -17,11 +17,11 @@ class StatusEmail extends Mailable
      * Create a new message instance.
      */
     public function __construct(
-        public string $type,
-        public string $typeUrl,
-        public string $status,
-        public string $typenumber,
-        public string $statusTitle,
+        public string $type = "",
+        public string $typeUrl= "",
+        public string $status= "",
+        public string $typenumber= "",
+        public string $statusTitle= "",
     ) {
         //
     }

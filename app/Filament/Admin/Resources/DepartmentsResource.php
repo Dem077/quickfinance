@@ -25,6 +25,9 @@ class DepartmentsResource extends Resource
                 Forms\Components\TextInput::make('name')
                     ->required()
                     ->maxLength(255),
+                Forms\Components\TextInput::make('petty_cash_float_amount')
+                    ->required()
+                    ->numeric(),
                 Forms\Components\TextInput::make('hod')
                     ->label('Head of Department')
                     ->helperText('Full name of the Head of Department')

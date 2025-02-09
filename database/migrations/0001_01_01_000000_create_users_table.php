@@ -17,6 +17,8 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->string('mobile');
             $table->string('avatar_url')->nullable();
+            $table->string('bank_account_name')->nullable();
+            $table->string('bank_account_no')->nullable();
             $table->foreignId('department_id')->constrained();
             $table->foreignId('location_id')->constrained();
             $table->string('designation');

@@ -6,6 +6,7 @@ use App\Filament\Admin\Resources\UserResource\Pages;
 use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -66,6 +67,21 @@ class UserResource extends Resource
                             ->relationship('location', 'name')
                             ->required()
                             ->native(false),
+                        Forms\Components\Select::make('pettycashassigned')
+                            ->label('Petty Cash Assigned')
+                            ->options([
+                                'Yes' => 'Yes',
+                                'No' => 'No',
+                            ])
+                            ->live()
+                            ->default('No')
+                            ->required()
+                            ->visibleon(['create'])
+                            ->native(false),
+                        Forms\Components\TextInput::make('bank_account_name')
+                            ->visible(fn (Get $get): bool => $get('pettycashassigned') === 'Yes' || ['edit'] && ($get('bank_account_name') !== null)),
+                        Forms\Components\TextInput::make('bank_account_no')
+                            ->visible(fn (Get $get): bool => $get('pettycashassigned') === 'Yes'||  ['edit'] && ($get('bank_account_no') !== null)),
                         Forms\Components\FileUpload::make('avatar_url')
                             ->label('Avatar')
                             ->image()

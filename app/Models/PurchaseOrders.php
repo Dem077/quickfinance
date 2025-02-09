@@ -42,5 +42,10 @@ class PurchaseOrders extends Model
     {
         return $this->belongsTo(AdvanceForm::class , 'advance_form_id');
     }
+
+    public function pettyCashReimbursment(): HasMany
+    {
+        return $this->hasMany(PettyCashReimbursment::class, 'po_id');
+    }
     
 }

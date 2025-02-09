@@ -1,43 +1,86 @@
-<!DOCTYPE html>
-<html lang="en">
+blade.php
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-    <meta charset="UTF-8">
-    <title>New PR Request</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <!-- Bootstrap CSS CDN -->
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body {
-            background-color: #f8f9fa;
-        }
-        .mail-container {
-            margin-top: 50px;
-        }
-        .logo {
-            max-height: 80px;
-            margin-bottom: 15px;
-        }
-    </style>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Status Update</title>
+    <!--[if gte mso 9]>
+    <xml>
+        <o:OfficeDocumentSettings>
+            <o:AllowPNG/>
+            <o:PixelsPerInch>96</o:PixelsPerInch>
+        </o:OfficeDocumentSettings>
+    </xml>
+    <![endif]-->
 </head>
-<body>
-    <div class="container mail-container">
-        <div class="card mx-auto" style="max-width: 600px;">
-            <div class="card-header text-center mb-0 bg-white border-bottom-0">
-                <img src="{{ asset('images\agro\agrologo.png') }}" alt="Company Logo" class="logo">
-                <h5>Quick Finance</h5>
-            </div>
-            <div class="card-body text-center">
-                <h4 class="card-title text-center">Your {{$type ?? ""}} has been {{$status ?? ""}} follow link for more Details</h4>
-                <p class="card-text text-left pl-5 mt-4">
-                    <strong>Number:</strong> {{ $typenumber ?? 'N/A' }}<br>
-                </p>
-                <a href="{{ $typeUrl ?? '#' }}" class="btn btn-primary">View {{$type ?? 'type'}}</a>
-            </div>
-        </div>
-    </div>
-    <!-- Optional JavaScript -->
-    <!-- jQuery and Bootstrap Bundle (includes Popper) -->
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+<body style="margin: 0; padding: 0; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%;">
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+        <tr>
+            <td align="center" style="padding: 20px 0;">
+                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="600" style="border-collapse: collapse; border: 1px solid #cccccc;">
+                    <!-- ...existing code... -->
+                    <tr>
+                        <td style="padding: 20px 30px 40px 30px;">
+                            <!-- ...existing code... -->
+                            <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 20px;">
+                                <tr>
+                                    @if($status === 'approved')
+                                        <td bgcolor="#d4edda" style="padding: 10px; border-radius: 4px; background-color: #d4edda !important; color: #155724 !important; border: 1px solid #c3e6cb;">
+                                            <!--[if gte mso 9]>
+                                            <v:rect xmlns:v="urn:schemas-microsoft-com:vml" fill="true" stroke="false" style="width:540px;">
+                                                <v:fill type="tile" color="#d4edda" />
+                                                <v:textbox style="mso-fit-shape-to-text:true" inset="0,0,0,0">
+                                            <![endif]-->
+                                            <p style="margin: 0; font-family: Arial, sans-serif; color: #155724;">Status: {{ ucfirst($status) }}</p>
+                                            <!--[if gte mso 9]>
+                                                </v:textbox>
+                                            </v:rect>
+                                            <![endif]-->
+                                        </td>
+                                    @else
+                                        <td bgcolor="#f8d7da" style="padding: 10px; border-radius: 4px; background-color: #f8d7da !important; !important; border: 1px solid #f5c6cb;">
+                                            <!--[if gte mso 9]>
+                                            <v:rect xmlns:v="urn:schemas-microsoft-com:vml" fill="true" stroke="false" style="width:540px;">
+                                                <v:fill type="tile" color="#f8d7da" />
+                                                <v:textbox style="mso-fit-shape-to-text:true" inset="0,0,0,0">
+                                            <![endif]-->
+                                            <p style="margin: 0; font-family: Arial, sans-serif;">Status: {{ ucfirst($status) }}</p>
+                                            <!--[if gte mso 9]>
+                                                </v:textbox>
+                                            </v:rect>
+                                            <![endif]-->
+                                        </td>
+                                    @endif
+                                </tr>
+                            </table>
+                            <!-- ...rest of existing code... -->
+                            
+                            @if($reason)
+                                <p style="margin: 0 0 20px 0; font-family: Arial, sans-serif;"><strong>Reason:</strong> {{ $reason ?? ''}}</p>
+                            @endif
+                            
+                            <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto; text-align: center;">
+                                <tr>
+                                    <td style="border-radius: 4px; background: #155724; text-align: center;">
+                                        <a href="{{ $typeUrl ?? '' }}" style="background: #155724; border: 15px solid #155724; font-family: Arial, sans-serif; font-size: 14px; line-height: 1.1; text-align: center; text-decoration: none; display: block; border-radius: 4px; font-weight: bold; color: #ffffff;">
+                                            View Details
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 20px; border-top: 1px solid #cccccc;">
+                            <p style="margin: 0; font-size: 12px; line-height: 20px; font-family: Arial, sans-serif; color: #666666; text-align: center;">
+                                This is an automated email. Please do not reply.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>

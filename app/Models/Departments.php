@@ -13,6 +13,7 @@ class Departments extends Model
         'name',
         'hod',
         'hod_designation',
+        'petty_cash_float_amount',
     ];
 
     public function users()

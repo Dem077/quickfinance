@@ -25,4 +25,9 @@ class Vendors extends Model
     {
         return $this->hasMany(AdvanceForm::class , 'vendors_id');
     }
+
+    public function pettyCashReimbursments(): HasMany
+    {
+        return $this->hasMany(PettyCashReimbursment::class , 'Vendor_id');
+    }
 }

@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Resources;
 use App\Filament\Admin\Resources\PurchaseOrdersResource\Pages;
 use App\Filament\Admin\Resources\PurchaseOrdersResource\RelationManagers;
 use App\Models\AdvanceForm;
+use App\Models\BudgetTransactionHistory;
 use App\Models\Item;
 use App\Models\PurchaseOrders;
 use App\Models\PurchaseRequestDetails;
@@ -140,6 +141,7 @@ class PurchaseOrdersResource extends Resource
                                                     ->pluck('items.name', 'items.name')  // Use the correct relationship and column
                                                     ->toArray();
                                             })
+                                            ->disableOptionsWhenSelectedInSiblingRepeaterItems()
                                             ->live()
                                             ->afterStateUpdated(function ($state, Get $get, Set $set) {
                                                 if ($state) {
@@ -274,6 +276,8 @@ class PurchaseOrdersResource extends Resource
                         $record->purchaseRequest->budgetAccount->update([
                             'amount' => $record->purchaseRequest->budgetAccount->amount - $record->purchaseOrderDetails()->sum('amount'),
                         ]);
+
+                        BudgetTransactionHistory::createtransaction($record->purchaseRequest->budgetAccount->id, 'Purchase Order', $record->purchaseOrderDetails()->sum('amount'), $record->purchaseRequest->budgetAccount->amount, 'Purchase Order Closed', Auth::id());
                         
                         Notification::make()
                             ->title('PO Closed successfully')

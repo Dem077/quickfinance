@@ -19,6 +19,7 @@ class DepartmentsFactory extends Factory
         return [
             'name' => fake()->name(),
             'hod' => fake()->name(),   
+            'petty_cash_float_amount' => fake()->randomFloat(2, 1000, 10000),
             'hod_designation' => fake()->jobTitle(),
         ];
     }

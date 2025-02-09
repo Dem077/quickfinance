@@ -32,6 +32,8 @@ class User extends Authenticatable implements FilamentUser, HasAvatar
         'password',
         'designation',
         'location_id',
+        'bank_account_name',
+        'bank_account_no',
     ];
 
     /**
@@ -93,6 +95,16 @@ class User extends Authenticatable implements FilamentUser, HasAvatar
     public function budgetTransfer(): HasMany
     {
         return $this->hasMany(BudgetTransfer::class, 'user_id');
+    }
+
+    public function pettycashreimbursment(): HasMany
+    {
+        return $this->hasMany(PettyCashReimbursment::class, 'user_id');
+    }  
+    
+    public function budgettransactionhistory(): HasMany
+    {
+        return $this->hasMany(BudgetTransactionHistory::class, 'transaction_by');
     }
     
 }
