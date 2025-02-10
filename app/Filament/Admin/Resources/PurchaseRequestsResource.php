@@ -94,6 +94,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                 Forms\Components\TextInput::make('purpose')
                     ->label('Purpose / Reason')
                     ->required()
+                    ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests'))
                     ->maxLength(255),
                 Forms\Components\Hidden::make('user_id')
                     ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests'))

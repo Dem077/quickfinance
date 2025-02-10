@@ -30,8 +30,8 @@ class CreateBudgetTransfer extends CreateRecord
             'amount' => $toBudget->amount + $record->amount
         ]);
 
-        BudgetTransactionHistory::createtransaction($fromBudget->id, 'Transfer', $record->amount, $fromBudget->amount, 'Transfer to ' . $toBudget->name, Auth::id());
-        BudgetTransactionHistory::createtransaction($toBudget->id, 'Transfer', $record->amount, $toBudget->amount, 'Transfer from ' . $fromBudget->name, Auth::id());
+        BudgetTransactionHistory::createtransaction($fromBudget->id, 'Transfer', $record->amount, $fromBudget->amount, 'Transfer to ' . $toBudget->code, Auth::id());
+        BudgetTransactionHistory::createtransaction($toBudget->id, 'Transfer', $record->amount, $toBudget->amount, 'Transfer from ' . $fromBudget->code, Auth::id());
 
         Notification::make()
             ->title('Budget transferred successfully')

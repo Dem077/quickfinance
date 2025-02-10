@@ -33,9 +33,11 @@ class BudgetTransactionHistoryResource extends Resource
                     ->maxLength(255),
                 Forms\Components\TextInput::make('transaction_amount')
                     ->required()
+                    ->money('MVR', locale: 'us')
                     ->numeric(),
                 Forms\Components\TextInput::make('transaction_balance')
                     ->required()
+                    ->money('MVR', locale: 'us')
                     ->numeric(),
                 Forms\Components\Textarea::make('transaction_details')
                     ->columnSpanFull(),
@@ -52,18 +54,27 @@ class BudgetTransactionHistoryResource extends Resource
                 Tables\Columns\TextColumn::make('subBudget.name')
                     ->numeric()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('subBudget.code')
+                    ->numeric()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('transaction_type')
+                    ->searchable()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('transaction_date')
                     ->date()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('transaction_type')
+                Tables\Columns\TextColumn::make('transaction_details')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('transaction_amount')
                     ->numeric()
+                    ->money('MVR', locale: 'us')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('transaction_balance')
+                    ->label('Account Balance')
                     ->numeric()
+                    ->money('MVR', locale: 'us')
                     ->sortable(),
-                Tables\Columns\TextColumn::make('transaction_by')
+                Tables\Columns\TextColumn::make('transactionBy.name')
                     ->numeric()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')

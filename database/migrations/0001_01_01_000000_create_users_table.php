@@ -15,10 +15,12 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('email')->unique();
-            $table->string('mobile');
+            $table->string('mobile')->unique();
             $table->string('avatar_url')->nullable();
             $table->string('bank_account_name')->nullable();
-            $table->string('bank_account_no')->nullable();
+            $table->string('bank_account_no')->unique()->nullable();
+            $table->boolean('is_hod')->default(false);
+            $table->foreignId('hod_of')->unique()->nullable()->constrained('departments');
             $table->foreignId('department_id')->constrained();
             $table->foreignId('location_id')->constrained();
             $table->string('designation');

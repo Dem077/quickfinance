@@ -34,6 +34,8 @@ class User extends Authenticatable implements FilamentUser, HasAvatar
         'location_id',
         'bank_account_name',
         'bank_account_no',
+        'hod_of',
+        'is_hod',
     ];
 
     /**
@@ -105,6 +107,11 @@ class User extends Authenticatable implements FilamentUser, HasAvatar
     public function budgettransactionhistory(): HasMany
     {
         return $this->hasMany(BudgetTransactionHistory::class, 'transaction_by');
+    }
+
+    public function hodof(): BelongsTo
+    {
+        return $this->belongsTo(Departments::class, 'hod_of');
     }
     
 }

@@ -14,8 +14,6 @@ return new class extends Migration
         Schema::create('departments', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('hod');
-            $table->string('hod_designation');
             $table->decimal('petty_cash_float_amount', 15, 0)->nullable();
             $table->timestamps();
         });

@@ -12,6 +12,7 @@ class PettyCashReimbursment extends Model
         'date',
         'user_id',
         'status',
+        'supporting_documents',
     ];
 
     protected $casts = [
@@ -24,6 +25,6 @@ class PettyCashReimbursment extends Model
 
     public function pettyCashReimbursmentDetails():HasMany
     {
-        return $this->hasMany(PettyCashReimbursmentDetail::class, 'petty_cash_reimbursment_id');
+        return $this->hasMany(PettyCashReimbursmentDetail::class, 'petty_cash_reimb_id');
     }
 }

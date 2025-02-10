@@ -223,6 +223,11 @@ class PurchaseOrdersResource extends Resource
                 Tables\Columns\TextColumn::make('date')
                     ->date('d-m-Y')
                     ->sortable(),
+                Tables\Columns\TextColumn::make('total_amount')
+                    ->label('Total Amount')
+                    ->money('MVR', locale: 'us')
+                    ->sortable()
+                    ->getStateUsing(fn ($record) => $record->purchaseOrderDetails->sum('amount')),
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')
                     ->getStateUsing(fn ($record) => 

@@ -15,8 +15,9 @@ return new class extends Migration
             $table->id();
             $table->date('date');
             $table->foreignId('Vendor_id')->constrained('vendors');
+            $table->string('bill_no');
             $table->foreignId('petty_cash_reimb_id')->constrained('petty_cash_reimbursments');
-            $table->foreignId('sub_budget_id')->nullable()->constrained('sub_budgets');
+            $table->foreignId('sub_budget_id')->nullable()->constrained('sub_budget_accounts');
             $table->string('details');
             $table->foreignId('po_id')->constrained('purchase_orders');
             $table->decimal('amount', 15, 2);

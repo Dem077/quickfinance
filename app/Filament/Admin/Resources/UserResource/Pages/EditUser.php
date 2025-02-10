@@ -21,4 +21,38 @@ class EditUser extends EditRecord
             Actions\DeleteAction::make(),
         ];
     }
+
+    protected function beforeSave(): void
+    {
+        if (($this->data['is_hod'] ?? false) == true) {
+            $duplicate = \App\Models\User::where('hod_of', $this->data['department_id'])
+                ->where('id', '<>', $this->record->id)
+                ->exists();
+    
+            if ($duplicate) {
+                \Filament\Notifications\Notification::make()
+                    ->title('HOD already assigned for this department')
+                    ->danger()
+                    ->send();
+    
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'is_hod' => 'HOD already assigned for this department.',
+                ]);
+            }
+        }
+    }
+
+    protected function afterSave(): void
+    {
+        if ($this->record->is_hod == true) {
+            $this->record->update([
+                'hod_of' => $this->record->department_id,
+            ]);
+        }
+        else {
+            $this->record->update([
+                'hod_of' => null,
+            ]);
+        }
+    }
 }

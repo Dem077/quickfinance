@@ -35,6 +35,11 @@ class SubBudgetAccounts extends Model
         return $this->hasMany(BudgetTransfer::class, 'to_budget_id');
     }
 
+    public function pettyCashReimbursmentDetail(): HasMany
+    {
+        return $this->hasMany(PettyCashReimbursmentDetail::class, 'sub_budget_id');
+    }
+
     public function budgetTransactionHistory(): HasMany
     {
         return $this->hasMany(BudgetTransactionHistory::class, 'sub_budget_id');

@@ -28,16 +28,24 @@ class DepartmentsResource extends Resource
                 Forms\Components\TextInput::make('petty_cash_float_amount')
                     ->required()
                     ->numeric(),
-                Forms\Components\TextInput::make('hod')
-                    ->label('Head of Department')
-                    ->helperText('Full name of the Head of Department')
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('hod_designation')
-                    ->label('HOD Designation')
-                    ->helperText('Designation of the Head of Department')
-                    ->required()
-                    ->maxLength(255),
+                // Forms\Components\TextInput::make('hod')
+                //     ->label('Head of Department')
+                //     ->helperText('Full name of the Head of Department')
+                //     ->required()
+                //     ->maxLength(255),
+                Forms\Components\TextInput::make('hod_of')
+                    ->label('Assigned Head of Department')
+                    ->helperText('Please Assign HOD from User Settings')
+                    ->placeholder(function (Departments $department): ?string {
+                        $department->load('hodfromusers');
+                        return (string) $department->hodfromusers->name;
+                    })
+                    ->disabled(),
+                // Forms\Components\TextInput::make('hod_designation')
+                //     ->label('HOD Designation')
+                //     ->helperText('Designation of the Head of Department')
+                //     ->required()
+                //     ->maxLength(255),
             ]);
     }
 
@@ -47,7 +55,7 @@ class DepartmentsResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('hod')
+                Tables\Columns\TextColumn::make('hodfromusers.name')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()

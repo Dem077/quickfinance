@@ -13,6 +13,7 @@ class PettyCashReimbursmentDetail extends Model
         'details',
         'po_id',
         'amount',
+        'bill_no',
         'sub_budget_id',
         'petty_cash_reimb_id',
     ];  
@@ -25,6 +26,11 @@ class PettyCashReimbursmentDetail extends Model
     public function purchaseOrder()
     {
         return $this->belongsTo(PurchaseOrders::class, 'po_id');
+    }
+
+    public function subBudget()
+    {
+        return $this->belongsTo(SubBudgetAccounts::class, 'sub_budget_id');
     }
 
     public function pettyCashReimbursment(): BelongsTo
