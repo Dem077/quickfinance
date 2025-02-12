@@ -10,6 +10,17 @@ class PettyCashReimbursmentPolicy
 {
     use HandlesAuthorization;
 
+    public function pv_approve(User $user): bool
+    {
+        return $user->can('pv_approve_petty::cash::reimbursment');
+    }
+
+    
+    public function fin_hod_approve(User $user): bool
+    {
+        return $user->can('fin_hod_approve_petty::cash::reimbursment');
+    }
+
     /**
      * Determine whether the user can view any models.
      */

@@ -78,6 +78,8 @@ return [
         'replicate' => 'Replicate',
         'approve' => 'Approve Purchase Requests',
         'send_approval' => 'Send for Approval',
+        'pv_approve' => 'Approve and Add PV',
+        'fin_hod_approve' => 'Finance HOD Approval',
     ],
 
 

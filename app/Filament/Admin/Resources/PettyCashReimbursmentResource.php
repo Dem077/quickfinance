@@ -25,6 +25,20 @@ class PettyCashReimbursmentResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
+    public static function getPermissionPrefixes(): array
+    {
+        return [
+            'view',
+            'view_any',
+            'create',
+            'update',
+            'delete',
+            'delete_any',
+            'pv_approve',
+            'fin_hod_approve',
+        ];
+    }
+
     public static function form(Form $form): Form
     {
         return $form
@@ -158,12 +172,18 @@ class PettyCashReimbursmentResource extends Resource
                     ->color('warning')
                     ->visible(fn ($record) => $record->status->value === PettyCashStatus::Draft->value)
                     ->action(fn ($record) => $record->update(['status' => PettyCashStatus::Submitted])),
-                Tables\Actions\Action::make('approve')
+                Tables\Actions\Action::make('dep_approve')
                     ->label('Approve')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
                     ->visible(fn ($record) => $record->status->value === PettyCashStatus::Submitted->value && !Auth::user()->hod_of==null && $record->user->department_id==Auth::user()->hod_of)
                     ->action(fn ($record) => $record->update(['status' => PettyCashStatus::DepApproved])),
+                Tables\Actions\Action::make('dep_reject')
+                    ->label('Reject')
+                    ->icon('heroicon-o-x-circle')
+                    ->color('danger')
+                    ->visible(fn ($record) => $record->status->value === PettyCashStatus::Submitted->value && !Auth::user()->hod_of==null && $record->user->department_id==Auth::user()->hod_of)
+                    ->action(fn ($record) => $record->update(['status' => PettyCashStatus::Dep_Reject])),
                 Tables\Actions\EditAction::make()
                     ->visible(fn ($record) => $record->status->value === PettyCashStatus::Draft->value),
             ])
