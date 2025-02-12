@@ -9,6 +9,7 @@ use App\Models\PettyCashReimbursment;
 use App\Models\PurchaseOrders;
 use App\Models\SubBudgetAccounts;
 use App\Models\Vendors;
+use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
 use Filament\Forms;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Form;
@@ -19,7 +20,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Auth;
 
-class PettyCashReimbursmentResource extends Resource
+class PettyCashReimbursmentResource extends Resource implements HasShieldPermissions
 {
     protected static ?string $model = PettyCashReimbursment::class;
 

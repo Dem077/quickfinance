@@ -2,17 +2,18 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class BudgetAccounts extends Model
+class BudgetAccounts extends Model 
 {
+    use HasFactory;
+
     protected $fillable = [
         'name',
-        'code',
         'expenditure_type',
         'account',
-        'amount',
     ];
 
     public function purchaseRequests(): HasMany
