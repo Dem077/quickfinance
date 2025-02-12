@@ -21,6 +21,7 @@ class PurchaseOrders extends Model
         'supporting_document',
         'advance_form_id',
         'is_advance_form_required',
+        'is_reimbursed',
     ];
 
     public function vendor(): BelongsTo

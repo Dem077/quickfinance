@@ -25,7 +25,7 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
 {
     protected static ?string $model = PettyCashReimbursment::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-banknotes';
 
     public static function getPermissionPrefixes(): array
     {
@@ -93,9 +93,11 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                                             ->columnSpan(2)
                                             ->nullable(),
                                         Forms\Components\Select::make('po_id')
+                                            ->label('Record ID')
                                             ->options(
                                                 PurchaseOrders::where('is_closed', true)
                                                     ->where('payment_method', 'petty_cash')
+                                                    ->where('is_reimbursed', false)
                                                     ->pluck('po_no', 'id')
                                             )
                                             ->native(false)
@@ -231,7 +233,12 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                                 'Petty Cash Reimbursement for Request ID '.$record->id,
                                 Auth::id()
                             );
+                            if($detail->po_id != null){
+                                PurchaseOrders::find($detail->po_id)->update(['is_reimbursed' => true]);
+                            }
                         }
+
+                        
                     }),
                 
                 Tables\Actions\Action::make('send_back')

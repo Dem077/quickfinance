@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('payment_method');
             $table->boolean('is_submitted')->default(false);
             $table->boolean('is_closed')->default(false);
+            $table->boolean('is_reimbursed')->default(false);
             $table->string('supporting_document')->nullable();
             $table->boolean('is_advance_form_required')->default(0);
             $table->foreignId('advance_form_id')->nullable()->constrained('advance_forms')->cascadeOnDelete();
