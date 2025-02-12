@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\AdvanceForm;
+use App\Models\PettyCashReimbursment;
 use App\Models\PurchaseOrders;
 use App\Models\PurchaseRequests;
 use Illuminate\Support\Facades\Route;
@@ -77,6 +78,39 @@ Route::get('advance-form/{record}/download', function (PurchaseOrders $record) {
         ->header('Content-Type', 'application/pdf')
         ->header('Content-Disposition', 'inline; filename="advance-form.pdf"');
 })->name('purchase-orders.advance-form.download');
+
+
+Route::get('purchase-requests/{record}/preview', function ( PettyCashReimbursment $record ) {
+    // // Check if document is approved
+    // if (!$record->is_approved) {
+    //     abort(403, 'Access denied. Document is not approved.');
+    // } 
+
+    $record->load(['user','pettyCashReimbursmentDetails']);
+
+    $items = $record->pettyCashReimbursmentDetails()->with(['vendor','purchaseOrder','subBudget','pettyCashReimbursment'])->get();
+    
+    $html = view('pdf.petty-cash-form', ['record' => $record , 'items' => $items])->render();
+    
+    $mpdf = new \Mpdf\Mpdf([
+        'mode' => 'utf-8',
+        'format' => 'A4',
+        'orientation' => 'L',    
+        'margin_header' => '0',
+        'margin_top' => '15',
+        'margin_bottom' => '30',
+        'margin_footer' => '20',
+    ]);
+ 
+
+    $mpdf->WriteHTML($html);
+    
+    return response($mpdf->Output('', \Mpdf\Output\Destination::INLINE))
+        ->header('Content-Type', 'application/pdf')
+        ->header('Content-Disposition', 'inline; filename="preview.pdf"');
+})->name('petty-cash.preview');
+
+
 
 // Route::get('mail/preview', function () {
 //     return new App\Mail\TestEmail();

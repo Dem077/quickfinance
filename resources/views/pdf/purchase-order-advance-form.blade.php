@@ -224,6 +224,7 @@
                     <td style="padding: 0%; text-align:center; height:30px; width:33%; border-right: 1px solid #000">{{$record->user->department->hodfromusers->designation}}</td>
                     <td style="padding: 0%; text-align:center; height:30px; width:33%;">Managing Director / DMD /GM</td>
                 </tr>
+            </tbody>
         </table>
     </div>
       

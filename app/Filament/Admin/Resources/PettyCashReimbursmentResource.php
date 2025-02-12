@@ -239,8 +239,15 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                         }
 
                         
-                    }),
+                }),
                 
+                Tables\Actions\Action::make('download_pdf')
+                        ->label('Download PDF')
+                        ->icon('heroicon-o-eye')
+                        ->visible(fn ($record) => $record->status->value === PettyCashStatus::Rembursed->value)
+                        ->url(fn (PettyCashReimbursment $record) => route('petty-cash.preview', $record))
+                        ->openUrlInNewTab(),
+                    
                 Tables\Actions\Action::make('send_back')
                     ->label('Reject')
                     ->tooltip('Send back to payables')

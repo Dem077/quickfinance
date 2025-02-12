@@ -9,23 +9,15 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class ApprovalEmail extends Mailable
+class NotificationEmail extends Mailable
 {
     use Queueable, SerializesModels;
 
     /**
      * Create a new message instance.
      */
-    public function __construct(
-        public string $type,
-        public string $requesterName,
-        public string $typenumber,
-        public string $typeDescription,
-        public string $typeDate,
-        public string $typeUrl,
-    ) {
-        //
-   
+    public function __construct()
+    {
         //
     }
 
@@ -35,7 +27,7 @@ class ApprovalEmail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'New Approval Request',
+            subject: 'Notification Email',
         );
     }
 
@@ -45,7 +37,7 @@ class ApprovalEmail extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'mails.approval',
+            view: 'mails.notification',
         );
     }
 
