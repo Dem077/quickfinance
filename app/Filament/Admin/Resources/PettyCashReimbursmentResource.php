@@ -48,6 +48,7 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                 Forms\Components\DatePicker::make('date')
                     ->native(false)
                     ->closeOnDateSelection()
+                    ->disabled(fn ($record) => $record->status->value !== PettyCashStatus::Draft)
                     ->required(),
                 Forms\Components\Hidden::make('user_id')
                     ->default(Auth::id())
@@ -201,7 +202,8 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                     ])
                     ->action(fn ($record, array $data) => $record->update([
                         'status' => PettyCashStatus::FinApproved,
-                        'pv_number' => $data['pv_number']
+                        'pv_number' => $data['pv_number'],
+                        'verified_by' => Auth::id(),
                     ])),
                 Tables\Actions\Action::make('fin_reject')
                     ->label('Reject')
@@ -218,7 +220,10 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                     ->color('success')
                     ->visible(fn ($record) => $record->status->value === PettyCashStatus::FinApproved->value && Auth::user()->can('fin_hod_approve_petty::cash::reimbursment'))
                     ->action(function ($record, array $data) {
-                        $record->update(['status' => PettyCashStatus::Rembursed]);
+                        $record->update([
+                            'status' => PettyCashStatus::Rembursed,
+                            'approved_by' => Auth::id(),
+                        ]);
                         foreach($record->pettyCashReimbursmentDetails as $detail){
 
                             $detail->subBudget->update([
@@ -258,7 +263,7 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                     ->action(fn ($record, array $data) => $record->update(['status' => PettyCashStatus::DepApproved])),
                     
                 Tables\Actions\EditAction::make()
-                    ->visible(fn ($record) => $record->status->value === PettyCashStatus::Draft->value),
+                    ->visible(fn ($record) => $record->status->value === PettyCashStatus::Draft->value || $record->status->value === PettyCashStatus::FinApproved->value),
                
             ])
             ->bulkActions([

@@ -237,15 +237,15 @@
                 <tr>
                     <td style="padding: 0%; text-align:center; width:25%;  height:30px; border-right: 1px solid #000"><strong>{{$record->user->name ?? 'N/A'}}</strong></td>
                     <td style="padding: 0%; text-align:center; width:25%;  height:30px; border-right: 1px solid #000"><strong>{{$record->user->department->hodfromusers->name?? 'N/A'}}</strong></td>
-                    <td style="padding: 0%; text-align:center; width:25%;  height:30px; border-right: 1px solid #000"><strong></strong></td>
-                    <td style="padding: 0%; text-align:center; width:25%;  height:30px;"><strong></strong></td>
+                    <td style="padding: 0%; text-align:center; width:25%;  height:30px; border-right: 1px solid #000"><strong>{{$record->VerifiedBy->name?? 'N/A'}}</strong></td>
+                    <td style="padding: 0%; text-align:center; width:25%;  height:30px;"><strong>{{$record->ApprovedBy->name?? 'N/A'}}</strong></td>
 
                 </tr>
                 <tr>
                     <td style="padding: 0%; text-align:center; height:30px; width:25%; border-right: 1px solid #000">{{$record->user->designation?? 'N/A'}}</td>
                     <td style="padding: 0%; text-align:center; height:30px; width:25%; border-right: 1px solid #000">{{$record->user->department->hodfromusers->designation?? 'N/A'}}</td>
-                    <td style="padding: 0%; text-align:center; height:30px; width:25%; border-right: 1px solid #000">Managing Director / DMD /GM</td>
-                    <td style="padding: 0%; text-align:center; height:30px; width:25%;">Managing Director / DMD /GM</td>
+                    <td style="padding: 0%; text-align:center; height:30px; width:25%; border-right: 1px solid #000">{{$record->VerifiedBy->designation?? 'N/A'}}</td>
+                    <td style="padding: 0%; text-align:center; height:30px; width:25%;">{{$record->VerifiedBy->designation?? 'N/A'}}</td>
 
                 </tr>
             </tbody>

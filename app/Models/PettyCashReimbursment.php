@@ -14,6 +14,8 @@ class PettyCashReimbursment extends Model
         'status',
         'supporting_documents',
         'pv_number',
+        'verified_by',
+        'approved_by',
     ];
 
     protected $casts = [
@@ -27,5 +29,15 @@ class PettyCashReimbursment extends Model
     public function pettyCashReimbursmentDetails():HasMany
     {
         return $this->hasMany(PettyCashReimbursmentDetail::class, 'petty_cash_reimb_id');
+    }
+
+    public function VerifiedBy()
+    {
+        return $this->belongsTo(User::class, 'verified_by');
+    }
+
+    public function ApprovedBy()
+    {
+        return $this->belongsTo(User::class, 'approved_by');
     }
 }

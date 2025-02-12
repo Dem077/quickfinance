@@ -86,7 +86,7 @@ Route::get('purchase-requests/{record}/preview', function ( PettyCashReimbursmen
     //     abort(403, 'Access denied. Document is not approved.');
     // } 
 
-    $record->load(['user','pettyCashReimbursmentDetails']);
+    $record->load(['user','pettyCashReimbursmentDetails','VerifiedBy','ApprovedBy']);
 
     $items = $record->pettyCashReimbursmentDetails()->with(['vendor','purchaseOrder','subBudget','pettyCashReimbursment'])->get();
     

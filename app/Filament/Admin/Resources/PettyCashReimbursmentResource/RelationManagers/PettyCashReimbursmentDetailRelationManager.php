@@ -9,6 +9,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 
 class PettyCashReimbursmentDetailRelationManager extends RelationManager
 {
@@ -21,32 +22,38 @@ class PettyCashReimbursmentDetailRelationManager extends RelationManager
                 Forms\Components\DatePicker::make('date')
                     ->native(false)
                     ->closeOnDateSelection()
+                    ->disabled(fn ($record) => $record->pettycashreimbursment->status->value !== 'draft')
                     ->required()
                     ->columnSpan(1),
                 Forms\Components\Select::make('Vendor_id')
                     ->relationship('Vendor', 'name')
                     ->native(false)
+                    ->disabled(fn ($record) => $record->pettycashreimbursment->status->value !== 'draft')
                     ->columnSpan(2)
                     ->required(),
                 Forms\Components\TextInput::make('bill_no')
                     ->columnSpan(2)
+                    ->disabled(fn ($record) => $record->pettycashreimbursment->status->value !== 'draft')
                     ->required(),
                 Forms\Components\TextInput::make('details')
                     ->columnSpan(2)
+                    ->disabled(fn ($record) => $record->pettycashreimbursment->status->value !== 'draft')
                     ->required(),
                 Forms\Components\Select::make('sub_budget_id')
-                    ->relationship('SubBudget', 'name')
+                    ->relationship('SubBudget', 'code')
                     ->native(false)
                     ->columnSpan(2)
                     ->nullable(),
                 Forms\Components\Select::make('po_id')
                     ->relationship('PurchaseOrder', 'po_no')
                     ->native(false)
+                    ->disabled(fn ($record) => $record->pettycashreimbursment->status->value !== 'draft')
                     ->columnSpan(2)
                     ->nullable(),
                 
                 Forms\Components\TextInput::make('amount')
                     ->columnSpan(1)
+                    ->disabled(fn ($record) => $record->pettycashreimbursment->status->value !== 'draft')
                     ->minValue(1)
                     ->required()
                     ->numeric(),
@@ -73,11 +80,13 @@ class PettyCashReimbursmentDetailRelationManager extends RelationManager
                 //
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make(),
+                Tables\Actions\CreateAction::make()
+                    ->visible(fn ($record) => !Auth::user()->can('fin_hod_approve_petty::cash::reimbursment')),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\DeleteAction::make()
+                    ->visible(fn ($record) => $record->pettycashreimbursment->status->value === 'draft'),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

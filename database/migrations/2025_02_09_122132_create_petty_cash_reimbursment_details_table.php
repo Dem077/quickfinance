@@ -19,7 +19,7 @@ return new class extends Migration
             $table->foreignId('petty_cash_reimb_id')->constrained('petty_cash_reimbursments');
             $table->foreignId('sub_budget_id')->nullable()->constrained('sub_budget_accounts');
             $table->string('details');
-            $table->foreignId('po_id')->constrained('purchase_orders');
+            $table->foreignId('po_id')->nullable()->constrained('purchase_orders');
             $table->decimal('amount', 15, 2);
             $table->timestamps();
         });
