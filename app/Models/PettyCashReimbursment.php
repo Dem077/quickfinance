@@ -13,6 +13,7 @@ class PettyCashReimbursment extends Model
         'user_id',
         'status',
         'supporting_documents',
+        'pv_number',
     ];
 
     protected $casts = [

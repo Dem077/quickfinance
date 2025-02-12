@@ -65,6 +65,7 @@ class PettyCashReimbursmentDetailRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('bill_no'),
                 Tables\Columns\TextColumn::make('details'),
                 Tables\Columns\TextColumn::make('subBudget.code'),
+                Tables\Columns\TextColumn::make('purchaseOrder.po_no'),
                 Tables\Columns\TextColumn::make('amount')
                     ->money('MVR', locale: 'us'),
             ])

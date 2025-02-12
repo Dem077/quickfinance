@@ -38,8 +38,11 @@ class PurchaseOrdersPolicy
      * Determine whether the user can update the model.
      */
     public function update(User $user, PurchaseOrders $purchaseOrders): bool
-    {
-        return $user->can('update_purchase::orders');
+    { 
+        if(!$purchaseOrders->is_submitted && !$purchaseOrders->is_closed && $user->can('update_purchase::orders')){
+            return true;
+        }
+         return false;
     }
 
     /**

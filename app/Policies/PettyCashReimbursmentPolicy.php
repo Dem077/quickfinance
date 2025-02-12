@@ -50,7 +50,7 @@ class PettyCashReimbursmentPolicy
      */
     public function update(User $user, PettyCashReimbursment $pettyCashReimbursment): bool
     {
-        if ($pettyCashReimbursment->status === 'draft') {
+        if ($pettyCashReimbursment->status === 'draft' && $user->can('update_petty::cash::reimbursment')) {
             return true;
         }
         return false;
