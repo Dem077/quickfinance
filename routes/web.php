@@ -21,10 +21,9 @@ Livewire::setScriptRoute(function ($handle) {
 / END
 */
 
-Route::get('/admin-login', function () {
-    return redirect(route('filament.admin.auth.login'));
-})->name('login');
-
+Route::get('/', function () {
+    return redirect('/admin');
+});
 Route::get('pr/{record}/preview', function ( PurchaseRequests $record ) {
     // Check if document is approved
     if (!$record->is_approved) {
