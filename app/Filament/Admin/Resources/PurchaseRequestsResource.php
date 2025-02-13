@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Resources;
 
 use App\Filament\Admin\Resources\PurchaseRequestsResource\Pages;
 use App\Filament\Admin\Resources\PurchaseRequestsResource\RelationManagers;
+use App\Mail\NotificationEmail;
 use App\Mail\StatusEmail;
 use App\Models\PurchaseOrders;
 use App\Models\PurchaseRequests;
@@ -211,11 +212,12 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                             $record->update([
                                 'is_submited' => true,
                             ]);
-                            // $approvalusers = $user::permission('approve_purchase::requests')->get();
+                            $approvalusers = $user::permission('approve_purchase::requests')->get();
                             
-                            // foreach($approvalusers as $user){
-                            //     Mail::to($user->email)->send(new StatusEmail('Purchase Request', config('app.url')."/admin/purchase-orders", 'Submitted', $record->pr_no, 'Purchase Request'));
-                            // }
+                            foreach($approvalusers as $user){
+                                Mail::to($user->email)->queue(new NotificationEmail('Purchase Request '. $record->pr_no));
+                            }
+
                             Notification::make()
                                 ->title('Submitted for approval successfully')
                                 ->success()
@@ -235,6 +237,9 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                                 'is_approved' => true,
                                 'approved_canceled_by' => Auth::id(),
                             ]);
+                            $user = User::find($record->user_id);
+                            Mail::to($user->email)->queue(new StatusEmail('Purchase Request '. $record->pr_no, 'approved', '',''));
+
                             Notification::make()
                                 ->title('PR Approved successfully')
                                 ->success()
@@ -261,6 +266,8 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                                 'cancel_remark' => $data['cancel_remark'],
                                 'approved_canceled_by' => Auth::id(),
                             ]);
+                            $user = User::find($record->user_id);
+                            Mail::to($user->email)->queue(new StatusEmail('Purchase Request '. $record->pr_no, 'canceled', $data['cancel_remark'],''));
                             Notification::make()
                                 ->title('PR Canceled successfully')
                                 ->warning()
@@ -326,7 +333,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                         ->label('Download PDF')
                         ->icon('heroicon-o-eye')
                         ->visible(fn ($record) => $record->is_approved  && $record->uploaded_document == Null && Auth::user()->can('send_approval_purchase::requests'))
-                        ->url(fn (PurchaseRequests $record) => route('purchase-requests.preview', $record))
+                        ->url(fn (PurchaseRequests $record) => route('purchase-requests.download', $record))
                         ->openUrlInNewTab(),
                 
 

@@ -9,7 +9,7 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class StatusEmail extends Mailable
+class StatusEmail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
@@ -18,10 +18,9 @@ class StatusEmail extends Mailable
      */
     public function __construct(
         public string $type = "",
-        public string $typeUrl= "",
         public string $status= "",
-        public string $typenumber= "",
-        public string $statusTitle= "",
+        public string $reason= "",
+        public string $by= "",
     ) {
         //
     }
@@ -45,10 +44,9 @@ class StatusEmail extends Mailable
             view: 'mails.status',
             with: [
                 'type' => $this->type,
-                'typeUrl' => $this->typeUrl,
                 'status' => $this->status,
-                'typenumber' => $this->typenumber,
-                'statusTitle' => $this->statusTitle,
+                'reason' => $this->reason,
+                'by' => $this->by,
             ],
         );
 

@@ -24,7 +24,7 @@ Livewire::setScriptRoute(function ($handle) {
 Route::get('/', function () {
     return view('welcome');
 });
-Route::get('purchase-requests/{record}/preview', function ( PurchaseRequests $record ) {
+Route::get('pr/{record}/preview', function ( PurchaseRequests $record ) {
     // Check if document is approved
     if (!$record->is_approved) {
         abort(403, 'Access denied. Document is not approved.');
@@ -53,10 +53,10 @@ Route::get('purchase-requests/{record}/preview', function ( PurchaseRequests $re
     
     return response($mpdf->Output('', \Mpdf\Output\Destination::INLINE))
         ->header('Content-Type', 'application/pdf')
-        ->header('Content-Disposition', 'inline; filename="preview.pdf"');
-})->name('purchase-requests.preview');
+        ->header('Content-Disposition', 'inline; filename="'.$record->pr_no.'.pdf"');
+})->name('purchase-requests.download');
 
-Route::get('advance-form/{record}/download', function (PurchaseOrders $record) {
+Route::get('adv-form/{record}/download', function (PurchaseOrders $record) {
     // dd($record);
     $mpdf = new \Mpdf\Mpdf([
         'mode' => 'utf-8',
@@ -80,7 +80,7 @@ Route::get('advance-form/{record}/download', function (PurchaseOrders $record) {
 })->name('purchase-orders.advance-form.download');
 
 
-Route::get('purchase-requests/{record}/preview', function ( PettyCashReimbursment $record ) {
+Route::get('petty-cash/{record}/preview', function ( PettyCashReimbursment $record ) {
     // // Check if document is approved
     // if (!$record->is_approved) {
     //     abort(403, 'Access denied. Document is not approved.');
