@@ -38,7 +38,10 @@ class DepartmentsResource extends Resource
                     ->helperText('Please Assign HOD from User Settings')
                     ->placeholder(function (Departments $department): ?string {
                         $department->load('hodfromusers');
-                        return (string) $department->hodfromusers->name;
+                        if ($department->hodfromusers) {
+                            return (string) $department->hodfromusers->name;
+                        }
+                        return null;
                     })
                     ->disabled(),
                 // Forms\Components\TextInput::make('hod_designation')
