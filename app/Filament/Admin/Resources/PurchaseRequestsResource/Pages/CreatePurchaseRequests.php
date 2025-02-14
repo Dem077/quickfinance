@@ -38,6 +38,7 @@ class CreatePurchaseRequests extends CreateRecord
                 'pr_id' => $this->record->id,
                 'item_id' => $detail['item'],
                 'unit' => $detail['unit'],
+                'budget_account_id' => $detail['budget_account'],
                 'amount' => $detail['amount'],
             ]);
         }

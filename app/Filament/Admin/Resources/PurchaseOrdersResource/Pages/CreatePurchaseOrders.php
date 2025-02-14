@@ -22,6 +22,7 @@ class CreatePurchaseOrders extends CreateRecord
                 'po_id' => $this->record->id,
                 'itemcode' => $detail['itemcode'],
                 'desc' => $detail['desc'],
+                'budget_account_id' => $detail['budget_account'],
                 'unit_measure' => $detail['unit_measure'],
                 'qty' => $detail['qty'],
                 'unit_price' => $detail['unit_price'],

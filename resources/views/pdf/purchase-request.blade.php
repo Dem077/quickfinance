@@ -179,7 +179,7 @@
                    <tr> 
                     <td>{{$loop->iteration}}</td>
                     <td>{{$item->items->name}}</td>
-                    <td>{{$record->budgetAccount->code}}</td>
+                    <td>{{$item->budgetAccount->code}}</td>
                     <td>{{$item->unit}}</td>
                     <td>{{$item->amount}}</td>
                 @endforeach

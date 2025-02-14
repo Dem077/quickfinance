@@ -15,9 +15,9 @@ return new class extends Migration
             $table->id();
             $table->string('pr_no');
             $table->date('date');
-            $table->foreignId('budget_account_id')->constrained();
             $table->string('purpose');
             $table->string('is_closed')->default(false);
+            $table->string('supporting_document')->nullable();
             $table->foreignId('is_closed_by')->nullable()->constrained('users');
             $table->boolean('is_submited')->default(false);
             $table->boolean('is_approved')->default(false);

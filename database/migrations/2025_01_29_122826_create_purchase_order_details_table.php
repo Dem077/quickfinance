@@ -16,6 +16,7 @@ return new class extends Migration
             $table->foreignId('po_id')->constrained('purchase_orders')->cascadeOnDelete();
             $table->string('itemcode');
             $table->string('desc');
+            $table->foreignId('budget_account_id')->constrained('sub_budget_accounts');
             $table->string('unit_measure');
             $table->string('qty');
             $table->string('unit_price');

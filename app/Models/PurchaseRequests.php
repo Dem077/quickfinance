@@ -11,7 +11,6 @@ class PurchaseRequests extends Model
     protected $fillable = [
         'pr_no',
         'date',
-        'budget_account_id',
         'location_id',
         'project_id',
         'purpose',
@@ -24,13 +23,10 @@ class PurchaseRequests extends Model
         'approved_canceled_by',
         'is_closed',
         'is_closed_by',
+        'supporting_document',
     ];
 
-    public function budgetAccount(): BelongsTo
-    {
-        return $this->belongsTo(SubBudgetAccounts::class);
-    }
-
+  
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

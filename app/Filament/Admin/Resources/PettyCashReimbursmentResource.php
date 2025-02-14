@@ -135,6 +135,20 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                 Tables\Columns\TextColumn::make('user.name')
                     ->label('Requested By')
                     ->sortable(),
+                    Tables\Columns\TextColumn::make('pv_number')
+                    ->label('PV Numbers')
+                    ->formatStateUsing(function ($state) {
+                        $decoded = json_decode($state, true);
+                        if (is_array($decoded)) {
+                            // If it's an array of arrays with a "pv_number" key:
+                            if (isset($decoded[0]) && is_array($decoded[0]) && array_key_exists('pv_number', $decoded[0])) {
+                                return implode(', ', array_column($decoded, 'pv_number'));
+                            }
+                            // Otherwise, assume it's a simple array.
+                            return implode(', ', $decoded);
+                        }
+                        return $state;
+                    }),
                 Tables\Columns\TextColumn::make('total_amount')
                     ->label('Total Amount')
                     ->money('MVR', locale: 'us')
@@ -229,14 +243,19 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                     ->color('success')
                     ->visible(fn ($record) => $record->status->value === PettyCashStatus::DepApproved->value && Auth::user()->can('pv_approve_petty::cash::reimbursment'))
                     ->form([
-                        Forms\Components\TextInput::make('pv_number')
-                            ->label('Write PV Number')
-                            ->required(),
+                        
+                        Forms\Components\Repeater::make('pv_numbers')
+                            ->label('PV Numbers')
+                            ->simple(
+                                Forms\Components\TextInput::make('pv_number')
+                                    ->required(),
+                            )
                     ])
                     ->action(function ($record, array $data) { 
+                       
                         $record->update([
                             'status' => PettyCashStatus::FinApproved,
-                            'pv_number' => $data['pv_number'],
+                            'pv_number' => json_encode($data['pv_numbers']),
                             'verified_by' => Auth::id(),
                         ]);
 

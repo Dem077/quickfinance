@@ -114,6 +114,12 @@ class PurchaseOrdersResource extends Resource
                                             ->live()
                                             ->dehydrated(false)
                                             ->columnSpan(2),
+                                        Forms\Components\Hidden::make('budget_account')
+                                            ->label('Budget Code')  
+                                            ->required()
+                                            ->disabled()
+                                            ->live()
+                                            ->dehydrated(false),
                                         Forms\Components\Select::make('desc')
                                             ->label('Description')
                                             ->options(function (Get $get, $state, $record) {
@@ -149,12 +155,13 @@ class PurchaseOrdersResource extends Resource
                                                         ->whereHas('items', function ($query) use ($state) {
                                                             $query->where('name', $state);
                                                         })
-                                                        ->with('items')
+                                                        ->with('items','budgetAccount')
                                                         ->first();
-                                                    
+
                                                     if ($prItem) {
                                                         $set('unit_measure', $prItem->unit);
                                                         $set('qty', $prItem->amount);
+                                                        $set('budget_account', $prItem->budgetAccount->id);
                                                         $set('itemcode', $prItem->items->item_code);
                                                     }
                                                 }
@@ -163,7 +170,7 @@ class PurchaseOrdersResource extends Resource
                                             ->required()
                                             ->columnSpan(2),
                                         Forms\Components\TextInput::make('unit_measure')
-                                            ->label('Unit Measure')
+                                            ->label('U/M')
                                             ->required()
                                             ->disabled()
                                             ->maxLength(255)
@@ -335,8 +342,9 @@ class PurchaseOrdersResource extends Resource
                             ->label('Expected Delivery In Days')
                             ->required(),
                         Forms\Components\TextInput::make('advance_amount')
-                            ->label('Advance Amount')
+                            ->label('Advance Amount %')
                             ->numeric()
+                            ->suffix('%')
                             ->required(),
                         // Add additional fields as needed
                     ])
@@ -356,8 +364,8 @@ class PurchaseOrdersResource extends Resource
                         $advanceForm = $record->advanceForm()->create([
                             'qoation_no' => $data['qoation_no'],
                             'expected_delivery' => $data['expected_delivery'],
-                            'advance_percentage' => ((($data['advance_amount']) / $record->purchaseOrderDetails()->sum('amount')) * 100),
-                            'advance_amount' => $data['advance_amount'],
+                            'advance_percentage' => ($data['advance_amount']),
+                            'advance_amount' => (($data['advance_amount']/100)*$record->purchaseOrderDetails()->sum('amount')),
                             'request_number' => $request_number,
                             'vendors_id' => $record->vendor_id,
                             'balance_amount' => $record->purchaseOrderDetails()->sum('amount') - $data['advance_amount'],

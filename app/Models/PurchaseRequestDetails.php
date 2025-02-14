@@ -10,6 +10,7 @@ class PurchaseRequestDetails extends Model
     protected $fillable = [
         'item_id',
         'unit',
+        'budget_account_id',
         'amount',
         'pr_id',
         'is_utilized',
@@ -31,4 +32,10 @@ class PurchaseRequestDetails extends Model
     {
         return $this->belongsTo(Item::class, 'item_id');
     }
+
+    public function budgetAccount(): BelongsTo
+    {
+        return $this->belongsTo(SubBudgetAccounts::class , 'budget_account_id');
+    }
+
 }

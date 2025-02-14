@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('purchase_request_details', function (Blueprint $table) {
             $table->id();
             $table->foreignId('item_id')->constrained('items');
+            $table->foreignId('budget_account_id')->constrained('sub_budget_accounts');
             $table->string('unit');
             $table->string('amount');
             $table->boolean('is_utilized')->default('0');

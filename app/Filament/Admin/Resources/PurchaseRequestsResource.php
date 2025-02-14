@@ -83,15 +83,11 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                     ->relationship('project', 'name')
                     ->native(false)
                     ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests')),
-                Forms\Components\Select::make('budget_account_id')
-                    ->relationship('budgetAccount', 'name', function ($query) {
-                        $query->selectRaw("CONCAT(code, ' - ', budget_accounts.name, ' (', budget_accounts.expenditure_type, ' - ', budget_accounts.account, ')') AS display_name, budget_accounts.id")
-                            ->join('budget_accounts', 'sub_budget_accounts.budget_account_id', '=', 'budget_accounts.id');
-                    })
-                    ->getOptionLabelFromRecordUsing(fn ($record) => $record->display_name)
-                    ->searchable(['budget_accounts.name', 'code', 'budget_accounts.expenditure_type', 'budget_accounts.account'])
-                    ->preload()
-                    ->required(),
+                Forms\Components\FileUpload::make('supporting_document')
+                    ->label('Supporting Document')
+                    ->openable()
+                    ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests')),
+         
                 Forms\Components\TextInput::make('purpose')
                     ->label('Purpose / Reason')
                     ->required()
@@ -107,7 +103,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                             ->label('Items / Services')
                             ->schema([
                                 Forms\Components\Grid::make()
-                                    ->columns(7)
+                                    ->columns(8)
                                     ->schema([
                                         Forms\Components\Select::make('item')
                                             ->label('Item / Service')
@@ -127,7 +123,19 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                                                 'Ltr' => 'Ltr',
                                                 'Each' => 'Each',
                                             ])
-                                            ->columnSpan(3),
+                                            ->columnSpan(2),
+                                        Forms\Components\Select::make('budget_account')
+                                            ->label('Budget Account')
+                                            ->options(function () {
+                                                return \App\Models\SubBudgetAccounts::query()
+                                                    ->selectRaw("CONCAT(code, ' - ', name, '') as display_name, id")
+                                                    ->pluck('display_name', 'id')
+                                                    ->toArray();
+                                            })
+                                            ->searchable()
+                                            ->preload()
+                                            ->required()
+                                            ->columnSpan(2),
                                         Forms\Components\TextInput::make('amount')
                                         ->label('Quantity') 
                                             ->required()
@@ -150,10 +158,6 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                 Tables\Columns\TextColumn::make('date')
                     ->date()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('budget_account_id')
-                    ->label('Budget Code')
-                    ->getStateUsing(fn ($record) => $record->budgetAccount->code ?? '-')
-                    ->searchable(['budget_accounts.name', 'budget_accounts.code', 'budget_accounts.expenditure_type', 'budget_accounts.account']),
                 Tables\Columns\TextColumn::make('location.name')
                     ->numeric()
                     ->sortable(),

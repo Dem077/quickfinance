@@ -18,7 +18,7 @@ class PurchaseRequestDetailsRelationManager extends RelationManager
         return $form
             ->schema([
                 Forms\Components\Grid::make()
-                    ->columns(6)
+                    ->columns(8)
                     ->schema([
                         Forms\Components\Select::make('item_id')
                             ->relationship('items', 'name')
@@ -29,6 +29,11 @@ class PurchaseRequestDetailsRelationManager extends RelationManager
                             ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests'))
                             ->required()
                             ->maxLength(255)
+                            ->columnSpan(2),
+                        Forms\Components\Select::make('budget_account_id')
+                            ->relationship('budgetAccount', 'code')
+                            ->required()
+                            ->searchable()
                             ->columnSpan(2),
                         Forms\Components\TextInput::make('amount')
                             ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests'))
@@ -46,6 +51,7 @@ class PurchaseRequestDetailsRelationManager extends RelationManager
             ->columns([
                 Tables\Columns\TextColumn::make('items.name')->label('Item Name'),
                 Tables\Columns\TextColumn::make('unit'),
+                Tables\Columns\TextColumn::make('budgetAccount.code')->label('Budget Account'),
                 Tables\Columns\TextColumn::make('amount'),
             ])
             ->filters([
@@ -57,8 +63,7 @@ class PurchaseRequestDetailsRelationManager extends RelationManager
                     ->visible(fn ($record) => Auth::user()->can('send_approval_purchase::requests')),
             ])
             ->actions([
-                Tables\Actions\EditAction::make()
-                    ->visible(fn ($record) => Auth::user()->can('send_approval_purchase::requests')),
+                Tables\Actions\EditAction::make(),
             ])
             ->recordUrl(false)
             ->bulkActions([
