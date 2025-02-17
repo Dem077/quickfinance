@@ -2,6 +2,8 @@
 
 namespace App\Filament\Admin\Resources\PurchaseRequestsResource\RelationManagers;
 
+use App\Models\SubBudgetAccounts;
+use Closure;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -18,7 +20,7 @@ class PurchaseRequestDetailsRelationManager extends RelationManager
         return $form
             ->schema([
                 Forms\Components\Grid::make()
-                    ->columns(8)
+                    ->columns(10)
                     ->schema([
                         Forms\Components\Select::make('item_id')
                             ->relationship('items', 'name')
@@ -40,6 +42,27 @@ class PurchaseRequestDetailsRelationManager extends RelationManager
                             ->required()
                             ->maxLength(255)
                             ->columnSpan(2),
+                        Forms\Components\TextInput::make('est_cost')
+                            ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests'))
+                            ->required()
+                            ->numeric()
+                            ->reactive()
+                            ->rules([
+                                fn (Forms\Get $get): Closure =>
+                                    function (string $attribute, $value, Closure $fail) use ($get) {
+                                        if (empty($value)) {
+                                            return;
+                                        }
+                                        $budgetAccountId = $get('budget_account_id');
+                                        if ($budgetAccountId) {
+                                            $account = SubBudgetAccounts::find($budgetAccountId);
+                                            if ($account && $value > $account->amount) {
+                                                $fail("You don't have enough funds for this budget code.");
+                                            }
+                                        }
+                                    },
+                            ])
+                            ->columnSpan(2),
                     ]),
             ]);
     }
@@ -52,7 +75,8 @@ class PurchaseRequestDetailsRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('items.name')->label('Item Name'),
                 Tables\Columns\TextColumn::make('unit'),
                 Tables\Columns\TextColumn::make('budgetAccount.code')->label('Budget Account'),
-                Tables\Columns\TextColumn::make('amount'),
+                Tables\Columns\TextColumn::make('amount')->label('Quantity'),
+                Tables\Columns\TextColumn::make('est_cost')->label('Estimated Cost'),
             ])
             ->filters([
                 //

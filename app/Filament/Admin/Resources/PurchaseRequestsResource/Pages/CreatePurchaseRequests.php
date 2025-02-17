@@ -40,6 +40,7 @@ class CreatePurchaseRequests extends CreateRecord
                 'unit' => $detail['unit'],
                 'budget_account_id' => $detail['budget_account'],
                 'amount' => $detail['amount'],
+                'est_cost' => $detail['est_cost'],
             ]);
         }
     }

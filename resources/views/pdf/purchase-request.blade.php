@@ -171,18 +171,26 @@
                     <th>Item / Service</th>
                     <th>BUDGET CODE</th>
                     <th>UOM</th>
-                    <th>AMOUNT</th>
+                    <th>QTY</th>
+                    <th>EST COST</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach ($items as $item)
                    <tr> 
-                    <td>{{$loop->iteration}}</td>
-                    <td>{{$item->items->name}}</td>
-                    <td>{{$item->budgetAccount->code}}</td>
-                    <td>{{$item->unit}}</td>
-                    <td>{{$item->amount}}</td>
+                        <td>{{$loop->iteration}}</td>
+                        <td>{{$item->items->name}}</td>
+                        <td>{{$item->budgetAccount->code}}</td>
+                        <td>{{$item->unit}}</td>
+                        <td>{{$item->amount}}</td>
+                        <td>{{$item->est_cost}}</td>
+                   </tr>
                 @endforeach
+                <tr>
+                    <td colspan="5" style="text-align: right; "><strong>Total</strong></td>
+                    
+                    <td><strong>{{$items->sum('est_cost')}}</strong></td>
+                </tr>
         </table>
 
         <!--mpdf

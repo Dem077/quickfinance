@@ -8,8 +8,10 @@ use App\Mail\NotificationEmail;
 use App\Mail\StatusEmail;
 use App\Models\PurchaseOrders;
 use App\Models\PurchaseRequests;
+use App\Models\SubBudgetAccounts;
 use App\Models\User;
 use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
+use Closure;
 use Filament\Forms;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Tabs\Tab;
@@ -145,6 +147,22 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                                             ->label('Estimated Cost')
                                             ->required()
                                             ->numeric()
+                                            ->reactive()
+                                            ->rules([
+                                                fn (Forms\Get $get): Closure =>
+                                                    function (string $attribute, $value, Closure $fail) use ($get) {
+                                                        if (empty($value)) {
+                                                            return;
+                                                        }
+                                                        $budgetAccountId = $get('budget_account');
+                                                        if ($budgetAccountId) {
+                                                            $account = SubBudgetAccounts::find($budgetAccountId);
+                                                            if ($account && $value > $account->amount) {
+                                                                $fail("You don't have enough funds for this budget code.");
+                                                            }
+                                                        }
+                                                    },
+                                            ])
                                             ->columnSpan(2),
                                     ]),
                             ])
@@ -172,6 +190,12 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                 Tables\Columns\TextColumn::make('user.name')
                     ->label('Requested By')
                     ->numeric()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('total_est_cost')
+                    ->label('Total Estimated Cost')
+                    ->getStateUsing(fn ($record) => $record->purchaseRequestDetails->sum('est_cost'))
+                    ->numeric()
+                    ->money('MVR', locale: 'us')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')

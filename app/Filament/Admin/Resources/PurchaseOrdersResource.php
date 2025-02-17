@@ -310,7 +310,7 @@ class PurchaseOrdersResource extends Resource
                     ->icon('heroicon-o-paper-airplane')
                     ->color('warning')
                     ->visible(fn ($record) => !$record->is_submitted && !$record->is_closed &&
-                        Auth::user()->can('send_approval_purchase::requests')
+                        Auth::user()->can('send_approval_purchase::requests' ) && $record->payment_method == 'purchase_order' || !$record->is_submitted && !$record->is_closed && $record->supporting_document  && $record->payment_method == 'petty_cash' && Auth::user()->can('send_approval_purchase::requests')
                     )
                     ->action(function (PurchaseOrders $record) {
                         $record->update([
@@ -374,7 +374,7 @@ class PurchaseOrdersResource extends Resource
                             'advance_amount' => (($data['advance_amount']/100)*$record->purchaseOrderDetails()->sum('amount')),
                             'request_number' => $request_number,
                             'vendors_id' => $record->vendor_id,
-                            'balance_amount' => $record->purchaseOrderDetails()->sum('amount') - $data['advance_amount'],
+                            'balance_amount' => $record->purchaseOrderDetails()->sum('amount') - ($data['advance_amount']/100)*$record->purchaseOrderDetails()->sum('amount'),
                             'generated_by' => Auth::id(),
                         ]);
                         $record->update([
