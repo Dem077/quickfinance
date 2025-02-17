@@ -11,6 +11,7 @@ use App\Models\SubBudgetAccounts;
 use App\Models\Vendors;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 use Mpdf\Tag\Sub;
 
 class DatabaseSeeder extends Seeder
@@ -21,12 +22,25 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
        
-        Location::factory(2)->create();
-        Departments::factory(2)->create();
+        Location::factory()->create([
+            'name'=> 'Head Office',
+        ]);
+        Location::factory()->create([
+            'name'=> 'Warehouse',
+        ]);
+        Departments::factory()->create([
+            'name' => 'IT',
+            'petty_cash_float_amount' => 5000,
+        ]);
+        Departments::factory()->create([
+            'name' => 'Finance',
+            'petty_cash_float_amount' => 5000,
+        ]);
         BudgetAccounts::factory()->create([
             'name' => 'Building',
             'expenditure_type' => 'CAPPEX',
             'account' => 'Property, Plant and Equipment',]);
+
         SubBudgetAccounts::factory()->create([
             'code' => 'CAPPEX1010102',
             'name' => '1010102 · Building',
@@ -56,7 +70,17 @@ class DatabaseSeeder extends Seeder
 
         $user = \App\Models\User::factory()->create([
             'name' => 'Admin',
-            'email' => 'admin@admin.com',
+            'email' => 'it@agronational.mv',
+            'email_verified_at' => now(),
+            'bank_account_name' => null,
+            'bank_account_no' => null,
+            'hod_of' => null,
+            'is_hod' => false,
+            'designation' => "IT Admin",
+            'department_id' => Departments::first()->id,
+            'location_id' => Location::inRandomOrder()->first()->id,
+            'mobile' => '9940018',
+            'password' => Hash::make('12345'),
         ]);
 
         
