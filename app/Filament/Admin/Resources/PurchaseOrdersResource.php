@@ -34,6 +34,14 @@ class PurchaseOrdersResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-document-currency-dollar';
 
     protected static ?int $navigationSort = 3;
+
+    protected static ?string $title = 'Procure';
+
+    protected ?string $heading = 'Procure';
+
+    protected static ?string $navigationLabel = 'Procure';
+
+    protected static ?string $slug = 'procure';
     
 
     public static function form(Form $form): Form
@@ -41,6 +49,7 @@ class PurchaseOrdersResource extends Resource
         return $form
             ->schema([
                 Forms\Components\TextInput::make('po_no')
+                    ->label('Record ID')
                     ->required()
                     ->maxLength(255),
                 Forms\Components\Select::make('vendor_id')
