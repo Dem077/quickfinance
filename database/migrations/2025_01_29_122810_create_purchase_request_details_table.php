@@ -17,6 +17,7 @@ return new class extends Migration
             $table->foreignId('budget_account_id')->constrained('sub_budget_accounts');
             $table->string('unit');
             $table->string('amount');
+            $table->string('est_cost')->nullable();
             $table->boolean('is_utilized')->default('0');
             $table->foreignId('pr_id')->constrained('purchase_requests')->cascadeOnDelete();
             $table->timestamps();

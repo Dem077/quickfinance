@@ -14,6 +14,7 @@ class PurchaseRequestDetails extends Model
         'amount',
         'pr_id',
         'is_utilized',
+        'est_cost',
     ];
 
   

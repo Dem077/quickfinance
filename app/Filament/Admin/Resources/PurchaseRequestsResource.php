@@ -103,7 +103,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                             ->label('Items / Services')
                             ->schema([
                                 Forms\Components\Grid::make()
-                                    ->columns(8)
+                                    ->columns(10)
                                     ->schema([
                                         Forms\Components\Select::make('item')
                                             ->label('Item / Service')
@@ -138,6 +138,11 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                                             ->columnSpan(2),
                                         Forms\Components\TextInput::make('amount')
                                         ->label('Quantity') 
+                                            ->required()
+                                            ->numeric()
+                                            ->columnSpan(2),
+                                        Forms\Components\TextInput::make('est_cost')
+                                            ->label('Estimated Cost')
                                             ->required()
                                             ->numeric()
                                             ->columnSpan(2),

@@ -286,11 +286,17 @@ class PurchaseOrdersResource extends Resource
                             'is_closed_by' => Auth::id(),
                         ]);
                         if($record->payment_method == 'purchase_order'){
-                            $record->purchaseRequest->budgetAccount->update([
-                                'amount' => $record->purchaseRequest->budgetAccount->amount - $record->purchaseOrderDetails()->sum('amount'),
-                            ]);
+                            
+                            foreach($record->purchaseOrderDetails as $detail){
+                                 $detail->budgetAccount->update([
+                                    'amount' => $detail->budgetAccount->amount - $detail->amount,]);
+                                    BudgetTransactionHistory::createtransaction($detail->budgetAccount->id, 'Purchase Order', $detail->amount, $detail->budgetAccount->amount, 'Purchase Order Closed for PO ('.$record->po_no.' | Item: '.$detail->desc.' )', Auth::id());
+                            }
+                            // $record->purchaseRequest->budgetAccount->update([
+                            //     'amount' => $record->purchaseRequest->budgetAccount->amount - $record->purchaseOrderDetails()->sum('amount'),
+                            // ]);
     
-                            BudgetTransactionHistory::createtransaction($record->purchaseRequest->budgetAccount->id, 'Purchase Order', $record->purchaseOrderDetails()->sum('amount'), $record->purchaseRequest->budgetAccount->amount, 'Purchase Order Closed', Auth::id());
+                            // BudgetTransactionHistory::createtransaction($record->purchaseRequest->budgetAccount->id, 'Purchase Order', $record->purchaseOrderDetails()->sum('amount'), $record->purchaseRequest->budgetAccount->amount, 'Purchase Order Closed', Auth::id());
                             
                         }
                     
