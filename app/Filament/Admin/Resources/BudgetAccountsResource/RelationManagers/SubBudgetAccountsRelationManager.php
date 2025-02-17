@@ -2,11 +2,15 @@
 
 namespace App\Filament\Admin\Resources\BudgetAccountsResource\RelationManagers;
 
+use App\Models\BudgetTransactionHistory;
+use App\Models\SubBudgetAccounts;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Auth;
 
 class SubBudgetAccountsRelationManager extends RelationManager
 {
@@ -45,6 +49,54 @@ class SubBudgetAccountsRelationManager extends RelationManager
             ])
             ->headerActions([
                 Tables\Actions\CreateAction::make(),
+                Tables\Actions\Action::make('top_up_account')
+                    ->label('Top Up Account')
+                    ->color('success')
+                    ->form([
+                        Forms\Components\Repeater::make('subbudgets')
+                            ->label('Sub Budgets')
+                            ->grid(2)
+                            ->disableItemCreation()
+                            ->disableItemDeletion()
+                            ->schema([
+                                Forms\Components\TextInput::make('id')
+                                    ->hidden(),
+                                Forms\Components\TextInput::make('code')
+                                    ->label('Code')
+                                    ->disabled(),
+                                Forms\Components\TextInput::make('name')
+                                    ->label('Name')
+                                    ->disabled(),
+                                Forms\Components\TextInput::make('amount')
+                                    ->label('New Amount')
+                                    ->required()
+                                    ->numeric()
+                                    ->inputMode('decimal'),
+                            ])
+                            ->default(fn ($livewire) => $livewire->ownerRecord->subBudgetAccounts->map(function ($subBudget) {
+                                return [
+                                    'id'    => $subBudget->id,
+                                    'code'  => $subBudget->code,
+                                    'name'  => $subBudget->name,
+                                    'amount'=> $subBudget->amount,
+                                ];
+                            })->toArray()),
+                    ])
+                    ->action(function (array $data) {
+                       
+                        // Loop over the submitted subbudget data and update each record.
+                        foreach ($data['subbudgets'] as $subBudgetData) {
+                            BudgetTransactionHistory::createtransaction($subBudgetData['id'], 'Top UP', $subBudgetData['amount'], $subBudgetData['amount'], 'Funds added to account', Auth::id());
+                            SubBudgetAccounts::find($subBudgetData['id'])
+                                ->update([
+                                    'amount' => $subBudgetData['amount'],
+                                ]);
+                        }
+                        Notification::make()
+                            ->title('Top Up Successful')
+                            ->success()
+                            ->send();
+                    }),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
