@@ -28,9 +28,19 @@ class BudgetTransferResource extends Resource
             ->schema([
                 Forms\Components\Select::make('from_budget_id')
                     ->relationship('fromBudget', 'name')
+                    ->getOptionLabelFromRecordUsing(
+                        fn($record) => $record->department_id
+                            ? "{$record->name} - {$record->department->name} ({$record->code})"
+                            : "{$record->name} ({$record->code})"
+                    )
                     ->required(),
                 Forms\Components\Select::make('to_budget_id')
                     ->relationship('toBudget', 'name')
+                    ->getOptionLabelFromRecordUsing(
+                        fn($record) => $record->department_id
+                        ? "{$record->name} - {$record->department->name} ({$record->code})"
+                        : "{$record->name} ({$record->code})"
+                    )
                     ->required(),
                 Forms\Components\Hidden::make('user_id')
                     ->default(Auth::id())

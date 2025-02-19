@@ -20,7 +20,7 @@ class PurchaseRequestDetailsRelationManager extends RelationManager
         return $form
             ->schema([
                 Forms\Components\Grid::make()
-                    ->columns(10)
+                    ->columns(12)
                     ->schema([
                         Forms\Components\Select::make('item_id')
                             ->relationship('items', 'name')
@@ -34,9 +34,14 @@ class PurchaseRequestDetailsRelationManager extends RelationManager
                             ->columnSpan(2),
                         Forms\Components\Select::make('budget_account_id')
                             ->relationship('budgetAccount', 'code')
+                            ->getOptionLabelFromRecordUsing(
+                                fn($record) => $record->department_id
+                                ? "{$record->name} - {$record->department->name} ({$record->code})"
+                                : "{$record->name} ({$record->code})"
+                            )
                             ->required()
                             ->searchable()
-                            ->columnSpan(2),
+                            ->columnSpan(4),
                         Forms\Components\TextInput::make('amount')
                             ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests'))
                             ->required()

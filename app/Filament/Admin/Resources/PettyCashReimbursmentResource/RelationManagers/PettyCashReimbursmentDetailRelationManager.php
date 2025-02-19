@@ -41,6 +41,11 @@ class PettyCashReimbursmentDetailRelationManager extends RelationManager
                     ->required(),
                 Forms\Components\Select::make('sub_budget_id')
                     ->relationship('SubBudget', 'code')
+                    ->getOptionLabelFromRecordUsing(
+                        fn($record) => $record->department_id
+                        ? "{$record->name} - {$record->department->name} ({$record->code})"
+                        : "{$record->name} ({$record->code})"
+                    )
                     ->native(false)
                     ->columnSpan(2)
                     ->nullable(),

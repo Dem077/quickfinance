@@ -70,7 +70,7 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                             ->label('Items / Services')
                             ->schema([
                                 Forms\Components\Grid::make()
-                                    ->columns(12)
+                                    ->columns(13)
                                     ->schema([
                                         Forms\Components\DatePicker::make('date')
                                             ->native(false)
@@ -91,11 +91,18 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                                             ->columnSpan(2)
                                             ->required(),
                                         Forms\Components\Select::make('sub_budget_id')
-                                            ->options(
-                                                SubBudgetAccounts::all()->pluck('name', 'id')
-                                            )
+                                            ->options(function () {
+                                                return \App\Models\SubBudgetAccounts::with('department')
+                                                    ->get()
+                                                    ->mapWithKeys(function ($row) {
+                                                        return [
+                                                            $row->id => $row->code . ' - ' . $row->name . ' (' . $row->department->name . ')',
+                                                        ];
+                                                    })
+                                                    ->toArray();
+                                            })
                                             ->native(false)
-                                            ->columnSpan(2)
+                                            ->columnSpan(3)
                                             ->nullable(),
                                         Forms\Components\Select::make('po_id')
                                             ->label('Record ID')

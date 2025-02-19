@@ -129,9 +129,13 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                                         Forms\Components\Select::make('budget_account')
                                             ->label('Budget Account')
                                             ->options(function () {
-                                                return \App\Models\SubBudgetAccounts::query()
-                                                    ->selectRaw("CONCAT(code, ' - ', name, '') as display_name, id")
-                                                    ->pluck('display_name', 'id')
+                                                return \App\Models\SubBudgetAccounts::with('department')
+                                                    ->get()
+                                                    ->mapWithKeys(function ($row) {
+                                                        return [
+                                                            $row->id => $row->code . ' - ' . $row->name . ' (' . $row->department->name . ')',
+                                                        ];
+                                                    })
                                                     ->toArray();
                                             })
                                             ->searchable()
