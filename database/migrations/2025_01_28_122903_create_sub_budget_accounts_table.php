@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('code');
             $table->string('name');
             $table->integer('amount');
+            $table->foreignId('department_id')->nullable()->constrained();
             $table->foreignId('budget_account_id')->constrained();
             $table->timestamps();
         });

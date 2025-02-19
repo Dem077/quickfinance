@@ -31,4 +31,9 @@ class Departments extends Model
     {
         return $this->hasOne(User::class,  'hod_of' );
     }
+
+    public function subBudgetAccounts()
+    {
+        return $this->hasMany(SubBudgetAccounts::class, 'department_id');
+    }
 }

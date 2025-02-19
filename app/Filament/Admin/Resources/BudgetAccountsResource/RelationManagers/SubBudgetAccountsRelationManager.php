@@ -26,6 +26,9 @@ class SubBudgetAccountsRelationManager extends RelationManager
                 Forms\Components\TextInput::make('name')
                     ->required()
                     ->maxLength(255),
+                Forms\Components\Select::make('department_id')
+                    ->label('Department')
+                    ->relationship('department', 'name'),
                 Forms\Components\TextInput::make('amount')
                     ->required()
                     ->numeric()
@@ -41,6 +44,8 @@ class SubBudgetAccountsRelationManager extends RelationManager
             ->columns([
                 Tables\Columns\TextColumn::make('code'),
                 Tables\Columns\TextColumn::make('name'),
+                Tables\Columns\TextColumn::make('department.name')
+                    ->label('Department'),
                 Tables\Columns\TextColumn::make('amount')
                     ->money('MVR', locale: 'us'),
             ])
@@ -66,6 +71,10 @@ class SubBudgetAccountsRelationManager extends RelationManager
                                     ->disabled(),
                                 Forms\Components\TextInput::make('name')
                                     ->label('Name')
+                                    ->disabled(),
+                                Forms\Components\Select::make('department_id')
+                                    ->label('Department')
+                                    ->relationship('department', 'name')
                                     ->disabled(),
                                 Forms\Components\TextInput::make('amount')
                                     ->label('New Amount')

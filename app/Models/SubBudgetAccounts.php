@@ -16,6 +16,7 @@ class SubBudgetAccounts extends Model
         'name',
         'amount',
         'budget_account_id',
+        'department_id'
     ];
 
     public function budgetAccount(): BelongsTo
@@ -51,5 +52,10 @@ class SubBudgetAccounts extends Model
     public function purchaseorderdetails(): HasMany
     {
         return $this->hasMany(PurchaseOrderDetails::class, 'budget_account_id');
+    }
+
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Departments::class, 'department_id');
     }
 }
