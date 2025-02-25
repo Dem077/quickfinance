@@ -54,6 +54,9 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                     ->closeOnDateSelection()
                     // ->disabled(fn ($record) => $record->status->value !== PettyCashStatus::Draft || !$record->status ==null )
                     ->required(),
+                Forms\Components\TextInput::make('form_no')
+                    ->label('Form Number')
+                    ->required(),
                 Forms\Components\Hidden::make('user_id')
                     ->default(Auth::id())
                     ->required(),
@@ -135,6 +138,9 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
             ->columns([
                 Tables\Columns\TextColumn::make('id')
                     ->label('Reqeust ID')
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('form_no')
+                    ->label('Form Number')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('date')
                     ->date()
@@ -245,7 +251,7 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                         }
                     }),
                 Tables\Actions\Action::make('fin_approve')
-                    ->label('Approve')
+                    ->label('Add PV')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
                     ->visible(fn ($record) => $record->status->value === PettyCashStatus::DepApproved->value && Auth::user()->can('pv_approve_petty::cash::reimbursment'))
@@ -290,7 +296,7 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                     }),
 
                 Tables\Actions\Action::make('rembursed')
-                    ->label('Reimburse')
+                    ->label('Approve')
                     ->icon('heroicon-o-check-circle')
                     ->requiresConfirmation()
                     ->color('success')
@@ -339,7 +345,8 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                     ->visible(fn ($record) => $record->status->value === PettyCashStatus::FinApproved->value && Auth::user()->can('fin_hod_approve_petty::cash::reimbursment'))
                     ->action(function ($record, array $data) {
                         $record->update([
-                            'status' => PettyCashStatus::DepApproved
+                            'status' => PettyCashStatus::DepApproved,
+                            'pv_number' => null,
                         ]);
                         $verifiedby = $record->VerifiedBy->email;
 

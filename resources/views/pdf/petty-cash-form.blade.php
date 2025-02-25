@@ -151,6 +151,10 @@
             <tr>
                 <td class="logo-cell details-cell2">
                     <table  class="details-table2">
+                        <tr> 
+                            <td style="background-color: #b9b9b9; text-align:center;"><strong>Form No:</strong></td>
+                            <td >{{$record->form_no??'-'}}</td>
+                        </tr>
                         <tr>
                             <td style="background-color: #b9b9b9; text-align:center;"><strong>Date:</strong></td>
                             <td >{{ \Carbon\Carbon::parse($record->date)->format('d-M-Y') }}</td>
