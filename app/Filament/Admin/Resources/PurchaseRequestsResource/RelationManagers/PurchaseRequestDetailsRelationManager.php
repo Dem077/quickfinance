@@ -33,15 +33,20 @@ class PurchaseRequestDetailsRelationManager extends RelationManager
                             ->maxLength(255)
                             ->columnSpan(2),
                         Forms\Components\Select::make('budget_account_id')
-                            ->relationship('budgetAccount', 'code')
+                            ->label('Budget Account')
+                            ->options(function () {
+                                return \App\Models\SubBudgetAccounts::with('department')
+                                    ->get()
+                                    ->mapWithKeys(function ($row) {
+                                        return [
+                                            $row->id => $row->code . ' - ' . $row->name . ' (' . $row->department->name . ')',
+                                        ];
+                                    })
+                                    ->toArray();
+                            })
                             ->searchable()
-                            ->getOptionLabelFromRecordUsing(
-                                fn($record) => $record->department_id
-                                ? "{$record->name} - {$record->department->name} ({$record->code})"
-                                : "{$record->name} ({$record->code})"
-                            )
+                            ->preload()
                             ->required()
-                            ->searchable()
                             ->columnSpan(4),
                         Forms\Components\TextInput::make('amount')
                             ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests'))
