@@ -34,6 +34,7 @@ class PurchaseRequestDetailsRelationManager extends RelationManager
                             ->columnSpan(2),
                         Forms\Components\Select::make('budget_account_id')
                             ->relationship('budgetAccount', 'code')
+                            ->searchable()
                             ->getOptionLabelFromRecordUsing(
                                 fn($record) => $record->department_id
                                 ? "{$record->name} - {$record->department->name} ({$record->code})"

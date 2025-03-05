@@ -124,6 +124,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                                                 'Pcs' => 'Pcs',
                                                 'Ltr' => 'Ltr',
                                                 'Each' => 'Each',
+                                                'Bottle' => 'Bottle',
                                                 'Bags' => 'Bags,'
                                             ])
                                             ->columnSpan(2),
