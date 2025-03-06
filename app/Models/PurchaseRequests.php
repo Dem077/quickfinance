@@ -23,6 +23,7 @@ class PurchaseRequests extends Model
         'approved_canceled_by',
         'is_closed',
         'is_closed_by',
+        'status',
         'supporting_document',
     ];
 

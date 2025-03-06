@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources;
 
+use App\Enums\PurchaseOrderStatus;
 use App\Filament\Admin\Resources\PurchaseOrdersResource\Pages;
 use App\Filament\Admin\Resources\PurchaseOrdersResource\RelationManagers;
 use App\Models\AdvanceForm;
@@ -291,6 +292,7 @@ class PurchaseOrdersResource extends Resource
                     )
                     ->action(function (PurchaseOrders $record) {
                         $record->update([
+                            'status' => PurchaseOrderStatus::Closed,
                             'is_closed' => true,
                             'is_closed_by' => Auth::id(),
                         ]);
@@ -323,6 +325,7 @@ class PurchaseOrdersResource extends Resource
                     )
                     ->action(function (PurchaseOrders $record) {
                         $record->update([
+                            'status' => PurchaseOrderStatus::Submitted,
                             'is_submitted' => true,
                         ]);
                         foreach ($record->purchaseOrderDetails as $detail) {

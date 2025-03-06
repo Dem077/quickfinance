@@ -2,6 +2,8 @@
 
 namespace App\Filament\Admin\Resources;
 
+use App\Enums\PurchaseOrderStatus;
+use App\Enums\PurchaseRequestsStatus;
 use App\Filament\Admin\Resources\PurchaseRequestsResource\Pages;
 use App\Filament\Admin\Resources\PurchaseRequestsResource\RelationManagers;
 use App\Mail\NotificationEmail;
@@ -249,6 +251,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                         )
                         ->action(function (PurchaseRequests $record , User $user) {
                             $record->update([
+                                'status' => PurchaseRequestsStatus::Submitted,
                                 'is_submited' => true,
                             ]);
                             $approvalusers = $user::permission('approve_purchase::requests')->get();
@@ -273,6 +276,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                         )
                         ->action(function (PurchaseRequests $record) {
                             $record->update([
+                                'status' => PurchaseRequestsStatus::Approved,
                                 'is_approved' => true,
                                 'approved_canceled_by' => Auth::id(),
                             ]);
@@ -301,6 +305,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                         )
                         ->action(function (PurchaseRequests $record, array $data) {
                             $record->update([
+                                'status' => PurchaseRequestsStatus::Canceled,
                                 'is_canceled' => true,
                                 'cancel_remark' => $data['cancel_remark'],
                                 'approved_canceled_by' => Auth::id(),
@@ -324,6 +329,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                         ->action(function (PurchaseRequests $record) {
                           
                             $record->update([
+                                'status' => PurchaseRequestsStatus::Closed,
                                 'is_closed' => true,
                                 'is_closed_by' => Auth::id(),
                             ]);
@@ -331,6 +337,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                             if(!$po){
                                 foreach($po as $p){
                                     $p->update([
+                                        'status' => PurchaseOrderStatus::Closed,
                                         'is_closed' => true,
                                         'is_closed_by' => Auth::id(),
                                     ]);
@@ -354,6 +361,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                         ])
                         ->action(function (PurchaseRequests $record, array $data) {
                             $record->update([
+                                'status' => PurchaseRequestsStatus::DocumentUploaded,
                                 'uploaded_document' => $data['uploaded_document'],
                             ]);
                             Notification::make()
