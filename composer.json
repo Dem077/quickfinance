@@ -21,6 +21,7 @@
         "joshembling/image-optimizer": "^1.4",
         "laravel/framework": "^11.0",
         "laravel/tinker": "^2.9",
+        "league/csv": "*",
         "livewire/livewire": "^3.0",
         "mpdf/mpdf": "^8.2",
         "njxqlus/filament-progressbar": "^1.0",
