@@ -11,6 +11,7 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Auth;
+use Laravel\SerializableClosure\Serializers\Native;
 
 class SubBudgetAccountsRelationManager extends RelationManager
 {
@@ -27,10 +28,14 @@ class SubBudgetAccountsRelationManager extends RelationManager
                     ->required()
                     ->maxLength(255),
                 Forms\Components\Select::make('department_id')
+                    ->searchable()
                     ->label('Department')
+                    ->native(false)
                     ->relationship('department', 'name'),
                 Forms\Components\Select::make('location_id')
+                    ->searchable()
                     ->label('Location')
+                    ->native(false)
                     ->relationship('location', 'name'),
                 Forms\Components\TextInput::make('amount')
                     ->required()
