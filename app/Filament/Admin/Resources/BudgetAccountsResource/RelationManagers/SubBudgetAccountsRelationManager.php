@@ -29,6 +29,9 @@ class SubBudgetAccountsRelationManager extends RelationManager
                 Forms\Components\Select::make('department_id')
                     ->label('Department')
                     ->relationship('department', 'name'),
+                Forms\Components\Select::make('location_id')
+                    ->label('Location')
+                    ->relationship('location', 'name'),
                 Forms\Components\TextInput::make('amount')
                     ->required()
                     ->numeric()
@@ -44,6 +47,8 @@ class SubBudgetAccountsRelationManager extends RelationManager
             ->columns([
                 Tables\Columns\TextColumn::make('code'),
                 Tables\Columns\TextColumn::make('name'),
+                Tables\Columns\TextColumn::make('location.name')
+                    ->label('Location'),
                 Tables\Columns\TextColumn::make('department.name')
                     ->label('Department'),
                 Tables\Columns\TextColumn::make('amount')
