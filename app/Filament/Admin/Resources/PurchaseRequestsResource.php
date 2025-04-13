@@ -195,6 +195,10 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                 Tables\Columns\TextColumn::make('project.name')
                     ->numeric()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('purpose')
+                    ->label('Purpose / Reason')
+                    ->searchable()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('user.name')
                     ->label('Requested By')
                     ->numeric()

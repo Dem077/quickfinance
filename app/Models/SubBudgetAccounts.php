@@ -16,6 +16,7 @@ class SubBudgetAccounts extends Model
         'name',
         'amount',
         'budget_account_id',
+        'location_id',
         'department_id'
     ];
 
@@ -57,5 +58,10 @@ class SubBudgetAccounts extends Model
     public function department(): BelongsTo
     {
         return $this->belongsTo(Departments::class, 'department_id');
+    }
+
+    public function location(): BelongsTo
+    {
+        return $this->belongsTo(Location::class, 'location_id');
     }
 }
