@@ -111,6 +111,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                                     ->schema([
                                         Forms\Components\Select::make('item')
                                             ->label('Item / Service')
+                                            ->searchable()
                                             ->options(
                                                 \App\Models\Item::all()->pluck('name', 'id')
                                             )

@@ -9,4 +9,6 @@ use Filament\Resources\Pages\CreateRecord;
 class CreateBudgetTransactionHistory extends CreateRecord
 {
     protected static string $resource = BudgetTransactionHistoryResource::class;
+
+
 }

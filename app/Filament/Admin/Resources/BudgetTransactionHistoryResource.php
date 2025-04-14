@@ -35,11 +35,11 @@ class BudgetTransactionHistoryResource extends Resource
                     ->maxLength(255),
                 Forms\Components\TextInput::make('transaction_amount')
                     ->required()
-                    ->money('MVR', locale: 'us')
+                    ->prefix('MVR')
                     ->numeric(),
                 Forms\Components\TextInput::make('transaction_balance')
                     ->required()
-                    ->money('MVR', locale: 'us')
+                    ->prefix('MVR')
                     ->numeric(),
                 Forms\Components\Textarea::make('transaction_details')
                     ->columnSpanFull(),
@@ -112,8 +112,6 @@ class BudgetTransactionHistoryResource extends Resource
     {
         return [
             'index' => Pages\ListBudgetTransactionHistories::route('/'),
-            'create' => Pages\CreateBudgetTransactionHistory::route('/create'),
-            'edit' => Pages\EditBudgetTransactionHistory::route('/{record}/edit'),
         ];
     }
 }
