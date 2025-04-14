@@ -137,7 +137,8 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                                                     ->get()
                                                     ->mapWithKeys(function ($row) {
                                                         return [
-                                                            $row->id => $row->code . ' - ' . $row->name . ' (' . $row->department->name . ')',
+                                                            $row->id => $row->code . ' - ' . $row->name . 
+                                                                ($row->department ? ' (' . $row->department->name . ')' : ''),
                                                         ];
                                                     })
                                                     ->toArray();

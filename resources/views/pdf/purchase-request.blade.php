@@ -151,10 +151,12 @@
                             <td style="background-color: #b9b9b9; text-align:center;"><strong>Department:</strong></td>
                             <td>{{$record->user->Department->name}}</td>
                         </tr>
+                        @if($record->project->name )
                         <tr>
                             <td style="background-color: #b9b9b9; text-align:center;"><strong>Project:</strong></td>
                             <td>{{$record->project->name}}</td>
                         </tr>
+                        @endif
                         <tr>
                             <td style="background-color: #b9b9b9; text-align:center;"><strong>Location:</strong></td>
                             <td>{{$record->location->name}}</td>
