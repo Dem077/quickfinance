@@ -26,6 +26,7 @@ class PurchaseRequestDetailsRelationManager extends RelationManager
                             ->relationship('items', 'name')
                             ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests'))
                             ->required()
+                            ->searchable()
                             ->columnSpan(2),
                         Forms\Components\TextInput::make('unit')
                             ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests'))
