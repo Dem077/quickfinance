@@ -40,7 +40,7 @@
                                                 <v:textbox style="mso-fit-shape-to-text:true" inset="0,0,0,0">
                                             <![endif]-->
                                            
-                                            <p style="margin: 0 0 20px 0; font-family: Arial, sans-serif; text-align: center;">You are {{ $type ?? ''}} has been Approved @if($by)by {{$by}}@endif</p>
+                                            <p style="margin: 0 0 20px 0; font-family: Arial, sans-serif; text-align: center;">Your {{ $type ?? ''}} has been Approved @if($by)by {{$by}}@endif</p>
                                             {{-- <p style="margin: 0; font-family: Arial, sans-serif; text-align: center; color: #155724;">Status: {{ ucfirst($status) }}</p> --}}
                                             <!--[if gte mso 9]>
                                                 </v:textbox>
