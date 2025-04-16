@@ -128,7 +128,9 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                                                 'Ltr' => 'Ltr',
                                                 'Each' => 'Each',
                                                 'Bottle' => 'Bottle',
-                                                'Bags' => 'Bags,'
+                                                'Bags' => 'Bags',
+                                                'Feet' => 'Feet',
+                                                'Meter' => 'Meter',
                                             ])
                                             ->columnSpan(2),
                                         Forms\Components\Select::make('budget_account')
