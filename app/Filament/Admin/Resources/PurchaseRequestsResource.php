@@ -221,8 +221,10 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                         $record->is_closed ? 'Closed' :
                         ($record->is_approved ? 
                             ($record->uploaded_document ? 'Document Uploaded' : 'Approved') :
-                            ($record->is_canceled ? 'Canceled' :
-                                ($record->is_submited ? 'Submitted' : 'Draft')
+                            ($record->is_approved_by_hod ? 'HOD Approved' :
+                                ($record->is_canceled ? 'Canceled' :
+                                    ($record->is_submited ? 'Submitted' : 'Draft')
+                                )
                             )
                         )
                     )
@@ -232,6 +234,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                     ->color(fn ($state) => match ($state) {
                         'Closed' => 'success',
                         'Approved' => 'success',
+                        'HOD Approved' => 'info',
                         'Document Uploaded' => 'info',
                         'Canceled' => 'danger',
                         'Submitted' => 'warning',
