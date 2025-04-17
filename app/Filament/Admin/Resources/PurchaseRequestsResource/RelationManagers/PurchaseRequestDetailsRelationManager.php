@@ -24,12 +24,12 @@ class PurchaseRequestDetailsRelationManager extends RelationManager
                     ->schema([
                         Forms\Components\Select::make('item_id')
                             ->relationship('items', 'name')
-                            ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests'))
+                            ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests')|| Auth::user()->is_hod == true)
                             ->required()
                             ->searchable()
                             ->columnSpan(2),
                         Forms\Components\TextInput::make('unit')
-                            ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests'))
+                            ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests')|| Auth::user()->is_hod == true)
                             ->required()
                             ->maxLength(255)
                             ->columnSpan(2),
@@ -47,15 +47,16 @@ class PurchaseRequestDetailsRelationManager extends RelationManager
                             })
                             ->searchable()
                             ->preload()
+                            ->disabled(fn ($record) => Auth::user()->is_hod == true))
                             ->required()
                             ->columnSpan(4),
                         Forms\Components\TextInput::make('amount')
-                            ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests'))
+                            ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests')|| Auth::user()->is_hod == true)
                             ->required()
                             ->maxLength(255)
                             ->columnSpan(2),
                         Forms\Components\TextInput::make('est_cost')
-                            ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests'))
+                            ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests')|| Auth::user()->is_hod == true)
                             ->required()
                             ->numeric()
                             ->reactive()

@@ -77,30 +77,30 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                     ->maxLength(255),
                 Forms\Components\DatePicker::make('date')
                     ->native(false)
-                    ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests'))
+                    ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests')|| Auth::user()->is_hod == true)
                     ->closeOnDateSelection()
                     ->required(),
                 Forms\Components\Select::make('location_id')
                     ->relationship('location', 'name')
                     ->native(false)
-                    ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests'))
+                    ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests')|| Auth::user()->is_hod == true)
                     ->required(),
                 Forms\Components\Select::make('project_id')
                     ->relationship('project', 'name')
                     ->native(false)
-                    ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests')),
+                    ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests')|| Auth::user()->is_hod == true),
                 Forms\Components\FileUpload::make('supporting_document')
                     ->label('Supporting Document')
                     ->openable()
-                    ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests')),
+                    ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests') || Auth::user()->is_hod == true),
          
                 Forms\Components\TextInput::make('purpose')
                     ->label('Purpose / Reason')
                     ->required()
-                    ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests'))
+                    ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests')|| Auth::user()->is_hod == true)
                     ->maxLength(255),
                 Forms\Components\Hidden::make('user_id')
-                    ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests'))
+                    ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests')|| Auth::user()->is_hod == true)
                     ->default(fn () => Auth::id())
                     ->required(),
                 Section::make('Details')
@@ -288,6 +288,9 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                             !$record->is_approved_by_hod 
                         )
                         ->action(function (PurchaseRequests $record) {
+                            $record->update([
+                                'is_approved_by_hod' => True,
+                            ]);
                             $user = User::find($record->user_id);
                             Mail::to($user->email)->queue(new StatusEmail('Purchase Request '. $record->pr_no, 'approved', '','HOD'));
 
@@ -417,7 +420,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                 
 
                 Tables\Actions\EditAction::make()
-                    ->visible(fn ($record) => (! $record->is_canceled && $record->is_submited && ! $record->is_approved && $record->uploaded_document == Null &&  Auth::user()->can('approve_purchase::requests')) || (! $record->is_submited && Auth::user()->can('send_approval_purchase::requests'))),
+                    ->visible(fn ($record) => (! $record->is_canceled && $record->is_submited && ! $record->is_approved && $record->uploaded_document == Null &&  Auth::user()->can('approve_purchase::requests')) || (! $record->is_submited && Auth::user()->can('send_approval_purchase::requests'))|| (!$record->is_approved_by_hod && $record->is_submited && Auth::user()->is_hod == true)),
             ])
             ->recordUrl(false)
             ->bulkActions([
