@@ -53,7 +53,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
     {
         if (Auth::user()->can('approve_purchase::requests')) {
             return parent::getEloquentQuery()->where('is_submited', true);
-        } else if (Auth::user()->is_hod) {
+        } else if (Auth::user()->is_hod == true) {
             return parent::getEloquentQuery()
             ->where(function ($query) {
                 $query->where('user_id', Auth::id())
