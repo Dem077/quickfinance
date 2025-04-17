@@ -21,6 +21,7 @@ return new class extends Migration
             $table->foreignId('is_closed_by')->nullable()->constrained('users');
             $table->boolean('is_submited')->default(false);
             $table->boolean('is_approved')->default(false);
+            $table->boolean('is_approved_by_hod')->default(false);
             $table->foreignId('approved_canceled_by')->nullable()->constrained('users');
             $table->boolean('is_canceled')->default(false);
             $table->text('cancel_remark')->nullable();

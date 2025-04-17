@@ -57,7 +57,9 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
             return parent::getEloquentQuery()
             ->where(function ($query) {
                 $query->where('user_id', Auth::id())
-                      ->orWhere('location_id', Auth::user()->location_id);
+                      ->orWhereHas('user', function ($subQuery) {
+                          $subQuery->where('department_id', Auth::user()->department_id);
+                      });
             });
         } else {
             return parent::getEloquentQuery();
@@ -273,6 +275,24 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                                 ->success()
                                 ->send();
                         }),
+                    Tables\Actions\Action::make('approve_purchase_request_hod')
+                        ->label('Approve')
+                        ->icon('heroicon-o-check-circle')
+                        ->color('success')
+                        ->visible(fn ($record) => $record->is_submited &&
+                            ! $record->is_canceled &&
+                            ! $record->is_approved &&
+                            !$record->is_approved_by_hod 
+                        )
+                        ->action(function (PurchaseRequests $record) {
+                            $user = User::find($record->user_id);
+                            Mail::to($user->email)->queue(new StatusEmail('Purchase Request '. $record->pr_no, 'approved', '','HOD'));
+
+                            Notification::make()
+                                ->title('PR Approved successfully')
+                                ->success()
+                                ->send();
+                        }),
                     Tables\Actions\Action::make('approve_purchase_request')
                         ->label('Approve')
                         ->icon('heroicon-o-check-circle')
@@ -280,6 +300,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                         ->visible(fn ($record) => $record->is_submited &&
                             ! $record->is_canceled &&
                             ! $record->is_approved &&
+                            $record->is_approved_by_hod &&
                             Auth::user()->can('approve_purchase::requests')
                         )
                         ->action(function (PurchaseRequests $record) {
