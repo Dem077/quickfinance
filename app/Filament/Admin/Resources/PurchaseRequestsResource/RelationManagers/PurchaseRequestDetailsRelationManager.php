@@ -47,7 +47,7 @@ class PurchaseRequestDetailsRelationManager extends RelationManager
                             })
                             ->searchable()
                             ->preload()
-                            ->disabled(fn ($record) => Auth::user()->is_hod == true))
+                            ->disabled(fn ($record) => Auth::user()->is_hod == true)
                             ->required()
                             ->columnSpan(4),
                         Forms\Components\TextInput::make('amount')
