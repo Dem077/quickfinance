@@ -61,7 +61,10 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                           $subQuery->where('department_id', Auth::user()->department_id);
                       })->where('is_submited', true);
             });
-        } else {
+        }else if (Auth::user()->can('send_approval_purchase::requests')) {
+            return parent::getEloquentQuery()
+                ->where('user_id', Auth::id());
+        }  else {
             return parent::getEloquentQuery();
         }
         
