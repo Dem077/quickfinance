@@ -240,14 +240,14 @@
             <tbody>
                 <tr>
                     <td style="padding: 0%; text-align:center; width:25%;  height:30px; border-right: 1px solid #000"><strong>{{$record->user->name ?? 'N/A'}}</strong></td>
-                    <td style="padding: 0%; text-align:center; width:25%;  height:30px; border-right: 1px solid #000"><strong>{{$record->user->hodof[0]->user->name?? 'N/A'}}</strong></td>
+                    <td style="padding: 0%; text-align:center; width:25%;  height:30px; border-right: 1px solid #000"><strong>{{$record->department->user->user->name?? 'N/A'}}</strong></td>
                     <td style="padding: 0%; text-align:center; width:25%;  height:30px; border-right: 1px solid #000"><strong>{{$record->VerifiedBy->name?? 'N/A'}}</strong></td>
                     <td style="padding: 0%; text-align:center; width:25%;  height:30px;"><strong>{{$record->ApprovedBy->name?? 'N/A'}}</strong></td>
 
                 </tr>
                 <tr>
                     <td style="padding: 0%; text-align:center; height:30px; width:25%; border-right: 1px solid #000">{{$record->user->designation?? 'N/A'}}</td>
-                    <td style="padding: 0%; text-align:center; height:30px; width:25%; border-right: 1px solid #000">{{$record->user->hodof[0]->user->designation?? 'N/A'}}</td>
+                    <td style="padding: 0%; text-align:center; height:30px; width:25%; border-right: 1px solid #000">{{$record->user->department->user->designation?? 'N/A'}}</td>
                     <td style="padding: 0%; text-align:center; height:30px; width:25%; border-right: 1px solid #000">{{$record->VerifiedBy->designation?? 'N/A'}}</td>
                     <td style="padding: 0%; text-align:center; height:30px; width:25%;">{{$record->VerifiedBy->designation?? 'N/A'}}</td>
 

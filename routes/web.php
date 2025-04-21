@@ -70,7 +70,7 @@ Route::get('adv-form/{record}/download', function (PurchaseOrders $record) {
     
     $record=AdvanceForm::where('id', $record->advance_form_id)->first();
     // dd($record);
-    $record->load(['user','vendor', 'purchaseOrder', 'user.hodof.user']);
+    $record->load(['user','vendor', 'purchaseOrder', 'department.user']);
 //    dd($record->user->hodof[0]->user);
     $html = view('pdf.purchase-order-advance-form' , ['record' => $record ])->render();
     $mpdf->WriteHTML($html);
