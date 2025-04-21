@@ -213,7 +213,7 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                         $record->update([
                             'status' => PettyCashStatus::Submitted
                         ]);
-                        $useremail = $record->user->hodof[0]->user->email;
+                        $useremail = $record->user->department->user->email;
 
                         Mail::to($useremail)->queue(new NotificationEmail('Petty Cash Request '. $record->id));
                     }),
