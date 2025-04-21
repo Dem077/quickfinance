@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
@@ -28,10 +29,15 @@ class Departments extends Model
         return $this->hasMany(PurchaseRequests::class, 'department_id');
     }
 
-    public function hodfromusers():HasMany
+    public function user(): BelongsTo
     {
-        return $this->hasMany(User::class,  'hod_of' );
+        return $this->belongsTo(User::class, 'hod');
     }
+
+    // public function hodfromusers():HasMany
+    // {
+    //     return $this->hasMany(User::class,  'hod_of' );
+    // }
 
     public function subBudgetAccounts()
     {

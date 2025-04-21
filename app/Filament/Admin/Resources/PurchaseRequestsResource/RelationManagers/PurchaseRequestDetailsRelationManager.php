@@ -41,13 +41,12 @@ class PurchaseRequestDetailsRelationManager extends RelationManager
                                     ->mapWithKeys(function ($row) {
                                         return [
                                             
-                                            $row->id => $row->code . ' - ' . $row->name . ' (' . $row->department->name . ')',
+                                            $row->id => $row->code . ' - ' . $row->name . ' (' . $row->department->name . ' / '.$row->location->name.')',
                                         ];
                                     })
                                     ->toArray();
                             })
                             ->searchable()
-                            ->preload()
                             ->disabled(fn ($record) =>  Auth::user()->is_hod == true && !Auth::user()->can('send_approval_purchase::requests') && !Auth::user()->can('approve_purchase::requests') )
                             ->required()
                             ->columnSpan(4),

@@ -74,8 +74,6 @@ class DatabaseSeeder extends Seeder
             'email_verified_at' => now(),
             'bank_account_name' => null,
             'bank_account_no' => null,
-            'hod_of' => null,
-            'is_hod' => false,
             'designation' => "IT Admin",
             'department_id' => Departments::first()->id,
             'location_id' => Location::inRandomOrder()->first()->id,

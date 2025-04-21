@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Resources;
 
 use App\Filament\Admin\Resources\UserResource\Pages;
+use App\Filament\Admin\Resources\UserResource\RelationManagers\HodofRelationManager;
 use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -84,16 +85,16 @@ class UserResource extends Resource
                             ->visible(fn (Get $get): bool => $get('pettycashassigned') === 'Yes' || ['edit'] && ($get('bank_account_name') !== null)),
                         Forms\Components\TextInput::make('bank_account_no')
                             ->visible(fn (Get $get): bool => $get('pettycashassigned') === 'Yes'||  ['edit'] && ($get('bank_account_no') !== null)),
-                        Forms\Components\Radio::make('is_hod')
-                            ->label('Head of Department')
-                            ->options([
-                                true => 'Yes',
-                                false => 'No',
-                            ])
-                            ->inline()
-                            ->inlineLabel(false)
-                            ->live()
-                            ->required(),
+                        // Forms\Components\Radio::make('is_hod')
+                        //     ->label('Head of Department')
+                        //     ->options([
+                        //         true => 'Yes',
+                        //         false => 'No',
+                        //     ])
+                        //     ->inline()
+                        //     ->inlineLabel(false)
+                        //     ->live()
+                        //     ->required(),
                         
                         Forms\Components\FileUpload::make('avatar_url')
                             ->label('Avatar')
@@ -189,7 +190,7 @@ class UserResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            HodofRelationManager::class,
         ];
     }
 

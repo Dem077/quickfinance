@@ -51,25 +51,25 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
 
     public static function getEloquentQuery(): Builder
     {
-        if (Auth::user()->can('approve_purchase::requests')) {
-            return parent::getEloquentQuery()->where('status', PurchaseRequestsStatus::HODApproved->value)->orWhere('status', PurchaseRequestsStatus::Approved->value)->orWhere('status', PurchaseRequestsStatus::DocumentUploaded->value)->orWhere('status', PurchaseRequestsStatus::Closed->value)->orWhere('status', PurchaseRequestsStatus::Canceled->value);
-        } else if (Auth::user()->is_hod == true) {
-            return parent::getEloquentQuery()
-            ->where(function ($query) {
-                $query->where('user_id', Auth::id())
-                      ->orWhereHas('user', function ($subQuery) {
-                          $subQuery->where('department_id', Auth::user()->department_id);
-                      })->where('status', PurchaseRequestsStatus::Submitted->value)->orwhere('status', PurchaseRequestsStatus::HODApproved->value);
-            });
-        }else if (Auth::user()->can('send_approval_purchase::requests')) {
-            return parent::getEloquentQuery()
-            ->where('user_id', Auth::id());
-        }else if (Auth::user()->hasRole('super_admin')) {
-            return parent::getEloquentQuery();
-        }  else {
-            return parent::getEloquentQuery()->where('user_id', Auth::id())->orWhere('uploaded_document', true);
+        if (Auth::user()->hasRole('super_admin')) {
+            return parent::getEloquentQuery(); // Super admin sees all records
         }
-        
+    
+        if (Auth::user()->can('approve_purchase::requests')) {
+            return parent::getEloquentQuery()->whereNot('status', PurchaseRequestsStatus::Draft->value);
+        }
+    
+        if (Auth::user()->is_hod) {
+            return parent::getEloquentQuery()
+                ->where(function ($query) {
+                    $query->where('user_id', Auth::id())
+                          ->orWhereHas('user', function ($subQuery) {
+                              $subQuery->where('department_id', Auth::user()->department_id);
+                          });
+                });
+        }
+    
+        return parent::getEloquentQuery()->where('user_id', Auth::id());
     }
 
     public static function form(Form $form): Form
@@ -127,6 +127,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                                             ->columnSpan(2),
                                         Forms\Components\Select::make('unit')
                                             ->required()
+                                            ->searchable()
                                             ->native(false)
                                             ->options([
                                                 'Kg' => 'Kg',
@@ -148,13 +149,12 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                                                     ->mapWithKeys(function ($row) {
                                                         return [
                                                             $row->id => $row->code . ' - ' . $row->name . 
-                                                                ($row->department ? ' (' . $row->department->name . ')' : ''),
+                                                                ($row->department ? ' (' . $row->department->name . ' / '.$row->location->name.')' : ''),
                                                         ];
                                                     })
                                                     ->toArray();
                                             })
                                             ->searchable()
-                                            ->preload()
                                             ->required()
                                             ->columnSpan(2),
                                         Forms\Components\TextInput::make('amount')
@@ -267,7 +267,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                         )
                         ->action(function (PurchaseRequests $record , User $user) {
                             $record->update([
-                                'status' => PurchaseRequestsStatus::Submitted,
+                                'status' => PurchaseRequestsStatus::Submitted->value,
                                 // 'is_submited' => true,
                             ]);
                             $approvalusers = $user->where('is_hod', true)->where('department_id', Auth::user()->department_id)->get();
@@ -290,7 +290,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                         ->action(function (PurchaseRequests $record) {
                             $record->update([
                                 'approved_by_hod' => Auth::id(),
-                                'status' => PurchaseRequestsStatus::HODApproved,
+                                'status' => PurchaseRequestsStatus::HODApproved->value,
                             ]);
                             $user = User::find($record->user_id);
                             Mail::to($user->email)->queue(new StatusEmail('Purchase Request '. $record->pr_no, 'approved', '','HOD'));
@@ -310,7 +310,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                             $record->update([
                                 'is_approved_by_hod' => True,
                                 'approved_by_hod' => Auth::id(),//Actually to record who rejected
-                                'status' => PurchaseRequestsStatus::HODRejected,
+                                'status' => PurchaseRequestsStatus::HODRejected->value,
                             ]);
                             $user = User::find($record->user_id);
                             Mail::to($user->email)->queue(new StatusEmail('Purchase Request '. $record->pr_no, 'rejected', '','HOD'));
@@ -331,7 +331,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                         )
                         ->action(function (PurchaseRequests $record) {
                             $record->update([
-                                'status' => PurchaseRequestsStatus::Approved,
+                                'status' => PurchaseRequestsStatus::Approved->value,
                                 'approved_canceled_by' => Auth::id(),
                             ]);
                             $user = User::find($record->user_id);
@@ -357,7 +357,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                         )
                         ->action(function (PurchaseRequests $record, array $data) {
                             $record->update([
-                                'status' => PurchaseRequestsStatus::Canceled,
+                                'status' => PurchaseRequestsStatus::Canceled->value,
                                 // 'is_canceled' => true,
                                 'cancel_remark' => $data['cancel_remark'],
                                 'approved_canceled_by' => Auth::id(),
@@ -381,14 +381,14 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                         ->action(function (PurchaseRequests $record) {
                           
                             $record->update([
-                                'status' => PurchaseRequestsStatus::Closed,
+                                'status' => PurchaseRequestsStatus::Closed->value,
                                 'is_closed_by' => Auth::id(),
                             ]);
                             $po = PurchaseOrders::where('is_closed', false)->where('pr_id', $record->id)->get();
                             if(!$po){
                                 foreach($po as $p){
                                     $p->update([
-                                        'status' => PurchaseOrderStatus::Closed,
+                                        'status' => PurchaseOrderStatus::Closed->value,
                                         'is_closed' => true,
                                         'is_closed_by' => Auth::id(),
                                     ]);
@@ -412,7 +412,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                         ])
                         ->action(function (PurchaseRequests $record, array $data) {
                             $record->update([
-                                'status' => PurchaseRequestsStatus::DocumentUploaded,
+                                'status' => PurchaseRequestsStatus::DocumentUploaded->value,
                                 'uploaded_document' => $data['uploaded_document'],
                             ]);
                             Notification::make()

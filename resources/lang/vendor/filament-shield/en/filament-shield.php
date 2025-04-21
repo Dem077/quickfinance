@@ -79,9 +79,10 @@ return [
         'reorder' => 'Reorder',
         'restore_any' => 'Restore Any',
         'replicate' => 'Replicate',
-        'approve' => 'Approve Purchase Requests',
+        'approve' => 'Finance Approve Purchase Requests',
         'send_approval' => 'Send for Approval',
         'pv_approve' => 'Approve and Add PV',
         'fin_hod_approve' => 'Finance HOD Approval',
+        'generate_advance_form' => 'Generate Advance Form',
     ],
 ];

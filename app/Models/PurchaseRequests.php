@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\PurchaseRequestsStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -85,7 +86,7 @@ class PurchaseRequests extends Model
         
         if ($totalDetails === $utilizedDetails) {
             $purchaseRequest->update([
-                'is_closed' => true,
+                'status' => PurchaseRequestsStatus::Closed->value,
                 'is_closed_by' => 1,
             ]);
         }

@@ -29,6 +29,7 @@ return new class extends Migration
                 'submitted',
                 'closed',
                 'reimbursed',
+                'reimbursement_pending',
                 'draft'
             ])->default('draft')->after('id');
         });

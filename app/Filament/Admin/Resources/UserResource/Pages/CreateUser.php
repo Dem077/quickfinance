@@ -16,15 +16,15 @@ class CreateUser extends CreateRecord
 
     protected function afterCreate(): void
     {
-        if ($this->record->is_hod == true) {
-            $this->record->update([
-                'hod_of' => $this->record->department_id,
-            ]);
-        }
-        else {
-            $this->record->update([
-                'hod_of' => null,
-            ]);
-        }
+        // if ($this->record->is_hod == true) {
+        //     $this->record->update([
+        //         'hod_of' => $this->record->department_id,
+        //     ]);
+        // }
+        // else {
+        //     $this->record->update([
+        //         'hod_of' => null,
+        //     ]);
+        // }
     }
 }

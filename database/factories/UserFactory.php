@@ -32,8 +32,6 @@ class UserFactory extends Factory
             'avatar_url' => fake()->imageUrl(),
             'bank_account_name' => fake()->name(),
             'bank_account_no' => fake()->bankAccountNumber(),
-            'hod_of' => null,
-            'is_hod' => false,
             'designation' => fake()->jobTitle(),
             'department_id' => Departments::inRandomOrder()->first()->id,
             'location_id' => Location::inRandomOrder()->first()->id,

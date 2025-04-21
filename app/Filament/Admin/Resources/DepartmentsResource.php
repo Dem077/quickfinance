@@ -35,18 +35,7 @@ class DepartmentsResource extends Resource
                 //     ->helperText('Full name of the Head of Department')
                 //     ->required()
                 //     ->maxLength(255),
-                Forms\Components\TextInput::make('hod_of')
-                ->label('Assigned Heads of Department')
-                ->helperText('Please Assign HODs from User Settings')
-                ->placeholder(function (Departments $department): ?string {
-                    $department->load('hodfromusers'); // Load the related HODs
-                    if ($department->hodfromusers->isNotEmpty()) {
-                        // Join all HOD names into a comma-separated string
-                        return $department->hodfromusers->pluck('name')->join(', ');
-                    }
-                    return 'No HODs assigned';
-                })
-                ->disabled(),
+               
                 // Forms\Components\TextInput::make('hod_designation')
                 //     ->label('HOD Designation')
                 //     ->helperText('Designation of the Head of Department')
@@ -61,7 +50,7 @@ class DepartmentsResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('hodfromusers.name')
+                Tables\Columns\TextColumn::make('user.name')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()

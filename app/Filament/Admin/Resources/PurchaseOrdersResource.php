@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Resources;
 
 use App\Enums\PurchaseOrderStatus;
+use App\Enums\PurchaseRequestsStatus;
 use App\Filament\Admin\Resources\PurchaseOrdersResource\Pages;
 use App\Filament\Admin\Resources\PurchaseOrdersResource\RelationManagers;
 use App\Models\AdvanceForm;
@@ -75,7 +76,7 @@ class PurchaseOrdersResource extends Resource
                     ->required(),
                 Forms\Components\Select::make('pr_id')
                     ->relationship('purchaseRequest', 'pr_no', function ($query) {
-                        return $query->whereNotNull('uploaded_document')->where('is_closed', false);
+                        return $query->whereNotNull('uploaded_document')->wherenot('status', PurchaseRequestsStatus::Closed->value);
                     })
                     ->preload()
                     ->live()
@@ -261,8 +262,10 @@ class PurchaseOrdersResource extends Resource
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')
                     ->getStateUsing(fn ($record) => 
-                        ($record->is_closed ? 'Closed' :
-                        ($record->is_submitted ? 'Submitted' : 'Draft'))
+                    $record->status === PurchaseOrderStatus::Submitted->value ? 'Submitted' : 
+                    ($record->status === PurchaseOrderStatus::Reimbursed->value ? 'Reimbursed' : 
+                    ($record->status === PurchaseOrderStatus::Closed->value ? 'Closed' :
+                    ($record->status === PurchaseOrderStatus::WaitingReimbursement->value ? 'Pending Reimbursement' :'Draft') ))
                     )
                     ->sortable()
                     ->searchable()
@@ -271,6 +274,7 @@ class PurchaseOrdersResource extends Resource
                         'Closed' => 'danger',
                         'Submitted' => 'warning',
                         'Draft' => 'gray',
+                        'Reimbursment Pending' => 'warning',
                         default => 'primary',
                     }),
                 Tables\Columns\TextColumn::make('created_at')
@@ -287,28 +291,35 @@ class PurchaseOrdersResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make()
-                    ->visible(fn ($record) => ($record->is_closed == false && $record->is_submitted == false && Auth::user()->can('send_approval_purchase::requests'))),
+                    ->visible(fn ($record) => ($record->status == PurchaseOrderStatus::Draft->value && Auth::user()->can('create_purchase::orders'))),
                 Tables\Actions\Action::make('view_advance_form')
                     ->label('View Advance Form')
                     ->icon('heroicon-o-eye')
                     ->visible(fn ($record): bool => !empty($record->advance_form_id))
                     ->url(fn ($record): string => route('purchase-orders.advance-form.download', $record->advance_form_id))
                     ->openUrlInNewTab(),
-                Tables\Actions\Action::make('approve_purchase_close')
+                Tables\Actions\Action::make('purchase_order_close')
                     ->label('Close')
                     ->icon('heroicon-o-check-circle')
                     ->color('danger')
                     ->requiresConfirmation()
                     ->modalDescription('Are you sure you want to close this PR? This action cannot be undone.')
-                    ->visible(fn ($record) => $record->is_submitted && !$record->is_closed &&
-                        Auth::user()->can('approve_purchase::requests') || $record->is_submitted && !$record->is_closed && $record->supporting_document  && $record->payment_method == 'petty_cash' && Auth::user()->can('send_approval_purchase::requests')
+                    ->visible(fn ($record) => $record->status == PurchaseOrderStatus::Submitted->value && Auth::user()->can('approve_purchase::requests') 
+                    || $record->status == PurchaseOrderStatus::Submitted->value  && $record->payment_method == 'petty_cash' && Auth::user()->can('create_purchase::orders')
                     )
                     ->action(function (PurchaseOrders $record) {
-                        $record->update([
-                            'status' => PurchaseOrderStatus::Closed,
-                            'is_closed' => true,
-                            'is_closed_by' => Auth::id(),
-                        ]);
+                        if($record->payment_method == 'petty_cash'){
+                            $record->update([
+                                'status' => PurchaseOrderStatus::WaitingReimbursement->value,
+                                'is_closed_by' => Auth::id(),
+                            ]);
+                        }else{
+                            $record->update([
+                                'status' => PurchaseOrderStatus::Closed->value,
+                                'is_closed_by' => Auth::id(),
+                            ]);
+                        }
+                        
                         if($record->payment_method == 'purchase_order'){
                             
                             foreach($record->purchaseOrderDetails as $detail){
@@ -329,16 +340,16 @@ class PurchaseOrdersResource extends Resource
                             ->success()
                             ->send();
                     }),
-                Tables\Actions\Action::make('approve_purchase_submit')
+                Tables\Actions\Action::make('purchase_order_submit')
                     ->label('Submit')
                     ->icon('heroicon-o-paper-airplane')
                     ->color('warning')
-                    ->visible(fn ($record) => !$record->is_submitted && !$record->is_closed &&
-                        Auth::user()->can('send_approval_purchase::requests' ) && $record->payment_method == 'purchase_order' || !$record->is_submitted && !$record->is_closed && $record->supporting_document  && $record->payment_method == 'petty_cash' && Auth::user()->can('send_approval_purchase::requests')
+                    ->visible(fn ($record) => $record->status == PurchaseOrderStatus::Draft->value &&
+                        Auth::user()->can('create_purchase::orders' ) 
                     )
                     ->action(function (PurchaseOrders $record) {
                         $record->update([
-                            'status' => PurchaseOrderStatus::Submitted,
+                            'status' => PurchaseOrderStatus::Submitted->value,
                             'is_submitted' => true,
                         ]);
                         foreach ($record->purchaseOrderDetails as $detail) {
@@ -355,15 +366,16 @@ class PurchaseOrdersResource extends Resource
                             ->success()
                             ->send();
                 }),
-                Tables\Actions\Action::make('generate_advance_form')
-                    ->label('Generate Advance Form')
+                Tables\Actions\Action::make('regenerate_advance_form')
+                    ->label('Regenerate Advance Form')
                     ->icon('heroicon-o-document')
-                    ->color('info')
+                    ->color('warning')
+                    ->requiresConfirmation()
                     ->modalHeading('Advance Form Details')
                     ->modalSubheading('Please fill in the required fields')
                     ->modalButton('Generate')
-                    ->visible(fn ($record) => !$record->advance_form_id && $record->is_advance_form_required && $record->is_submitted && !$record->is_closed && $record->payment_method == 'purchase_order' &&
-                        Auth::user()->can('send_approval_purchase::requests')
+                    ->visible(fn ($record) => $record->advance_form_id && $record->is_advance_form_required && $record->status == PurchaseOrderStatus::Submitted->value && $record->payment_method == 'purchase_order' &&
+                        Auth::user()->can('create_purchase::orders')
                     )
                     ->form([
                         Forms\Components\TextInput::make('qoation_no')
@@ -377,43 +389,81 @@ class PurchaseOrdersResource extends Resource
                             ->numeric()
                             ->suffix('%')
                             ->required(),
-                        // Add additional fields as needed
                     ])
                     ->action(function (array $data, PurchaseOrders $record) {
 
-                        $count = 1125 + 1;
-
-                        do {
-                            $request_number = sprintf('LADV/PROC/%04d', $count);
-                            $exists = AdvanceForm::where('request_number', $request_number)->exists();
-                            if ($exists) {
-                                $count++;
-                            }
-                        } while ($exists);
+                       
 
                         // Create the Advance Form record with user inputs
-                        $advanceForm = $record->advanceForm()->create([
+                        $advanceForm = $record->advanceForm()->update([
                             'qoation_no' => $data['qoation_no'],
                             'expected_delivery' => $data['expected_delivery'],
                             'advance_percentage' => ($data['advance_amount']),
                             'advance_amount' => (($data['advance_amount']/100)*$record->purchaseOrderDetails()->sum('amount')),
-                            'request_number' => $request_number,
-                            'vendors_id' => $record->vendor_id,
                             'balance_amount' => $record->purchaseOrderDetails()->sum('amount') - ($data['advance_amount']/100)*$record->purchaseOrderDetails()->sum('amount'),
                             'generated_by' => Auth::id(),
-                        ]);
-                        $record->update([
-                            'advance_form_id' => $advanceForm->id,
                         ]);
 
                         // Redirect to the route that generates the PDF with the advance form data
                         return redirect()->route('purchase-orders.advance-form.download', $record->advance_form_id);
                            
                     }),
-                Tables\Actions\Action::make('upload_document')
+                    Tables\Actions\Action::make('generate_advance_form')
+                        ->label('Generate Advance Form')
+                        ->icon('heroicon-o-document')
+                        ->color('info')
+                        ->modalHeading('Advance Form Details')
+                        ->visible(fn ($record) => !$record->advance_form_id && $record->is_advance_form_required && $record->status == PurchaseOrderStatus::Submitted->value && $record->payment_method == 'purchase_order' && Auth::user()->can('create_purchase::orders')
+                        )
+                        ->form([
+                            Forms\Components\TextInput::make('qoation_no')
+                                ->label('Qoaution No')
+                                ->required(),
+                            Forms\Components\TextInput::make('expected_delivery')
+                                ->label('Expected Delivery In Days')
+                                ->required(),
+                            Forms\Components\TextInput::make('advance_amount')
+                                ->label('Advance Amount %')
+                                ->numeric()
+                                ->suffix('%')
+                                ->required(),
+                        ])
+                        ->action(function (array $data, PurchaseOrders $record) {
+
+                            $count = 1125 + 1;
+
+                            do {
+                                $request_number = sprintf('LADV/PROC/%04d', $count);
+                                $exists = AdvanceForm::where('request_number', $request_number)->exists();
+                                if ($exists) {
+                                    $count++;
+                                }
+                            } while ($exists);
+
+                            // Create the Advance Form record with user inputs
+                            $advanceForm = $record->advanceForm()->create([
+                                'qoation_no' => $data['qoation_no'],
+                                'expected_delivery' => $data['expected_delivery'],
+                                'advance_percentage' => ($data['advance_amount']),
+                                'advance_amount' => (($data['advance_amount']/100)*$record->purchaseOrderDetails()->sum('amount')),
+                                'request_number' => $request_number,
+                                'vendors_id' => $record->vendor_id,
+                                'balance_amount' => $record->purchaseOrderDetails()->sum('amount') - ($data['advance_amount']/100)*$record->purchaseOrderDetails()->sum('amount'),
+                                'generated_by' => Auth::id(),
+                            ]);
+                            $record->update([
+                                'advance_form_id' => $advanceForm->id,
+                            ]);
+
+                            // Redirect to the route that generates the PDF with the advance form data
+                            return redirect()->route('purchase-orders.advance-form.download', $record->advance_form_id);
+                            
+                        }),
+
+                Tables\Actions\Action::make('upload_supporting_document')
                     ->label('Upload Support')
                     ->icon('heroicon-o-document')
-                    ->visible(fn ($record) => $record->payment_method == 'petty_cash' && !$record->supporting_document && Auth::user()->can('send_approval_purchase::requests'))
+                    ->visible(fn ($record) => $record->payment_method == 'petty_cash' && !$record->supporting_document && Auth::user()->can('create_purchase::orders') && !$record->status == PurchaseOrderStatus::Closed->value)
                     ->form([
                         Forms\Components\FileUpload::make('supporting_document')
                             ->label('Document')
@@ -428,7 +478,7 @@ class PurchaseOrdersResource extends Resource
                             ->success()
                             ->send();
                     }), 
-                Tables\Actions\Action::make('supporting_document')
+                Tables\Actions\Action::make('view_supporting_document')
                     ->label('View Document')
                     ->icon('heroicon-o-eye')
                     ->visible(fn ($record) => $record->supporting_document)

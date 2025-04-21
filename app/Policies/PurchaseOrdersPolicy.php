@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\PurchaseOrderStatus;
 use App\Models\User;
 use App\Models\PurchaseOrders;
 use Illuminate\Auth\Access\HandlesAuthorization;
@@ -9,6 +10,11 @@ use Illuminate\Auth\Access\HandlesAuthorization;
 class PurchaseOrdersPolicy
 {
     use HandlesAuthorization;
+
+    public function generate_advance_form(User $user): bool
+    {
+        return $user->can('generate_advance_form_purchase::orders');
+    }
 
     /**
      * Determine whether the user can view any models.
@@ -39,7 +45,7 @@ class PurchaseOrdersPolicy
      */
     public function update(User $user, PurchaseOrders $purchaseOrders): bool
     { 
-        if(!$purchaseOrders->is_submitted && !$purchaseOrders->is_closed && $user->can('update_purchase::orders')){
+        if(!$purchaseOrders->status == PurchaseOrderStatus::Draft->value && $user->can('update_purchase::orders')){
             return true;
         }
          return false;
