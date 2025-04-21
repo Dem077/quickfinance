@@ -24,22 +24,22 @@ class EditUser extends EditRecord
 
     protected function beforeSave(): void
     {
-        if (($this->data['is_hod'] ?? false) == true) {
-            $duplicate = \App\Models\User::where('hod_of', $this->data['department_id'])
-                ->where('id', '<>', $this->record->id)
-                ->exists();
+        // if (($this->data['is_hod'] ?? false) == true) {
+        //     $duplicate = \App\Models\User::where('hod_of', $this->data['department_id'])
+        //         ->where('id', '<>', $this->record->id)
+        //         ->exists();
     
-            if ($duplicate) {
-                \Filament\Notifications\Notification::make()
-                    ->title('HOD already assigned for this department')
-                    ->danger()
-                    ->send();
+        //     if ($duplicate) {
+        //         \Filament\Notifications\Notification::make()
+        //             ->title('HOD already assigned for this department')
+        //             ->danger()
+        //             ->send();
     
-                throw \Illuminate\Validation\ValidationException::withMessages([
-                    'is_hod' => 'HOD already assigned for this department.',
-                ]);
-            }
-        }
+        //         throw \Illuminate\Validation\ValidationException::withMessages([
+        //             'is_hod' => 'HOD already assigned for this department.',
+        //         ]);
+        //     }
+        // }
     }
 
     protected function afterSave(): void

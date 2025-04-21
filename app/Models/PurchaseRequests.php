@@ -24,6 +24,7 @@ class PurchaseRequests extends Model
         'is_closed',
         'is_closed_by',
         'status',
+        'approved_by_hod',
         'supporting_document',
     ];
 
@@ -57,6 +58,11 @@ class PurchaseRequests extends Model
     {
         return $this->belongsTo(Item::class);
     }
+
+    public function hodapprovedby(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by_hod');
+    }   
 
     public static function checkAndUpdateClosedStatus($id)
     {

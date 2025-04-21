@@ -3,11 +3,13 @@
 namespace App\Filament\Admin\Resources;
 
 use App\Filament\Admin\Resources\DepartmentsResource\Pages;
+use App\Filament\Admin\Resources\DepartmentsResource\RelationManagers\HodfromusersRelationManager;
 use App\Models\Departments;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Actions\AssociateAction;
 use Filament\Tables\Table;
 
 class DepartmentsResource extends Resource
@@ -34,16 +36,17 @@ class DepartmentsResource extends Resource
                 //     ->required()
                 //     ->maxLength(255),
                 Forms\Components\TextInput::make('hod_of')
-                    ->label('Assigned Head of Department')
-                    ->helperText('Please Assign HOD from User Settings')
-                    ->placeholder(function (Departments $department): ?string {
-                        $department->load('hodfromusers');
-                        if ($department->hodfromusers) {
-                            return (string) $department->hodfromusers->name;
-                        }
-                        return null;
-                    })
-                    ->disabled(),
+                ->label('Assigned Heads of Department')
+                ->helperText('Please Assign HODs from User Settings')
+                ->placeholder(function (Departments $department): ?string {
+                    $department->load('hodfromusers'); // Load the related HODs
+                    if ($department->hodfromusers->isNotEmpty()) {
+                        // Join all HOD names into a comma-separated string
+                        return $department->hodfromusers->pluck('name')->join(', ');
+                    }
+                    return 'No HODs assigned';
+                })
+                ->disabled(),
                 // Forms\Components\TextInput::make('hod_designation')
                 //     ->label('HOD Designation')
                 //     ->helperText('Designation of the Head of Department')
@@ -85,7 +88,6 @@ class DepartmentsResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
         ];
     }
 

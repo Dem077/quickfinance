@@ -43,6 +43,19 @@ class PurchaseOrdersResource extends Resource
     protected static ?string $navigationLabel = 'Procure';
 
     protected static ?string $slug = 'procure';
+
+    public static function getPermissionPrefixes(): array
+    {
+        return [
+            'view',
+            'view_any',
+            'create',
+            'update',
+            'delete',
+            'delete_any',
+            'generate_advance_form',
+        ];
+    }
     
 
     public static function form(Form $form): Form

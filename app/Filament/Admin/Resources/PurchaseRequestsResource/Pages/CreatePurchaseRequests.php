@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources\PurchaseRequestsResource\Pages;
 
+use App\Enums\PurchaseRequestsStatus;
 use App\Filament\Admin\Resources\PurchaseRequestsResource;
 use App\Models\PurchaseRequestDetails;
 use App\Models\PurchaseRequests;
@@ -40,6 +41,7 @@ class CreatePurchaseRequests extends CreateRecord
                 'unit' => $detail['unit'],
                 'budget_account_id' => $detail['budget_account'],
                 'amount' => $detail['amount'],
+                'status' => PurchaseRequestsStatus::Draft->value,
                 'est_cost' => $detail['est_cost'],
             ]);
         }

@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\PurchaseRequestsStatus;
 use App\Models\AdvanceForm;
 use App\Models\PettyCashReimbursment;
 use App\Models\PurchaseOrders;
@@ -26,14 +27,14 @@ Route::get('/', function () {
 });
 Route::get('pr/{record}/preview', function ( PurchaseRequests $record ) {
     // Check if document is approved
-    if (!$record->is_approved) {
+    if (!$record->status == PurchaseRequestsStatus::Approved->value) {
         abort(403, 'Access denied. Document is not approved.');
     } 
     if( !$record->uploaded_document == null ) {
         abort(403, 'Access denied. Document is already signed and uploaded.');
     }
 
-    $record->load(['project','location', 'user' , 'approvedby']);
+    $record->load(['project','location', 'user' , 'approvedby' , 'hodapprovedby']);
 
     $items = $record->purchaseRequestDetails()->with('item')->get();
 
