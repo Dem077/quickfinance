@@ -101,7 +101,9 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                                                     ->get()
                                                     ->mapWithKeys(function ($row) {
                                                         return [
-                                                            $row->id => $row->code . ' - ' . $row->name . ' (' . $row->department->name .' / '.$row->location->name. ')',
+                                                            $row->id => $row->code . ' - ' . $row->name . 
+                                                                ($row->department ? ' (' . $row->department->name . 
+                                                                (isset($row->location) ? ' / ' . $row->location->name : '') . ')' : ''),
                                                         ];
                                                     })
                                                     ->toArray();
