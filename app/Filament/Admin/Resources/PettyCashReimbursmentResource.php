@@ -96,6 +96,7 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                                             ->columnSpan(2)
                                             ->required(),
                                         Forms\Components\Select::make('sub_budget_id')
+                                            ->searchable()
                                             ->options(function () {
                                                 return \App\Models\SubBudgetAccounts::with('department')
                                                     ->get()
@@ -120,6 +121,7 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                                                     ->pluck('po_no', 'id')
                                             )
                                             ->native(false)
+                                            ->searchable()
                                             ->columnSpan(2)
                                             ->nullable(),
                                         
