@@ -8,6 +8,7 @@ use App\Filament\Admin\Resources\PurchaseRequestsResource\Pages;
 use App\Filament\Admin\Resources\PurchaseRequestsResource\RelationManagers;
 use App\Mail\NotificationEmail;
 use App\Mail\StatusEmail;
+use App\Models\Departments;
 use App\Models\PurchaseOrders;
 use App\Models\PurchaseRequests;
 use App\Models\SubBudgetAccounts;
@@ -59,7 +60,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
             return parent::getEloquentQuery()->whereNot('status', PurchaseRequestsStatus::Draft->value);
         }
     
-        if (Auth::user()->id == Auth::user()->department->user->id ) {
+        if (Departments::where('hod', Auth::user()->id)->exists()) {
             return parent::getEloquentQuery()
                 ->where(function ($query) {
                     $query->where('user_id', Auth::id())
