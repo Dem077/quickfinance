@@ -61,12 +61,15 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
         }
     
         if (Departments::where('hod', Auth::user()->id)->exists()) {
+            $departmentIds = Departments::where('hod', Auth::user()->id)->pluck('id')->toArray();
+        
             return parent::getEloquentQuery()
-                ->where(function ($query) {
+                ->where(function ($query) use ($departmentIds) {
                     $query->where('user_id', Auth::id())
-                          ->orWhereHas('user', function ($subQuery) {
-                              $subQuery->where('department_id', Auth::user()->department_id);
-                          })->whereNot('status', PurchaseRequestsStatus::Draft->value);
+                          ->orWhereHas('user', function ($subQuery) use ($departmentIds) {
+                              $subQuery->whereIn('department_id', $departmentIds);
+                          })
+                          ->whereNot('status', PurchaseRequestsStatus::Draft->value);
                 });
         }
     
