@@ -273,7 +273,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                                 // 'is_submited' => true,
                             ]);
                             
-                            $hod = Auth::user()->department->user->email;
+                            $hod = $record->user->department->user->email;
 
                             
                                 Mail::to($hod)->queue(new NotificationEmail('Purchase Request '. $record->pr_no));
