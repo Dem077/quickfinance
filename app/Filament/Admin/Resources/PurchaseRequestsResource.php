@@ -272,11 +272,12 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                                 'status' => PurchaseRequestsStatus::Submitted->value,
                                 // 'is_submited' => true,
                             ]);
-                            $approvalusers = $user->where('is_hod', true)->where('department_id', Auth::user()->department_id)->get();
                             
-                            foreach($approvalusers as $user){
-                                Mail::to($user->email)->queue(new NotificationEmail('Purchase Request '. $record->pr_no));
-                            }
+                            $hod = Auth::user()->department->user->email;
+
+                            
+                                Mail::to($hod)->queue(new NotificationEmail('Purchase Request '. $record->pr_no));
+                            
 
                             Notification::make()
                                 ->title('Submitted for approval successfully')

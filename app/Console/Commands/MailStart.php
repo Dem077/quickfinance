@@ -25,12 +25,15 @@ class MailStart extends Command
      */
     public function handle()
     {
+        // Set the log file path to Laravel's default log file
+        $logFile = storage_path('logs/mail.log');
+
         // Run the nohup command to start the queue listener in the background
-        $command = 'nohup php artisan queue:listen &';
+        $command = "nohup php artisan queue:work > {$logFile} 2>&1 &";
         exec($command);
-
-        $this->info('Queue listener started in the background.');
-
+    
+        $this->info('Queue worker started in the background. Logs are being written to ' . $logFile);
+    
         return Command::SUCCESS;
     }
 }
