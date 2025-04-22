@@ -59,6 +59,10 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
         if (Auth::user()->can('approve_purchase::requests')) {
             return parent::getEloquentQuery()->whereNot('status', PurchaseRequestsStatus::Draft->value);
         }
+
+        if (Auth::user()->can('view_any_purchase::requests')) {
+            return parent::getEloquentQuery()->where('status', PurchaseRequestsStatus::Approved->value);
+        }
     
         if (Departments::where('hod', Auth::user()->id)->exists()) {
             $departmentIds = Departments::where('hod', Auth::user()->id)->pluck('id')->toArray();
@@ -342,7 +346,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                                 'approved_canceled_by' => Auth::id(),
                             ]);
                             $user = User::find($record->user_id);
-                            Mail::to($user->email)->queue(new StatusEmail('Purchase Request '. $record->pr_no, 'approved', '',''));
+                            Mail::to($user->email)->queue(new StatusEmail('Purchase Request '. $record->pr_no, 'approved', '','Finance'));
 
                             Notification::make()
                                 ->title('PR Approved successfully')
