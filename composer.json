@@ -15,7 +15,7 @@
         "awcodes/overlook": "^2.2",
         "aymanalhattami/filament-slim-scrollbar": "^2.0",
         "bezhansalleh/filament-shield": "^3.2",
-        "filament/filament": "^3.2",
+        "filament/filament": "3.3.11",
         "hasnayeen/themes": "^3.0",
         "jeffgreco13/filament-breezy": "^2.3",
         "joshembling/image-optimizer": "^1.4",
