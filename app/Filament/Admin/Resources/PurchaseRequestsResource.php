@@ -73,7 +73,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                 });
         }
         if (Auth::user()->can('view_purchase::requests') && Auth::user()->can('create_purchase::orders')) {
-            return parent::getEloquentQuery()->where('status', PurchaseRequestsStatus::Approved->value)->orwhere('status', PurchaseRequestsStatus::DocumentUploaded->value);
+            return parent::getEloquentQuery()->where('status', PurchaseRequestsStatus::Approved->value)->orwhere('status', PurchaseRequestsStatus::DocumentUploaded->value)->orwhere('status', PurchaseRequestsStatus::Closed->value);
         }
         return parent::getEloquentQuery()->where('user_id', Auth::id());
     }
