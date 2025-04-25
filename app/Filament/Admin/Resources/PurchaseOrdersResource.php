@@ -298,48 +298,6 @@ class PurchaseOrdersResource extends Resource
                     ->visible(fn ($record): bool => !empty($record->advance_form_id))
                     ->url(fn ($record): string => route('purchase-orders.advance-form.download', $record->advance_form_id))
                     ->openUrlInNewTab(),
-                Tables\Actions\Action::make('purchase_order_close')
-                    ->label('Close')
-                    ->icon('heroicon-o-check-circle')
-                    ->color('danger')
-                    ->requiresConfirmation()
-                    ->modalDescription('Are you sure you want to close this PR? This action cannot be undone.')
-                    ->visible(fn ($record) => $record->status == PurchaseOrderStatus::Submitted->value && Auth::user()->can('approve_purchase::requests') 
-                    || $record->status == PurchaseOrderStatus::Submitted->value  && $record->payment_method == 'petty_cash' && Auth::user()->can('create_purchase::orders')
-                    )
-                    ->action(function (PurchaseOrders $record) {
-                        if($record->payment_method == 'petty_cash'){
-                            $record->update([
-                                'status' => PurchaseOrderStatus::WaitingReimbursement->value,
-                                'is_closed_by' => Auth::id(),
-                            ]);
-                        }else{
-                            $record->update([
-                                'status' => PurchaseOrderStatus::Closed->value,
-                                'is_closed_by' => Auth::id(),
-                            ]);
-                        }
-                        
-                        if($record->payment_method == 'purchase_order'){
-                            
-                            foreach($record->purchaseOrderDetails as $detail){
-                                 $detail->budgetAccount->update([
-                                    'amount' => $detail->budgetAccount->amount - $detail->amount,]);
-                                    BudgetTransactionHistory::createtransaction($detail->budgetAccount->id, 'Purchase Order', $detail->amount, $detail->budgetAccount->amount, 'Purchase Order Closed for PO ('.$record->po_no.' | Item: '.$detail->desc.' )', Auth::id());
-                            }
-                            // $record->purchaseRequest->budgetAccount->update([
-                            //     'amount' => $record->purchaseRequest->budgetAccount->amount - $record->purchaseOrderDetails()->sum('amount'),
-                            // ]);
-    
-                            // BudgetTransactionHistory::createtransaction($record->purchaseRequest->budgetAccount->id, 'Purchase Order', $record->purchaseOrderDetails()->sum('amount'), $record->purchaseRequest->budgetAccount->amount, 'Purchase Order Closed', Auth::id());
-                            
-                        }
-                    
-                        Notification::make()
-                            ->title('PO Closed successfully')
-                            ->success()
-                            ->send();
-                    }),
                 Tables\Actions\Action::make('purchase_order_submit')
                     ->label('Submit')
                     ->icon('heroicon-o-paper-airplane')
@@ -461,9 +419,9 @@ class PurchaseOrdersResource extends Resource
                         }),
 
                 Tables\Actions\Action::make('upload_supporting_document')
-                    ->label('Upload Support')
+                    ->label('Upload Reciept')
                     ->icon('heroicon-o-document')
-                    ->visible(fn ($record) => $record->payment_method == 'petty_cash' && !$record->supporting_document && Auth::user()->can('create_purchase::orders') && !$record->status == PurchaseOrderStatus::Closed->value)
+                    ->visible(fn ($record) => $record->payment_method == 'petty_cash' && !$record->supporting_document && Auth::user()->can('create_purchase::orders') && $record->status !== PurchaseOrderStatus::Closed->value)
                     ->form([
                         Forms\Components\FileUpload::make('supporting_document')
                             ->label('Document')
@@ -479,11 +437,55 @@ class PurchaseOrdersResource extends Resource
                             ->send();
                     }), 
                 Tables\Actions\Action::make('view_supporting_document')
-                    ->label('View Document')
+                    ->label('View Reciept')
                     ->icon('heroicon-o-eye')
                     ->visible(fn ($record) => $record->supporting_document)
                     ->url(fn ($record) => asset('storage/' . $record->supporting_document))
                     ->openUrlInNewTab(), 
+                    
+                Tables\Actions\Action::make('purchase_order_close')
+                    ->label('Close')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->modalDescription('Are you sure you want to close this PR? This action cannot be undone.')
+                    ->visible(fn ($record) => $record->status == PurchaseOrderStatus::Submitted->value && Auth::user()->can('approve_purchase::requests') 
+                    || $record->status == PurchaseOrderStatus::Submitted->value && $record->supporting_document && $record->payment_method == 'petty_cash' && Auth::user()->can('create_purchase::orders')
+                    )
+                    ->action(function (PurchaseOrders $record) {
+                        if($record->payment_method == 'petty_cash'){
+                            $record->update([
+                                'status' => PurchaseOrderStatus::WaitingReimbursement->value,
+                                'is_closed_by' => Auth::id(),
+                            ]);
+                        }else{
+                            $record->update([
+                                'status' => PurchaseOrderStatus::Closed->value,
+                                'is_closed_by' => Auth::id(),
+                            ]);
+                        }
+                        
+                        if($record->payment_method == 'purchase_order'){
+                            
+                            foreach($record->purchaseOrderDetails as $detail){
+                                 $detail->budgetAccount->update([
+                                    'amount' => $detail->budgetAccount->amount - $detail->amount,]);
+                                    BudgetTransactionHistory::createtransaction($detail->budgetAccount->id, 'Purchase Order', $detail->amount, $detail->budgetAccount->amount, 'Purchase Order Closed for PO ('.$record->po_no.' | Item: '.$detail->desc.' )', Auth::id());
+                            }
+                            // $record->purchaseRequest->budgetAccount->update([
+                            //     'amount' => $record->purchaseRequest->budgetAccount->amount - $record->purchaseOrderDetails()->sum('amount'),
+                            // ]);
+    
+                            // BudgetTransactionHistory::createtransaction($record->purchaseRequest->budgetAccount->id, 'Purchase Order', $record->purchaseOrderDetails()->sum('amount'), $record->purchaseRequest->budgetAccount->amount, 'Purchase Order Closed', Auth::id());
+                            
+                        }
+                    
+                        Notification::make()
+                            ->title('PO Closed successfully')
+                            ->success()
+                            ->send();
+                    }),
+                
             
                     ])
             ->recordUrl(false)
