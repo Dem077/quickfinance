@@ -2,6 +2,8 @@
 
 namespace App\Filament\Admin\Resources\PettyCashReimbursmentResource\RelationManagers;
 
+use App\Enums\PurchaseOrderStatus;
+use App\Models\PurchaseOrders;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -22,22 +24,22 @@ class PettyCashReimbursmentDetailRelationManager extends RelationManager
                 Forms\Components\DatePicker::make('date')
                     ->native(false)
                     ->closeOnDateSelection()
-                    ->disabled(fn ($record) => $record->pettycashreimbursment->status->value !== 'draft')
+                    ->disabled(fn ($record) => $record && $record->pettycashreimbursment->status->value !== 'draft')
                     ->required()
                     ->columnSpan(1),
                 Forms\Components\Select::make('Vendor_id')
                     ->relationship('Vendor', 'name')
                     ->native(false)
-                    ->disabled(fn ($record) => $record->pettycashreimbursment->status->value !== 'draft')
+                    ->disabled(fn ($record) =>$record && $record->pettycashreimbursment->status->value !== 'draft')
                     ->columnSpan(2)
                     ->required(),
                 Forms\Components\TextInput::make('bill_no')
                     ->columnSpan(2)
-                    ->disabled(fn ($record) => $record->pettycashreimbursment->status->value !== 'draft')
+                    ->disabled(fn ($record) =>$record && $record->pettycashreimbursment->status->value !== 'draft')
                     ->required(),
                 Forms\Components\TextInput::make('details')
                     ->columnSpan(2)
-                    ->disabled(fn ($record) => $record->pettycashreimbursment->status->value !== 'draft')
+                    ->disabled(fn ($record) =>$record && $record->pettycashreimbursment->status->value !== 'draft')
                     ->required(),
                 Forms\Components\Select::make('sub_budget_id')
                     ->relationship('SubBudget', 'code')
@@ -49,16 +51,23 @@ class PettyCashReimbursmentDetailRelationManager extends RelationManager
                     ->native(false)
                     ->columnSpan(2)
                     ->nullable(),
+
                 Forms\Components\Select::make('po_id')
-                    ->relationship('PurchaseOrder', 'po_no')
+                    ->label('Record ID')
+                    ->options(
+                        PurchaseOrders::where('status', PurchaseOrderStatus::WaitingReimbursement->value)
+                            ->where('payment_method', 'petty_cash')
+                            ->pluck('po_no', 'id')
+                    )
                     ->native(false)
-                    ->disabled(fn ($record) => $record->pettycashreimbursment->status->value !== 'draft')
-                    ->columnSpan(2)
+                    ->helperText('Attach Records from Procure fuction for reference')
+                    ->disabled(fn ($record) =>$record && $record->pettycashreimbursment->status->value !== 'draft')
+                    ->searchable()
                     ->nullable(),
                 
                 Forms\Components\TextInput::make('amount')
                     ->columnSpan(1)
-                    ->disabled(fn ($record) => $record->pettycashreimbursment->status->value !== 'draft')
+                    ->disabled(fn ($record) =>$record && $record->pettycashreimbursment->status->value !== 'draft')
                     ->minValue(1)
                     ->required()
                     ->numeric(),
@@ -91,11 +100,10 @@ class PettyCashReimbursmentDetailRelationManager extends RelationManager
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make()
-                    ->visible(fn ($record) => $record->pettycashreimbursment->status->value === 'draft'),
+                    ->visible(fn ($record) =>$record && $record->pettycashreimbursment->status->value === 'draft'),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
     }

@@ -53,11 +53,11 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                 Forms\Components\DatePicker::make('date')
                     ->native(false)
                     ->closeOnDateSelection()
-                    ->disabled(fn ($record) => $record && $record->status!== PettyCashStatus::Draft->value )
+                    ->disabled(fn ($record) =>$record && $record && $record->status!== PettyCashStatus::Draft->value )
                     ->required(),
                 Forms\Components\TextInput::make('form_no')
                     ->label('Form Number')
-                    ->disabled(fn ($record) =>$record && $record->status!== PettyCashStatus::Draft->value )
+                    ->disabled(fn ($record) =>$record && $record && $record->status!== PettyCashStatus::Draft->value )
                     ->required(),
                 Forms\Components\Hidden::make('user_id')
                     ->default(Auth::id())
@@ -115,9 +115,8 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                                         Forms\Components\Select::make('po_id')
                                             ->label('Record ID')
                                             ->options(
-                                                PurchaseOrders::where('status', PurchaseOrderStatus::Closed->value)
+                                                PurchaseOrders::where('status', PurchaseOrderStatus::WaitingReimbursement->value)
                                                     ->where('payment_method', 'petty_cash')
-                                                    ->where('is_reimbursed', false)
                                                     ->pluck('po_no', 'id')
                                             )
                                             ->native(false)
@@ -316,6 +315,10 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
 
                             $detail->subBudget->update([
                                 'amount' => $detail->subBudget->amount - $detail->amount,
+                            ]);
+
+                            $detail->purchaseOrder->update([
+                                'status' => PurchaseOrderStatus::Reimbursed,
                             ]);
 
                             BudgetTransactionHistory::createtransaction(
