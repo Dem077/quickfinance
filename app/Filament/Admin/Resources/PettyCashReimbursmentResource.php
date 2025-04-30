@@ -224,7 +224,7 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                     ->label('Approve')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
-                    ->visible(fn ($record) => $record->status->value === PettyCashStatus::Submitted->value && $record->user->id==Auth::user()->department->hod)
+                    ->visible(fn ($record) => $record->status->value === PettyCashStatus::Submitted->value && Auth::user()->department->user->id == Auth::user()->id)
                     ->action(function ($record) {
                         $record->update([
                             'status' => PettyCashStatus::DepApproved
@@ -240,7 +240,7 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                     ->icon('heroicon-o-x-circle')
                     ->requiresConfirmation()
                     ->color('danger')
-                    ->visible(fn ($record) => $record->status->value === PettyCashStatus::Submitted->value && $record->user->id==Auth::user()->department->hod)
+                    ->visible(fn ($record) => $record->status->value === PettyCashStatus::Submitted->value && Auth::user()->department->user->id == Auth::user()->id)
                     ->action(function ($record) { 
                         $record->update([
                             'status' => PettyCashStatus::Dep_Reject
