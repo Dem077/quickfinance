@@ -294,7 +294,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                         ->label('Approve')
                         ->icon('heroicon-o-check-circle')
                         ->color('success')
-                        ->visible(fn ($record) => $record->status==PurchaseRequestsStatus::Submitted->value && Auth::user()->department->user->id == Auth::user()->id
+                        ->visible(fn ($record) => $record->status==PurchaseRequestsStatus::Submitted->value && $record->user->department->user->id == Auth::user()->id
                         )
                         ->action(function (PurchaseRequests $record) {
                             $record->update([
@@ -313,7 +313,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                         ->label('Reject')
                         ->icon('heroicon-o-check-circle')
                         ->color('danger')
-                        ->visible(fn ($record) => $record->status==PurchaseRequestsStatus::Submitted->value && Auth::user()->department->user->id == Auth::user()->id
+                        ->visible(fn ($record) => $record->status==PurchaseRequestsStatus::Submitted->value && $record->user->department->user->id == Auth::user()->id
                         )
                         ->action(function (PurchaseRequests $record) {
                             $record->update([
