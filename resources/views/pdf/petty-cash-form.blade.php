@@ -79,7 +79,7 @@
         .name-cell { 
             text-align: center;
             /* padding-left: 270px; */
-            padding-top: 30px;
+            /* padding-top: 30px; */
             vertical-align: center;
         }
         .name-table {
@@ -130,21 +130,67 @@
             <div class="header">
                <img class="logo" src="images/agro/agrologo.png" alt="Logo">
             </div>
+            <table style="width: 100%;">
+                <tr>
+                    <td class="name-cell"> 
+                        <table class="name-table">
+                            <tr>
+                                <td><h1>Petty Cash Reimbursement</h1></td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
         </htmlpageheader>
     <sethtmlpageheader name="custom-header" value="on" show-this-page="1" />
     mpdf-->
-    <div class="container">
-        <table style="width: 100%">
-            <tr>
-                <td class="name-cell"> 
-                    <table class="name-table">
-                        <tr>
-                            <td><h1>Petty Cash Reimbursement</h1></td>
-                        </tr>
-                    </table>
-                </td>
-            </tr>
+            <!--mpdf
+    <htmlpagefooter name="custom-footer">
+        <table class="footer-table">
+            <thead>
+                <tr>
+                    <th>Prepared By:</th>
+                    <th>Reviewed By:</th>
+                    <th>Verified By:</th>
+                    <th>Approved By:</th>
+
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="padding: 0%; text-align:center; width:25%;  height:30px; border-right: 1px solid #000"><strong>{{$record->user->name ?? 'N/A'}}</strong></td>
+                    <td style="padding: 0%; text-align:center; width:25%;  height:30px; border-right: 1px solid #000"><strong>{{$record->user->department->user->name?? 'N/A'}}</strong></td>
+                    <td style="padding: 0%; text-align:center; width:25%;  height:30px; border-right: 1px solid #000"><strong>{{$record->VerifiedBy->name?? 'N/A'}}</strong></td>
+                    <td style="padding: 0%; text-align:center; width:25%;  height:30px;"><strong>{{$record->ApprovedBy->name?? 'N/A'}}</strong></td>
+
+                </tr>
+                <tr>
+                    <td style="padding: 0%; text-align:center; height:30px; width:25%; border-right: 1px solid #000">{{$record->user->designation?? 'N/A'}}</td>
+                    <td style="padding: 0%; text-align:center; height:30px; width:25%; border-right: 1px solid #000">{{$record->user->department->user->designation?? 'N/A'}}</td>
+                    <td style="padding: 0%; text-align:center; height:30px; width:25%; border-right: 1px solid #000">{{$record->VerifiedBy->designation?? 'N/A'}}</td>
+                    <td style="padding: 0%; text-align:center; height:30px; width:25%;">{{$record->ApprovedBy->designation?? 'N/A'}}</td>
+
+                </tr>
+            </tbody>
+        
         </table>
+            <table style="width: 100%; margin-top: 20px; text-align: center;">
+                <tr>
+                    <td> This is an Electronically Generated file no signature required</td>
+                </tr>
+                <tr>
+                    <td style="text-align: center; font-size: 10px;">
+                        Page {PAGENO} of {nbpg} 
+                    </td>
+                </tr>
+            </table>
+    </div>
+      
+    </htmlpagefooter>
+    <sethtmlpagefooter name="custom-footer" value="on" />
+    mpdf-->
+    <div class="container">
+
        
         {{-- {{$record}} --}}
         <table class="header-content">
@@ -222,48 +268,10 @@
                         <td>{{$item->subBudget->code??'N/A'}}</td>
                         <td>{{$item->amount??'N/A'}}</td>
                    </tr>
+                   
                 @endforeach
         </table>
 
-        <!--mpdf
-    <htmlpagefooter name="custom-footer">
-        <table class="footer-table">
-            <thead>
-                <tr>
-                    <th>Prepared By:</th>
-                    <th>Reviewed By:</th>
-                    <th>Verified By:</th>
-                    <th>Approved By:</th>
 
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td style="padding: 0%; text-align:center; width:25%;  height:30px; border-right: 1px solid #000"><strong>{{$record->user->name ?? 'N/A'}}</strong></td>
-                    <td style="padding: 0%; text-align:center; width:25%;  height:30px; border-right: 1px solid #000"><strong>{{$record->department->user->user->name?? 'N/A'}}</strong></td>
-                    <td style="padding: 0%; text-align:center; width:25%;  height:30px; border-right: 1px solid #000"><strong>{{$record->VerifiedBy->name?? 'N/A'}}</strong></td>
-                    <td style="padding: 0%; text-align:center; width:25%;  height:30px;"><strong>{{$record->ApprovedBy->name?? 'N/A'}}</strong></td>
-
-                </tr>
-                <tr>
-                    <td style="padding: 0%; text-align:center; height:30px; width:25%; border-right: 1px solid #000">{{$record->user->designation?? 'N/A'}}</td>
-                    <td style="padding: 0%; text-align:center; height:30px; width:25%; border-right: 1px solid #000">{{$record->user->department->user->designation?? 'N/A'}}</td>
-                    <td style="padding: 0%; text-align:center; height:30px; width:25%; border-right: 1px solid #000">{{$record->VerifiedBy->designation?? 'N/A'}}</td>
-                    <td style="padding: 0%; text-align:center; height:30px; width:25%;">{{$record->VerifiedBy->designation?? 'N/A'}}</td>
-
-                </tr>
-            </tbody>
-        
-        </table>
-            <table style="width: 100%; margin-top: 20px; text-align: center;">
-                <tr>
-                    <td> This is an Electronically Generated file no signature required</td>
-                </tr>
-            </table>
-    </div>
-      
-    </htmlpagefooter>
-    <sethtmlpagefooter name="custom-footer" value="on" />
-    mpdf-->
 </body>
 </html>

@@ -317,9 +317,12 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                                 'amount' => $detail->subBudget->amount - $detail->amount,
                             ]);
 
-                            $detail->purchaseOrder->update([
-                                'status' => PurchaseOrderStatus::Reimbursed,
-                            ]);
+
+                            if($detail->purchaseOrder !== null){
+                                $detail->purchaseOrder->update([
+                                    'status' => PurchaseOrderStatus::Reimbursed,
+                                ]);
+                            }
 
                             BudgetTransactionHistory::createtransaction(
                                 $detail->sub_budget_id,
