@@ -203,6 +203,10 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
     {
         return $table
             ->columns([
+                Tables\Columns\TextColumn::make('id')
+                    ->label('Record ID')
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('pr_no')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('date')
