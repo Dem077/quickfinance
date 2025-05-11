@@ -16,12 +16,12 @@ class PettyCashReimbursmentDetail extends Model
         'bill_no',
         'sub_budget_id',
         'petty_cash_reimb_id',
-    ];  
+    ];
 
     public function vendor()
     {
         return $this->belongsTo(Vendors::class, 'Vendor_id');
-    }   
+    }
 
     public function purchaseOrder()
     {
@@ -37,5 +37,4 @@ class PettyCashReimbursmentDetail extends Model
     {
         return $this->belongsTo(PettyCashReimbursment::class, 'petty_cash_reimb_id');
     }
-
 }

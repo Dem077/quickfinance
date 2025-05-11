@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::table('purchase_orders', function (Blueprint $table) {
             $table->enum('status', ['submitted', 'closed', 'draft'])->default('draft');
         });
-    } 
+    }
 
     /**
      * Reverse the migrations.

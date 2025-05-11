@@ -71,6 +71,6 @@ return [
         'enabled' => true,
     ],
 
-    'navigation_group' => 'Admin Settings', 
+    'navigation_group' => 'Admin Settings',
 
 ];

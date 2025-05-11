@@ -3,13 +3,11 @@
 namespace App\Filament\Admin\Resources;
 
 use App\Filament\Admin\Resources\DepartmentsResource\Pages;
-use App\Filament\Admin\Resources\DepartmentsResource\RelationManagers\HodfromusersRelationManager;
 use App\Models\Departments;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Actions\AssociateAction;
 use Filament\Tables\Table;
 
 class DepartmentsResource extends Resource
@@ -35,7 +33,7 @@ class DepartmentsResource extends Resource
                 //     ->helperText('Full name of the Head of Department')
                 //     ->required()
                 //     ->maxLength(255),
-               
+
                 // Forms\Components\TextInput::make('hod_designation')
                 //     ->label('HOD Designation')
                 //     ->helperText('Designation of the Head of Department')

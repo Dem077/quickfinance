@@ -11,10 +11,10 @@ class Project extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name'
+        'name',
     ];
 
-    public function purchaseRequests():HasMany
+    public function purchaseRequests(): HasMany
     {
         return $this->hasMany(PurchaseRequests::class, 'project_id');
     }

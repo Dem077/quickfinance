@@ -14,12 +14,12 @@ class Location extends Model
         'name',
     ];
 
-    public function users():HasMany
+    public function users(): HasMany
     {
-        return $this->hasMany(User::class , 'location_id');
+        return $this->hasMany(User::class, 'location_id');
     }
 
-    public function subBudgetAccounts():HasMany
+    public function subBudgetAccounts(): HasMany
     {
         return $this->hasMany(SubBudgetAccounts::class, 'location_id');
     }

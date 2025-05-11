@@ -10,8 +10,6 @@ use Filament\Forms\Set;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class PurchaseOrderDetailsRelationManager extends RelationManager
 {
@@ -23,7 +21,7 @@ class PurchaseOrderDetailsRelationManager extends RelationManager
             ->schema([
                 Forms\Components\Grid::make()
                     ->columns(12)
-                    
+
                     ->schema([
                         Forms\Components\TextInput::make('itemcode')
                             ->label('Item Code')
@@ -36,8 +34,10 @@ class PurchaseOrderDetailsRelationManager extends RelationManager
                             ->label('Description')
                             ->options(function (Get $get, $state, $record) {
                                 $prId = $this->ownerRecord->pr_id;
-                                if (!$prId) return [];
-                                
+                                if (! $prId) {
+                                    return [];
+                                }
+
                                 return PurchaseRequestDetails::where('pr_id', $prId)
                                     ->whereHas('item')
                                     ->with('item')
@@ -54,7 +54,7 @@ class PurchaseOrderDetailsRelationManager extends RelationManager
                                         })
                                         ->with('item')
                                         ->first();
-                                    
+
                                     if ($prItem) {
                                         $set('itemcode', $prItem->item->item_code);
                                         $set('unit_measure', $prItem->unit);
@@ -81,7 +81,7 @@ class PurchaseOrderDetailsRelationManager extends RelationManager
                             ->numeric()
                             ->required()
                             ->columnSpan(2),
-                        
+
                         Forms\Components\TextInput::make('amount')
                             ->label('Amount')
                             ->numeric()
@@ -89,14 +89,14 @@ class PurchaseOrderDetailsRelationManager extends RelationManager
                             ->disabled()
                             ->suffixAction(
                                 Forms\Components\Actions\Action::make('calculate')
-                            ->label('Calculate')
-                            ->icon('heroicon-m-calculator')
-                            ->color('info')
-                            ->action(function (Get $get, Set $set) {
-                                $qty = (float) ($get('qty') ?? 0);
-                                $unitPrice = (float) ($get('unit_price') ?? 0);
-                                $set('amount', $qty * $unitPrice);
-                            }),)
+                                    ->label('Calculate')
+                                    ->icon('heroicon-m-calculator')
+                                    ->color('info')
+                                    ->action(function (Get $get, Set $set) {
+                                        $qty = (float) ($get('qty') ?? 0);
+                                        $unitPrice = (float) ($get('unit_price') ?? 0);
+                                        $set('amount', $qty * $unitPrice);
+                                    }), )
                             ->columnSpan(2),
                     ]),
             ]);
@@ -116,6 +116,7 @@ class PurchaseOrderDetailsRelationManager extends RelationManager
                 Tables\Actions\CreateAction::make()
                     ->mutateFormDataUsing(function (array $data) {
                         $data['pr_id'] = $this->ownerRecord->pr_id;
+
                         return $data;
                     }),
             ])

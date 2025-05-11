@@ -3,15 +3,12 @@
 namespace App\Filament\Admin\Resources;
 
 use App\Filament\Admin\Resources\BudgetTransferResource\Pages;
-use App\Filament\Admin\Resources\BudgetTransferResource\RelationManagers;
 use App\Models\BudgetTransfer;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Auth;
 
 class BudgetTransferResource extends Resource
@@ -29,7 +26,7 @@ class BudgetTransferResource extends Resource
                 Forms\Components\Select::make('from_budget_id')
                     ->relationship('fromBudget', 'name')
                     ->getOptionLabelFromRecordUsing(
-                        fn($record) => $record->department_id
+                        fn ($record) => $record->department_id
                             ? "{$record->name} - {$record->department->name} ({$record->code})"
                             : "{$record->name} ({$record->code})"
                     )
@@ -37,7 +34,7 @@ class BudgetTransferResource extends Resource
                 Forms\Components\Select::make('to_budget_id')
                     ->relationship('toBudget', 'name')
                     ->getOptionLabelFromRecordUsing(
-                        fn($record) => $record->department_id
+                        fn ($record) => $record->department_id
                         ? "{$record->name} - {$record->department->name} ({$record->code})"
                         : "{$record->name} ({$record->code})"
                     )
@@ -104,7 +101,7 @@ class BudgetTransferResource extends Resource
     {
         return [
             'index' => Pages\ListBudgetTransfers::route('/'),
-            'create' => Pages\CreateBudgetTransfer::route('/create')
+            'create' => Pages\CreateBudgetTransfer::route('/create'),
         ];
     }
 }

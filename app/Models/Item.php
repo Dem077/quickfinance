@@ -16,7 +16,6 @@ class Item extends Model
 
     public function purchaseRequestDetails()
     {
-        return $this->hasMany(PurchaseRequestDetails::class , 'item_id');
+        return $this->hasMany(PurchaseRequestDetails::class, 'item_id');
     }
-
 }

@@ -10,25 +10,23 @@ class PurchaseRequestDetailsObserver
     /**
      * Handle the PurchaseRequestDetails "created" event.
      */
-    public function created(PurchaseRequestDetails $purchaseRequestDetails): void
-    {
-    }
+    public function created(PurchaseRequestDetails $purchaseRequestDetails): void {}
 
     /**
      * Handle the PurchaseRequestDetails "updated" event.
      */
     public function updated(PurchaseRequestDetails $purchaseRequestDetails): void
     {
-    // Debug logging
-    Log::info('PurchaseRequestDetails updated', [
-        'id' => $purchaseRequestDetails->id,
-        'is_utilized' => $purchaseRequestDetails->is_utilized,
-        'isDirty' => $purchaseRequestDetails->isDirty('is_utilized')
-    ]);
+        // Debug logging
+        Log::info('PurchaseRequestDetails updated', [
+            'id' => $purchaseRequestDetails->id,
+            'is_utilized' => $purchaseRequestDetails->is_utilized,
+            'isDirty' => $purchaseRequestDetails->isDirty('is_utilized'),
+        ]);
 
-    if ($purchaseRequestDetails->isDirty('is_utilized') && $purchaseRequestDetails->is_utilized) {
-        $purchaseRequestDetails->purchaseRequest->checkAndUpdateClosedStatus();
-    }
+        if ($purchaseRequestDetails->isDirty('is_utilized') && $purchaseRequestDetails->is_utilized) {
+            $purchaseRequestDetails->purchaseRequest->checkAndUpdateClosedStatus();
+        }
     }
 
     /**

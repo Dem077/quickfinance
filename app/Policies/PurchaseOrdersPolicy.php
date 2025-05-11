@@ -3,8 +3,8 @@
 namespace App\Policies;
 
 use App\Enums\PurchaseOrderStatus;
-use App\Models\User;
 use App\Models\PurchaseOrders;
+use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class PurchaseOrdersPolicy
@@ -44,11 +44,12 @@ class PurchaseOrdersPolicy
      * Determine whether the user can update the model.
      */
     public function update(User $user, PurchaseOrders $purchaseOrders): bool
-    { 
-        if(!$purchaseOrders->status == PurchaseOrderStatus::Draft->value && $user->can('update_purchase::orders')){
+    {
+        if (! $purchaseOrders->status == PurchaseOrderStatus::Draft->value && $user->can('update_purchase::orders')) {
             return true;
         }
-         return false;
+
+        return false;
     }
 
     /**

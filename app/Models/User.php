@@ -9,7 +9,6 @@ use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
@@ -89,7 +88,7 @@ class User extends Authenticatable implements FilamentUser, HasAvatar
 
     public function advanceforms(): HasMany
     {
-        return $this->hasMany(AdvanceForm::class, 'generated_by');  
+        return $this->hasMany(AdvanceForm::class, 'generated_by');
     }
 
     public function budgetTransfer(): HasMany
@@ -100,8 +99,8 @@ class User extends Authenticatable implements FilamentUser, HasAvatar
     public function pettycashreimbursment(): HasMany
     {
         return $this->hasMany(PettyCashReimbursment::class, 'user_id');
-    }  
-    
+    }
+
     public function budgettransactionhistory(): HasMany
     {
         return $this->hasMany(BudgetTransactionHistory::class, 'transaction_by');
@@ -112,7 +111,6 @@ class User extends Authenticatable implements FilamentUser, HasAvatar
         return $this->hasMany(Departments::class, 'hod');
     }
 
-
     public function pettycashapprovedby(): HasMany
     {
         return $this->hasMany(PettyCashReimbursment::class, 'approved_by');
@@ -121,11 +119,10 @@ class User extends Authenticatable implements FilamentUser, HasAvatar
     public function pettycashverifiedby(): HasMany
     {
         return $this->hasMany(PettyCashReimbursment::class, 'verified_by');
-    }   
+    }
 
     public function hodapprovedby(): HasMany
     {
         return $this->hasMany(PurchaseRequests::class, 'approved_by_hod');
     }
-    
 }

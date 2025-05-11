@@ -7,15 +7,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class BudgetTransfer extends Model
 {
-   protected $fillable = [
-         'from_budget_id',
-         'to_budget_id',
-         'user_id',
-         'amount',
-         'description'
-   ];
+    protected $fillable = [
+        'from_budget_id',
+        'to_budget_id',
+        'user_id',
+        'amount',
+        'description',
+    ];
 
-    public function fromBudget() :BelongsTo
+    public function fromBudget(): BelongsTo
     {
         return $this->belongsTo(SubBudgetAccounts::class, 'from_budget_id');
     }
@@ -25,8 +25,8 @@ class BudgetTransfer extends Model
         return $this->belongsTo(SubBudgetAccounts::class, 'to_budget_id');
     }
 
-    public function user() :BelongsTo
+    public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class , 'user_id');
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

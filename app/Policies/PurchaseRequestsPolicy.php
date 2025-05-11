@@ -2,10 +2,9 @@
 
 namespace App\Policies;
 
-use App\Enums\PurchaseOrderStatus;
 use App\Enums\PurchaseRequestsStatus;
-use App\Models\User;
 use App\Models\PurchaseRequests;
+use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
 use Illuminate\Support\Facades\Auth;
 
@@ -18,7 +17,6 @@ class PurchaseRequestsPolicy
         return $user->can('send_approval_purchase::requests');
     }
 
-    
     public function approve(User $user): bool
     {
         return $user->can('approve_purchase::requests');
@@ -56,9 +54,10 @@ class PurchaseRequestsPolicy
         // dd($this->send_approval(Auth::user()));
         // dd($this->send_approval($user));
         // return $user->can('update_purchase::requests');
-        if ($purchaseRequests->status == PurchaseRequestsStatus::Approved->value || ($purchaseRequests->status == PurchaseRequestsStatus::Submitted->value  && $this->send_approval(Auth::user()))) {
+        if ($purchaseRequests->status == PurchaseRequestsStatus::Approved->value || ($purchaseRequests->status == PurchaseRequestsStatus::Submitted->value && $this->send_approval(Auth::user()))) {
             return false;
         }
+
         return true;
     }
 

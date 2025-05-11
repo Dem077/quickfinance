@@ -27,9 +27,9 @@ class BudgetTransactionHistory extends Model
         return $this->belongsTo(User::class, 'transaction_by');
     }
 
-    public static function createtransaction($budgetid , $type, $amount, $balance, $details, $by)
+    public static function createtransaction($budgetid, $type, $amount, $balance, $details, $by)
     {
-        $instance = new self();
+        $instance = new self;
         $instance->sub_budget_id = $budgetid;
         $instance->transaction_date = now();
         $instance->transaction_type = $type;

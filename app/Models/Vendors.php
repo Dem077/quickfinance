@@ -26,11 +26,11 @@ class Vendors extends Model
 
     public function advanceForms(): HasMany
     {
-        return $this->hasMany(AdvanceForm::class , 'vendors_id');
+        return $this->hasMany(AdvanceForm::class, 'vendors_id');
     }
 
     public function pettyCashReimbursments(): HasMany
     {
-        return $this->hasMany(PettyCashReimbursment::class , 'Vendor_id');
+        return $this->hasMany(PettyCashReimbursment::class, 'Vendor_id');
     }
 }

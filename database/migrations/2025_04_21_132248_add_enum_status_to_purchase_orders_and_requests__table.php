@@ -20,7 +20,7 @@ return new class extends Migration
                 'document_uploaded',
                 'canceled',
                 'approved',
-                'closed'
+                'closed',
             ])->default('draft')->after('id');
         });
 
@@ -30,7 +30,7 @@ return new class extends Migration
                 'closed',
                 'reimbursed',
                 'reimbursement_pending',
-                'draft'
+                'draft',
             ])->default('draft')->after('id');
         });
     }

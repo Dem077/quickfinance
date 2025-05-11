@@ -31,9 +31,9 @@ class MailStart extends Command
         // Run the nohup command to start the queue listener in the background
         $command = "nohup php artisan queue:work > {$logFile} 2>&1 &";
         exec($command);
-    
-        $this->info('Queue worker started in the background. Logs are being written to ' . $logFile);
-    
+
+        $this->info('Queue worker started in the background. Logs are being written to '.$logFile);
+
         return Command::SUCCESS;
     }
 }

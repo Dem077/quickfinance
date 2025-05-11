@@ -12,7 +12,6 @@ use App\Models\Vendors;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
-use Mpdf\Tag\Sub;
 
 class DatabaseSeeder extends Seeder
 {
@@ -21,12 +20,12 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-       
+
         Location::factory()->create([
-            'name'=> 'Head Office',
+            'name' => 'Head Office',
         ]);
         Location::factory()->create([
-            'name'=> 'Warehouse',
+            'name' => 'Warehouse',
         ]);
         Departments::factory()->create([
             'name' => 'IT',
@@ -39,7 +38,7 @@ class DatabaseSeeder extends Seeder
         BudgetAccounts::factory()->create([
             'name' => 'Building',
             'expenditure_type' => 'CAPPEX',
-            'account' => 'Property, Plant and Equipment',]);
+            'account' => 'Property, Plant and Equipment', ]);
 
         SubBudgetAccounts::factory()->create([
             'code' => 'CAPPEX1010102',
@@ -61,11 +60,11 @@ class DatabaseSeeder extends Seeder
 
         Vendors::factory()->create([
             'name' => 'Miadhu Trading',
-            'address'    => 'Male, Maldives',
+            'address' => 'Male, Maldives',
             'account_no' => '777771023123',
-            'mobile'     => '9999999',
-            'gst_no'   => 'GST12332',
-            'bank'       => 'BML',
+            'mobile' => '9999999',
+            'gst_no' => 'GST12332',
+            'bank' => 'BML',
         ]);
 
         $user = \App\Models\User::factory()->create([
@@ -74,23 +73,18 @@ class DatabaseSeeder extends Seeder
             'email_verified_at' => now(),
             'bank_account_name' => null,
             'bank_account_no' => null,
-            'designation' => "IT Admin",
+            'designation' => 'IT Admin',
             'department_id' => Departments::first()->id,
             'location_id' => Location::inRandomOrder()->first()->id,
             'mobile' => '9940018',
             'password' => Hash::make('12345'),
         ]);
 
-        
-
-        
-
         $user1 = \App\Models\User::factory()->create([
             'name' => 'finance',
-            'email' => 'finance@example.com'
+            'email' => 'finance@example.com',
         ]);
 
-       
         $this->call([
             ShieldSeeder::class,
         ]);

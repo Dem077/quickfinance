@@ -21,5 +21,4 @@ class EditItem extends EditRecord
     {
         return $this->getResource()::getUrl('index');
     }
-
 }

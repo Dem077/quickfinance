@@ -4,14 +4,11 @@ namespace App\Filament\Admin\Resources\PurchaseOrdersResource\Pages;
 
 use App\Filament\Admin\Resources\PurchaseOrdersResource;
 use App\Models\PurchaseOrderDetails;
-use App\Models\PurchaseOrders;
 use Filament\Resources\Pages\CreateRecord;
 
 class CreatePurchaseOrders extends CreateRecord
 {
     protected static string $resource = PurchaseOrdersResource::class;
-
-
 
     protected function afterCreate(): void
     {
@@ -35,5 +32,4 @@ class CreatePurchaseOrders extends CreateRecord
     {
         return $this->getResource()::getUrl('index');
     }
-
 }

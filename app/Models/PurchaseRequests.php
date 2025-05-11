@@ -29,7 +29,6 @@ class PurchaseRequests extends Model
         'supporting_document',
     ];
 
-  
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -63,18 +62,18 @@ class PurchaseRequests extends Model
     public function hodapprovedby(): BelongsTo
     {
         return $this->belongsTo(User::class, 'approved_by_hod');
-    }   
+    }
 
     public static function checkAndUpdateClosedStatus($id)
     {
         $purchaseRequest = self::find($id);
-        if (!$purchaseRequest) {
+        if (! $purchaseRequest) {
             return;
         }
 
         // Get all details
         $details = $purchaseRequest->purchaseRequestDetails;
-        
+
         // Only proceed if there are details
         if ($details->isEmpty()) {
             return;
@@ -82,8 +81,8 @@ class PurchaseRequests extends Model
 
         // Alternative method to check if all details are utilized
         $totalDetails = $details->count();
-        $utilizedDetails = PurchaseRequestDetails::where('is_utilized' , true)->where('pr_id', $purchaseRequest->id)->count();
-        
+        $utilizedDetails = PurchaseRequestDetails::where('is_utilized', true)->where('pr_id', $purchaseRequest->id)->count();
+
         if ($totalDetails === $utilizedDetails) {
             $purchaseRequest->update([
                 'status' => PurchaseRequestsStatus::Closed->value,

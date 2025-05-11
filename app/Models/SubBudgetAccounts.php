@@ -17,7 +17,7 @@ class SubBudgetAccounts extends Model
         'amount',
         'budget_account_id',
         'location_id',
-        'department_id'
+        'department_id',
     ];
 
     public function budgetAccount(): BelongsTo

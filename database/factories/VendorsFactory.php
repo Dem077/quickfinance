@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class VendorsFactory extends Factory
 {
-    
     /**
      * Define the model's default state.
      *
@@ -18,12 +17,12 @@ class VendorsFactory extends Factory
     public function definition(): array
     {
         return [
-            'name'       => $this->faker->company,
-            'address'    => $this->faker->address,
+            'name' => $this->faker->company,
+            'address' => $this->faker->address,
             'account_no' => $this->faker->bankAccountNumber,
-            'mobile'     => $this->faker->phoneNumber,
-            'gst_no'   => strtoupper($this->faker->bothify('??##########')),
-            'bank'       => $this->faker->company,
+            'mobile' => $this->faker->phoneNumber,
+            'gst_no' => strtoupper($this->faker->bothify('??##########')),
+            'bank' => $this->faker->company,
         ];
     }
 }

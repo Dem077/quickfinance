@@ -2,8 +2,8 @@
 
 namespace App\Policies;
 
-use App\Models\User;
 use App\Models\PettyCashReimbursment;
+use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class PettyCashReimbursmentPolicy
@@ -15,7 +15,6 @@ class PettyCashReimbursmentPolicy
         return $user->can('pv_approve_petty::cash::reimbursment');
     }
 
-    
     public function fin_hod_approve(User $user): bool
     {
         return $user->can('fin_hod_approve_petty::cash::reimbursment');
@@ -53,6 +52,7 @@ class PettyCashReimbursmentPolicy
         if ($pettyCashReimbursment->status->value === 'draft' && $user->can('update_petty::cash::reimbursment') || $pettyCashReimbursment->status->value === 'fin_approved' && $user->can('update_petty::cash::reimbursment')) {
             return true;
         }
+
         return false;
     }
 

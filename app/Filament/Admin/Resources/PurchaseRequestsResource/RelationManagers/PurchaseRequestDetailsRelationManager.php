@@ -24,12 +24,12 @@ class PurchaseRequestDetailsRelationManager extends RelationManager
                     ->schema([
                         Forms\Components\Select::make('item_id')
                             ->relationship('items', 'name')
-                            ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests')|| Auth::user()->is_hod == true && !Auth::user()->can('send_approval_purchase::requests'))
+                            ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests') || Auth::user()->is_hod == true && ! Auth::user()->can('send_approval_purchase::requests'))
                             ->required()
                             ->searchable()
                             ->columnSpan(2),
                         Forms\Components\TextInput::make('unit')
-                            ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests')|| Auth::user()->is_hod == true && !Auth::user()->can('send_approval_purchase::requests'))
+                            ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests') || Auth::user()->is_hod == true && ! Auth::user()->can('send_approval_purchase::requests'))
                             ->required()
                             ->maxLength(255)
                             ->columnSpan(2),
@@ -40,40 +40,39 @@ class PurchaseRequestDetailsRelationManager extends RelationManager
                                     ->get()
                                     ->mapWithKeys(function ($row) {
                                         return [
-                                            $row->id => $row->code . ' - ' . $row->name . 
-                                                ($row->department ? ' (' . $row->department->name . 
-                                                (isset($row->location) ? ' / ' . $row->location->name : '') . ')' : ''),
+                                            $row->id => $row->code.' - '.$row->name.
+                                                ($row->department ? ' ('.$row->department->name.
+                                                (isset($row->location) ? ' / '.$row->location->name : '').')' : ''),
                                         ];
                                     })
                                     ->toArray();
                             })
                             ->searchable()
-                            ->disabled(fn ($record) =>  Auth::user()->is_hod == true && !Auth::user()->can('send_approval_purchase::requests') && !Auth::user()->can('approve_purchase::requests') )
+                            ->disabled(fn ($record) => Auth::user()->is_hod == true && ! Auth::user()->can('send_approval_purchase::requests') && ! Auth::user()->can('approve_purchase::requests'))
                             ->required()
                             ->columnSpan(4),
                         Forms\Components\TextInput::make('amount')
-                        ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests')|| Auth::user()->is_hod == true && !Auth::user()->can('send_approval_purchase::requests'))
+                            ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests') || Auth::user()->is_hod == true && ! Auth::user()->can('send_approval_purchase::requests'))
                             ->maxLength(255)
                             ->columnSpan(2),
                         Forms\Components\TextInput::make('est_cost')
-                        ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests')|| Auth::user()->is_hod == true && !Auth::user()->can('send_approval_purchase::requests'))
+                            ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests') || Auth::user()->is_hod == true && ! Auth::user()->can('send_approval_purchase::requests'))
                             ->required()
                             ->numeric()
                             ->reactive()
                             ->rules([
-                                fn (Forms\Get $get): Closure =>
-                                    function (string $attribute, $value, Closure $fail) use ($get) {
-                                        if (empty($value)) {
-                                            return;
+                                fn (Forms\Get $get): Closure => function (string $attribute, $value, Closure $fail) use ($get) {
+                                    if (empty($value)) {
+                                        return;
+                                    }
+                                    $budgetAccountId = $get('budget_account_id');
+                                    if ($budgetAccountId) {
+                                        $account = SubBudgetAccounts::find($budgetAccountId);
+                                        if ($account && $value > $account->amount) {
+                                            $fail("You don't have enough funds for this budget code.");
                                         }
-                                        $budgetAccountId = $get('budget_account_id');
-                                        if ($budgetAccountId) {
-                                            $account = SubBudgetAccounts::find($budgetAccountId);
-                                            if ($account && $value > $account->amount) {
-                                                $fail("You don't have enough funds for this budget code.");
-                                            }
-                                        }
-                                    },
+                                    }
+                                },
                             ])
                             ->columnSpan(2),
                     ]),

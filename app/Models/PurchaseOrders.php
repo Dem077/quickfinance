@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class PurchaseOrders extends Model
 {
@@ -42,12 +41,11 @@ class PurchaseOrders extends Model
 
     public function advanceForm(): BelongsTo
     {
-        return $this->belongsTo(AdvanceForm::class , 'advance_form_id');
+        return $this->belongsTo(AdvanceForm::class, 'advance_form_id');
     }
 
     public function pettyCashReimbursment(): HasMany
     {
         return $this->hasMany(PettyCashReimbursment::class, 'po_id');
     }
-    
 }

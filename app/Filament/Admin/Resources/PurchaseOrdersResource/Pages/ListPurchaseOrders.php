@@ -10,7 +10,6 @@ class ListPurchaseOrders extends ListRecords
 {
     protected static string $resource = PurchaseOrdersResource::class;
 
-    
     protected ?string $heading = 'Procure';
 
     protected static ?string $navigationLabel = 'Procure';
@@ -18,7 +17,6 @@ class ListPurchaseOrders extends ListRecords
     protected static ?string $slug = 'procure';
 
     protected static ?string $title = 'Procure';
-    
 
     protected function getHeaderActions(): array
     {

@@ -14,7 +14,7 @@ class ReportTemplate extends Model
         'field_configs',
         'from_date',
         'to_date',
-        'created_by'
+        'created_by',
     ];
 
     protected $casts = [
@@ -22,6 +22,7 @@ class ReportTemplate extends Model
         'from_date' => 'date',
         'to_date' => 'date',
     ];
+
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');

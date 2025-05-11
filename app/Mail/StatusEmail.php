@@ -17,10 +17,10 @@ class StatusEmail extends Mailable implements ShouldQueue
      * Create a new message instance.
      */
     public function __construct(
-        public string $type = "",
-        public string $status= "",
-        public string $reason= "",
-        public string $by= "",
+        public string $type = '',
+        public string $status = '',
+        public string $reason = '',
+        public string $by = '',
     ) {
         //
     }

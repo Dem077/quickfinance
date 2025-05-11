@@ -19,18 +19,18 @@ class AdvanceForm extends Model
         'vendors_id',
     ];
 
-    public function user():BelongsTo
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'generated_by');
     }
 
-    public function vendor():BelongsTo
+    public function vendor(): BelongsTo
     {
         return $this->belongsTo(Vendors::class, 'vendors_id');
     }
 
-    public function purchaseOrder():HasOne
+    public function purchaseOrder(): HasOne
     {
-        return $this->Hasone(PurchaseOrders::class , 'advance_form_id');
+        return $this->Hasone(PurchaseOrders::class, 'advance_form_id');
     }
 }

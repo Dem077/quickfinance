@@ -11,7 +11,6 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Auth;
-use Laravel\SerializableClosure\Serializers\Native;
 
 class SubBudgetAccountsRelationManager extends RelationManager
 {
@@ -94,15 +93,15 @@ class SubBudgetAccountsRelationManager extends RelationManager
                             ])
                             ->default(fn ($livewire) => $livewire->ownerRecord->subBudgetAccounts->map(function ($subBudget) {
                                 return [
-                                    'id'    => $subBudget->id,
-                                    'code'  => $subBudget->code,
-                                    'name'  => $subBudget->name,
-                                    'amount'=> $subBudget->amount,
+                                    'id' => $subBudget->id,
+                                    'code' => $subBudget->code,
+                                    'name' => $subBudget->name,
+                                    'amount' => $subBudget->amount,
                                 ];
                             })->toArray()),
                     ])
                     ->action(function (array $data) {
-                       
+
                         // Loop over the submitted subbudget data and update each record.
                         foreach ($data['subbudgets'] as $subBudgetData) {
                             BudgetTransactionHistory::createtransaction($subBudgetData['id'], 'Top UP', $subBudgetData['amount'], $subBudgetData['amount'], 'Funds added to account', Auth::id());

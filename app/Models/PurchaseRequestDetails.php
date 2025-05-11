@@ -17,8 +17,6 @@ class PurchaseRequestDetails extends Model
         'est_cost',
     ];
 
-  
-
     public function purchaseRequest(): BelongsTo
     {
         return $this->belongsTo(PurchaseRequests::class, 'pr_id');
@@ -26,7 +24,7 @@ class PurchaseRequestDetails extends Model
 
     public function item(): BelongsTo
     {
-        return $this->belongsTo(PurchaseOrderDetails::class , 'item_id');
+        return $this->belongsTo(PurchaseOrderDetails::class, 'item_id');
     }
 
     public function items(): BelongsTo
@@ -36,7 +34,6 @@ class PurchaseRequestDetails extends Model
 
     public function budgetAccount(): BelongsTo
     {
-        return $this->belongsTo(SubBudgetAccounts::class , 'budget_account_id');
+        return $this->belongsTo(SubBudgetAccounts::class, 'budget_account_id');
     }
-
 }

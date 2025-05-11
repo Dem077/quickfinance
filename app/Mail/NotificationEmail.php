@@ -16,7 +16,7 @@ class NotificationEmail extends Mailable implements ShouldQueue
     /**
      * Create a new message instance.
      */
-    public function __construct(public string $type = "",)
+    public function __construct(public string $type = '')
     {
         //
     }

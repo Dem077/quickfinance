@@ -22,12 +22,13 @@ class PettyCashReimbursment extends Model
     protected $casts = [
         'status' => PettyCashStatus::class,
     ];
+
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    public function pettyCashReimbursmentDetails():HasMany
+    public function pettyCashReimbursmentDetails(): HasMany
     {
         return $this->hasMany(PettyCashReimbursmentDetail::class, 'petty_cash_reimb_id');
     }

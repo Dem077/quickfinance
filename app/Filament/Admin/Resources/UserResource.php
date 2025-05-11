@@ -8,7 +8,6 @@ use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
-use Filament\Forms\Set;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -84,7 +83,7 @@ class UserResource extends Resource
                         Forms\Components\TextInput::make('bank_account_name')
                             ->visible(fn (Get $get): bool => $get('pettycashassigned') === 'Yes' || ['edit'] && ($get('bank_account_name') !== null)),
                         Forms\Components\TextInput::make('bank_account_no')
-                            ->visible(fn (Get $get): bool => $get('pettycashassigned') === 'Yes'||  ['edit'] && ($get('bank_account_no') !== null)),
+                            ->visible(fn (Get $get): bool => $get('pettycashassigned') === 'Yes' || ['edit'] && ($get('bank_account_no') !== null)),
                         // Forms\Components\Radio::make('is_hod')
                         //     ->label('Head of Department')
                         //     ->options([
@@ -95,7 +94,7 @@ class UserResource extends Resource
                         //     ->inlineLabel(false)
                         //     ->live()
                         //     ->required(),
-                        
+
                         Forms\Components\FileUpload::make('avatar_url')
                             ->label('Avatar')
                             ->image()
