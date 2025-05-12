@@ -44,6 +44,24 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
         ];
     }
 
+
+    public static function getEloquentQuery(): Builder
+    {
+        if (Auth::user()->hasRole('super_admin')) {
+            return parent::getEloquentQuery(); // Super admin sees all records
+        }
+
+        if (Auth::user()->hasRole('pv_approve') || Auth::user()->hasRole('fin_hod_approve')) {
+            return parent::getEloquentQuery()
+                ->where('status', '!=', PettyCashStatus::Draft->value);
+        }
+        if (Auth::user()->hasRole('create_petty_cash') || Auth::user()->hasRole('update_petty_cash')) {
+            return parent::getEloquentQuery()
+                ->where('user_id', Auth::id());
+        }
+
+    
+    }
     public static function form(Form $form): Form
     {
         return $form
