@@ -8,6 +8,7 @@ use App\Filament\Admin\Resources\PettyCashReimbursmentResource\Pages;
 use App\Filament\Admin\Resources\PettyCashReimbursmentResource\RelationManagers\PettyCashReimbursmentDetailRelationManager;
 use App\Mail\NotificationEmail;
 use App\Mail\StatusEmail;
+use Illuminate\Database\Eloquent\Builder;
 use App\Models\BudgetTransactionHistory;
 use App\Models\PettyCashReimbursment;
 use App\Models\PurchaseOrders;
@@ -55,11 +56,8 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
             return parent::getEloquentQuery()
                 ->where('status', '!=', PettyCashStatus::Draft->value);
         }
-        if (Auth::user()->hasRole('create_petty_cash') || Auth::user()->hasRole('update_petty_cash')) {
             return parent::getEloquentQuery()
                 ->where('user_id', Auth::id());
-        }
-
     
     }
     public static function form(Form $form): Form
