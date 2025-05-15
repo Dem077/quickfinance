@@ -293,7 +293,7 @@ class PurchaseOrdersResource extends Resource
                     ->label('View Advance Form')
                     ->icon('heroicon-o-eye')
                     ->visible(fn ($record): bool => ! empty($record->advance_form_id))
-                    ->url(fn ($record): string => route('purchase-orders.advance-form.download', $record->advance_form_id))
+                    ->url(fn ($record): string => route('purchase-orders.advance-form.download', $record))
                     ->openUrlInNewTab(),
                 Tables\Actions\Action::make('purchase_order_submit')
                     ->label('Submit')
@@ -358,7 +358,7 @@ class PurchaseOrdersResource extends Resource
                         ]);
 
                         // Redirect to the route that generates the PDF with the advance form data
-                        return redirect()->route('purchase-orders.advance-form.download', $record->advance_form_id);
+                        return redirect()->route('purchase-orders.advance-form.download', $record);
 
                     }),
                 Tables\Actions\Action::make('generate_advance_form')
@@ -409,7 +409,7 @@ class PurchaseOrdersResource extends Resource
                         ]);
 
                         // Redirect to the route that generates the PDF with the advance form data
-                        return redirect()->route('purchase-orders.advance-form.download', $record->advance_form_id);
+                        return redirect()->route('purchase-orders.advance-form.download', $record);
 
                     }),
 

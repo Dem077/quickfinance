@@ -56,7 +56,7 @@ Route::get('pr/{record}/preview', function (PurchaseRequests $record) {
 })->name('purchase-requests.download');
 
 Route::get('adv-form/{record}/download', function (PurchaseOrders $record) {
-    // dd($record);
+   
     $mpdf = new \Mpdf\Mpdf([
         'mode' => 'utf-8',
         'format' => 'A4',
@@ -66,11 +66,11 @@ Route::get('adv-form/{record}/download', function (PurchaseOrders $record) {
         'margin_footer' => '50',
     ]);
 
-    $record = AdvanceForm::where('id', $record->advance_form_id)->first();
-    // dd($record);
-    $record->load(['user', 'vendor', 'purchaseOrder', 'user.department.user']);
+    $record1 = AdvanceForm::where('id', $record->advance_form_id)->first();
+    
+    $record1->load(['user', 'vendor', 'purchaseOrder', 'user.department.user']);
     //    dd($record->user->hodof[0]->user);
-    $html = view('pdf.purchase-order-advance-form', ['record' => $record])->render();
+    $html = view('pdf.purchase-order-advance-form', ['record' => $record1])->render();
     $mpdf->WriteHTML($html);
 
     return response($mpdf->Output('', \Mpdf\Output\Destination::INLINE))
