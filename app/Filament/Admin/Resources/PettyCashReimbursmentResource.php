@@ -62,6 +62,12 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                 ->where('status', '!=', PettyCashStatus::Draft->value);
         }
 
+        if ($user->hasRole('pv_approve_petty::cash::reimbursment')) {
+            return parent::getEloquentQuery()
+                ->where('status', '!=', PettyCashStatus::Draft->value)
+                ->where('status', '!=', PettyCashStatus::Submitted->value);
+        }
+
         return parent::getEloquentQuery()
             ->where('user_id', $user->id);
     }
