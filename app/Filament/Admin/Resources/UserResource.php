@@ -84,16 +84,17 @@ class UserResource extends Resource
                             ->visible(fn (Get $get): bool => $get('pettycashassigned') === 'Yes' || ['edit'] && ($get('bank_account_name') !== null)),
                         Forms\Components\TextInput::make('bank_account_no')
                             ->visible(fn (Get $get): bool => $get('pettycashassigned') === 'Yes' || ['edit'] && ($get('bank_account_no') !== null)),
-                        // Forms\Components\Radio::make('is_hod')
-                        //     ->label('Head of Department')
-                        //     ->options([
-                        //         true => 'Yes',
-                        //         false => 'No',
-                        //     ])
-                        //     ->inline()
-                        //     ->inlineLabel(false)
-                        //     ->live()
-                        //     ->required(),
+                        Forms\Components\Radio::make('view_all_pr')
+                            ->label('View All PRs')
+                            ->options([
+                                true => 'Yes',
+                                false => 'No',
+                            ])
+                            ->inline()
+                            ->helperText('This will allow the user to view all PRs in the system. Only for Procurment HOD')
+                            ->inlineLabel(false)
+                            ->live()
+                            ->required(),
 
                         Forms\Components\FileUpload::make('avatar_url')
                             ->label('Avatar')

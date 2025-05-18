@@ -22,6 +22,7 @@ return new class extends Migration
             $table->boolean('is_hod')->default(false);
             $table->foreignId('department_id')->constrained();
             $table->foreignId('location_id')->constrained();
+            $table->boolean('view_all_pr')->default(false);
             $table->string('designation');
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');

@@ -57,12 +57,12 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
         // Check if user is HOD of any department
         $isHod = \App\Models\Departments::where('hod', $user->id)->exists();
 
-        if ($user->hasRole('pv_approve') || $isHod) {
+        if ($isHod) {
             return parent::getEloquentQuery()
                 ->where('status', '!=', PettyCashStatus::Draft->value);
         }
 
-        if ($user->hasRole('pv_approve_petty::cash::reimbursment')) {
+        if ($user->can('pv_approve_petty::cash::reimbursment')) {
             return parent::getEloquentQuery()
                 ->where('status', '!=', PettyCashStatus::Draft->value)
                 ->where('status', '!=', PettyCashStatus::Submitted->value);
