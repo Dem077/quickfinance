@@ -48,18 +48,24 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
 
     public static function getEloquentQuery(): Builder
     {
-        if (Auth::user()->hasRole('super_admin')) {
+        $user = Auth::user();
+
+        if ($user->hasRole('super_admin')) {
             return parent::getEloquentQuery(); // Super admin sees all records
         }
 
-        if (Auth::user()->hasRole('pv_approve') || Auth::user()->hasRole('fin_hod_approve')) {
+        // Check if user is HOD of any department
+        $isHod = \App\Models\Departments::where('hod', $user->id)->exists();
+
+        if ($user->hasRole('pv_approve') || $isHod) {
             return parent::getEloquentQuery()
                 ->where('status', '!=', PettyCashStatus::Draft->value);
         }
-            return parent::getEloquentQuery()
-                ->where('user_id', Auth::id());
-    
+
+        return parent::getEloquentQuery()
+            ->where('user_id', $user->id);
     }
+    
     public static function form(Form $form): Form
     {
         return $form
