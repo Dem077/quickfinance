@@ -20,29 +20,29 @@ class PurchaseOrderDetailsRelationManager extends RelationManager
         return $form
             ->schema([
                 Forms\Components\Grid::make()
-                    ->columns(12)
+                    ->columns(15)
 
                     ->schema([
                         Forms\Components\TextInput::make('itemcode')
                             ->label('Item Code')
                             ->required()
-                            ->disabled()
+                            ->disabled(fn (string $operation): bool => $operation === 'edit')
                             ->live()
                             ->dehydrated(false)
                             ->columnSpan(2),
                         Forms\Components\Select::make('desc')
                             ->label('Description')
+                            ->disabled()
                             ->options(function (Get $get, $state, $record) {
                                 $prId = $this->ownerRecord->pr_id;
                                 if (! $prId) {
                                     return [];
                                 }
-
                                 return PurchaseRequestDetails::where('pr_id', $prId)
-                                    ->whereHas('item')
-                                    ->with('item')
+                                    
+                                    ->with('items')  // Eager load items relationship
                                     ->get()
-                                    ->pluck('item.name', 'item.name')
+                                    ->pluck('items.name', 'items.name')  // Use the correct relationship and column
                                     ->toArray();
                             })
                             ->live()
@@ -76,6 +76,16 @@ class PurchaseOrderDetailsRelationManager extends RelationManager
                             ->required()
                             ->disabled()
                             ->columnSpan(2),
+                        Forms\Components\Radio::make('gst')
+                            ->label('GST(%)')
+                            ->inline()
+                            ->inlineLabel(false)
+                            ->default('8')
+                            ->columnSpan(2)
+                            ->options([
+                                '0' => '0%',
+                                '8' => '8%', ])
+                            ->required(),
                         Forms\Components\TextInput::make('unit_price')
                             ->label('Unit Price')
                             ->numeric()
@@ -87,17 +97,19 @@ class PurchaseOrderDetailsRelationManager extends RelationManager
                             ->numeric()
                             ->required()
                             ->disabled()
+                            ->dehydrated()
                             ->suffixAction(
                                 Forms\Components\Actions\Action::make('calculate')
                                     ->label('Calculate')
                                     ->icon('heroicon-m-calculator')
                                     ->color('info')
-                                    ->action(function (Get $get, Set $set) {
+                                    ->action(function (Get $get, Set $set) { 
                                         $qty = (float) ($get('qty') ?? 0);
+                                        $gst = (float) ($get('gst') ?? 0);
                                         $unitPrice = (float) ($get('unit_price') ?? 0);
-                                        $set('amount', $qty * $unitPrice);
+                                        $set('amount', $qty * $unitPrice + ($qty * $unitPrice * ($gst / 100)));
                                     }), )
-                            ->columnSpan(2),
+                            ->columnSpan(3),
                     ]),
             ]);
     }

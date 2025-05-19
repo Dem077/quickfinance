@@ -45,7 +45,7 @@ class PurchaseOrdersPolicy
      */
     public function update(User $user, PurchaseOrders $purchaseOrders): bool
     {
-        if (! $purchaseOrders->status == PurchaseOrderStatus::Draft->value && $user->can('update_purchase::orders')) {
+        if ($purchaseOrders->status == PurchaseOrderStatus::Draft->value && $user->can('update_purchase::orders')) {
             return true;
         }
 
