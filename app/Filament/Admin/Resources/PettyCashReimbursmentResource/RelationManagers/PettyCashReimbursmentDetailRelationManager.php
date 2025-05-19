@@ -47,6 +47,7 @@ class PettyCashReimbursmentDetailRelationManager extends RelationManager
                         : "{$record->name} ({$record->code})"
                     )
                     ->native(false)
+                    ->required()
                     ->columnSpan(2)
                     ->nullable(),
 

@@ -123,6 +123,7 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                                             ->required(),
                                         Forms\Components\Select::make('sub_budget_id')
                                             ->searchable()
+                                            ->required()
                                             ->options(function () {
                                                 return \App\Models\SubBudgetAccounts::with('department')
                                                     ->get()
