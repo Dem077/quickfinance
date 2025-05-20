@@ -67,8 +67,9 @@ class PurchaseOrderDetailsRelationManager extends RelationManager
                         Forms\Components\TextInput::make('unit_measure')
                             ->label('Unit Measure')
                             ->required()
-                            ->disabled(fn (string $operation): bool => $operation != 'edit')
+                            ->disabled()
                             ->maxLength(255)
+                            ->dehydrated()
                             ->columnSpan(2),
                         Forms\Components\TextInput::make('qty')
                             ->label('Quantity')
@@ -134,12 +135,14 @@ class PurchaseOrderDetailsRelationManager extends RelationManager
                     }),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->visible(fn ($record) => $record && $record->status === 'draft'),
+                Tables\Actions\DeleteAction::make()
+                    
+                    ->visible(fn ($record) => $record && $record->status === 'draft'),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
     }

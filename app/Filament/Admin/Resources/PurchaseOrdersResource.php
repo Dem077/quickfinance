@@ -60,12 +60,15 @@ class PurchaseOrdersResource extends Resource
                 Forms\Components\TextInput::make('po_no')
                     ->label('Record ID')
                     ->required()
+                    ->disabled()
                     ->maxLength(255),
                 Forms\Components\Select::make('vendor_id')
                     ->relationship('vendor', 'name')
+                    ->disabled(fn ($record) => $record && $record->status !== 'draft')
                     ->required(),
                 Forms\Components\DatePicker::make('date')
                     ->native(false)
+                    ->disabled(fn ($record) => $record && $record->status !== 'draft')
                     ->closeOnDateSelection()
                     ->required(),
                 Forms\Components\Select::make('pr_id')
@@ -74,6 +77,7 @@ class PurchaseOrdersResource extends Resource
                     })
                     ->preload()
                     ->live()
+                    ->disabled(fn ($record) => $record && $record->status !== 'draft')
                     ->afterStateUpdated(function (Get $get, Set $set, $state) {
                         $set('purchaseRequestDetails.*.pr_id', $state);
                     })
@@ -81,6 +85,7 @@ class PurchaseOrdersResource extends Resource
                 Select::make('payment_method')
                     ->label('Payment Method')
                     ->live()
+                    ->disabled(fn ($record) => $record && $record->status !== 'draft')
                     ->native(false)
                     ->options([
                         'purchase_order' => 'Purchase Order',
@@ -91,6 +96,7 @@ class PurchaseOrdersResource extends Resource
                 Forms\Components\Radio::make('is_advance_form_required')
                     ->label('Advance Form Required')
                     ->inline()
+                    ->disabled(fn ($record) => $record && $record->status !== 'draft')
                     ->inlineLabel(false)
                     ->default('0')
                     ->options([
@@ -207,7 +213,7 @@ class PurchaseOrdersResource extends Resource
                                             ->label('GST(%)')
                                             ->inline()
                                             ->inlineLabel(false)
-                                            ->default('8')
+                                            ->default('0')
                                             ->columnSpan(2)
                                             ->options([
                                                 '0' => '0%',
@@ -288,7 +294,9 @@ class PurchaseOrdersResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make()
-                    ->visible(fn ($record) => ($record->status == PurchaseOrderStatus::Draft->value && Auth::user()->can('create_purchase::orders'))),
+                    ->visible(fn ($record) => (($record->status == PurchaseOrderStatus::Draft->value && Auth::user()->can('create_purchase::orders')) || (
+                         Auth::user()->can('approve_purchase::requests')))),
+                        
                 Tables\Actions\Action::make('view_advance_form')
                     ->label('View Advance Form')
                     ->icon('heroicon-o-eye')
