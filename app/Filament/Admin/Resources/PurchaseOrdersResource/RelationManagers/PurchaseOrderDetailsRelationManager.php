@@ -26,13 +26,13 @@ class PurchaseOrderDetailsRelationManager extends RelationManager
                         Forms\Components\TextInput::make('itemcode')
                             ->label('Item Code')
                             ->required()
-                            ->disabled(fn (string $operation): bool => $operation === 'edit')
+                            ->disabled()
                             ->live()
                             ->dehydrated(false)
                             ->columnSpan(2),
                         Forms\Components\Select::make('desc')
-                            ->label('Description')
-                            ->disabled()
+                            ->label('Description')                            
+                            ->disabled(fn (string $operation): bool => $operation != 'edit')
                             ->options(function (Get $get, $state, $record) {
                                 $prId = $this->ownerRecord->pr_id;
                                 if (! $prId) {
@@ -67,14 +67,14 @@ class PurchaseOrderDetailsRelationManager extends RelationManager
                         Forms\Components\TextInput::make('unit_measure')
                             ->label('Unit Measure')
                             ->required()
-                            ->disabled()
+                            ->disabled(fn (string $operation): bool => $operation != 'edit')
                             ->maxLength(255)
                             ->columnSpan(2),
                         Forms\Components\TextInput::make('qty')
                             ->label('Quantity')
                             ->numeric()
                             ->required()
-                            ->disabled()
+                            ->disabled(fn (string $operation): bool => $operation != 'edit')
                             ->columnSpan(2),
                         Forms\Components\Radio::make('gst')
                             ->label('GST(%)')
@@ -89,6 +89,7 @@ class PurchaseOrderDetailsRelationManager extends RelationManager
                         Forms\Components\TextInput::make('unit_price')
                             ->label('Unit Price')
                             ->numeric()
+                            ->disabled(fn (string $operation): bool => $operation != 'edit')
                             ->required()
                             ->columnSpan(2),
 
