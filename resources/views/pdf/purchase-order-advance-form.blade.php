@@ -166,7 +166,7 @@
                 </tr>
                 <tr>
                     <th>PURCHASE ORDER TOTAL</th>
-                    <td>{{$record->purchaseOrder->purchaseOrderDetails()->sum('amount')}}</td>
+                    <td>{{ number_format($record->purchaseOrder->purchaseOrderDetails()->sum('amount'), 2) }}</td>
                 </tr>
                 <tr>
                     <th>QUOTATION NO</th>

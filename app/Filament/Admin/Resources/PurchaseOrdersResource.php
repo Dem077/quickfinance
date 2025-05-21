@@ -391,7 +391,7 @@ class PurchaseOrdersResource extends Resource
                     ])
                     ->action(function (array $data, PurchaseOrders $record) {
 
-                        $count = 1125 + 1;
+                        $count = 1157 + 1;
 
                         do {
                             $request_number = sprintf('LADV/PROC/%04d', $count);

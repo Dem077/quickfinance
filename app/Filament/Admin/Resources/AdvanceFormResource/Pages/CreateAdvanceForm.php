@@ -12,7 +12,7 @@ class CreateAdvanceForm extends CreateRecord
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        $count = 1125 + 1;
+        $count = 1157 + 1;
 
         do {
             $request_number = sprintf('LADV/PROC/%04d', $count);
