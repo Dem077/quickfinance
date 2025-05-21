@@ -139,7 +139,7 @@
                         </tr>
                         <tr>
                             <td style="background-color: #d6d6d6; text-align:center;"><strong>Date:</strong></td>
-                            <td>{{$record->created_at->format('d-m-Y')}}</td>
+                            <td>{{$record->purchaseOrder->date->format('d-m-Y')}}</td>
                         </tr>
                         <tr>
                     </table>
@@ -162,7 +162,7 @@
                 </tr>
                 <tr>
                     <th>PURCHASE ORDER DATE</th>
-                    <td>{{$record->purchaseOrder->date}}</td>
+                    <td>{{$record->purchaseOrder->date->format('d-m-Y')}}</td>
                 </tr>
                 <tr>
                     <th>PURCHASE ORDER TOTAL</th>
