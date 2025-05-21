@@ -382,6 +382,7 @@ class PurchaseOrdersResource extends Resource
                             ->required(),
                         Forms\Components\TextInput::make('expected_delivery')
                             ->label('Expected Delivery In Days')
+                            ->numeric()
                             ->required(),
                         Forms\Components\TextInput::make('advance_amount')
                             ->label('Advance Amount %')
