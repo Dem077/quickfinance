@@ -60,7 +60,7 @@ class PurchaseOrdersResource extends Resource
                 Forms\Components\TextInput::make('po_no')
                     ->label('Record ID')
                     ->required()
-                    ->disabled()
+                    ->disabled(fn ($record) => $record && $record->status !== 'draft')
                     ->maxLength(255),
                 Forms\Components\Select::make('vendor_id')
                     ->relationship('vendor', 'name')
