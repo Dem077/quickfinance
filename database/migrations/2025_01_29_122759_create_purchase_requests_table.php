@@ -27,7 +27,7 @@ return new class extends Migration
             $table->text('cancel_remark')->nullable();
             $table->string('uploaded_document')->nullable();
             $table->foreignId('user_id')->constrained(); // Requested by User
-            $table->foreignId(('location_id'))->constrained();
+            $table->foreignId('location_id')->nullable()->constrained();
             $table->foreignId('project_id')->nullable()->constrained();
             $table->timestamps();
         });

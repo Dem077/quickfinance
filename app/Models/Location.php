@@ -23,4 +23,9 @@ class Location extends Model
     {
         return $this->hasMany(SubBudgetAccounts::class, 'location_id');
     }
+
+    public function purchaseRequests()
+    {
+        return $this->belongsToMany(PurchaseRequests::class, 'location_purchase_request', 'location_id', 'purchase_request_id');
+    }
 }

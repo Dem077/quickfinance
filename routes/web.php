@@ -33,7 +33,7 @@ Route::get('pr/{record}/preview', function (PurchaseRequests $record) {
         abort(403, 'Access denied. Document is already signed and uploaded.');
     }
 
-    $record->load(['project', 'location', 'user', 'approvedby', 'hodapprovedby']);
+    $record->load(['project','locations', 'location', 'user', 'approvedby', 'hodapprovedby']);
 
     $items = $record->purchaseRequestDetails()->with('item')->get();
 

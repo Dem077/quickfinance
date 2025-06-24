@@ -96,9 +96,11 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                     ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests') || Auth::user()->is_hod == true && ! Auth::user()->can('send_approval_purchase::requests'))
                     ->closeOnDateSelection()
                     ->required(),
-                Forms\Components\Select::make('location_id')
-                    ->relationship('location', 'name')
+                Forms\Components\Select::make('locations')
+                    ->relationship('locations', 'name')
                     ->native(false)
+                    ->multiple()
+                    ->preload()
                     ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests') || Auth::user()->is_hod == true && ! Auth::user()->can('send_approval_purchase::requests'))
                     ->required(),
                 Forms\Components\Select::make('project_id')
@@ -216,8 +218,30 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                 Tables\Columns\TextColumn::make('date')
                     ->date()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('location.name')
-                    ->numeric()
+                Tables\Columns\TextColumn::make('locations_display')
+                    ->label('Location(s)')
+                    ->getStateUsing(function ($record) {
+                        // Collect names from both relations
+                        $names = [];
+
+                        // Single location (one-to-many)
+                        if ($record->location) {
+                            $names[] = $record->location->name;
+                        }
+
+                        // Many-to-many locations
+                        if ($record->locations && $record->locations->count()) {
+                            // Avoid duplicate if single location is also in many-to-many
+                            foreach ($record->locations as $loc) {
+                                if (!in_array($loc->name, $names)) {
+                                    $names[] = $loc->name;
+                                }
+                            }
+                        }
+
+                        return implode(', ', $names) ?: 'N/A';
+                    })
+                    ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('project.name')
                     ->numeric()
