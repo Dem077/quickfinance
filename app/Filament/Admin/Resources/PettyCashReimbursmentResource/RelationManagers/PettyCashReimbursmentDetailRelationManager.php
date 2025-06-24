@@ -26,8 +26,10 @@ class PettyCashReimbursmentDetailRelationManager extends RelationManager
                     ->required()
                     ->columnSpan(1),
                 Forms\Components\Select::make('Vendor_id')
-                    ->relationship('Vendor', 'name')
+                    ->relationship('Vendor', 'name' , fn ($query) => $query->orderBy('name') )
                     ->native(false)
+                    ->preload()
+                    ->searchable()
                     ->disabled(fn ($record) => $record && $record->pettycashreimbursment->status->value !== 'draft')
                     ->columnSpan(2)
                     ->required(),
@@ -47,6 +49,8 @@ class PettyCashReimbursmentDetailRelationManager extends RelationManager
                         : "{$record->name} ({$record->code})"
                     )
                     ->native(false)
+                    ->searchable()
+                    ->preload()
                     ->required()
                     ->columnSpan(2)
                     ->nullable(),
@@ -94,7 +98,7 @@ class PettyCashReimbursmentDetailRelationManager extends RelationManager
             ])
             ->headerActions([
                 Tables\Actions\CreateAction::make()
-                    ->visible(fn ($record) => ! Auth::user()->can('fin_hod_approve_petty::cash::reimbursment')),
+                    // ->visible(fn ($record) => ! Auth::user()->can('fin_hod_approve_petty::cash::reimbursment')),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),

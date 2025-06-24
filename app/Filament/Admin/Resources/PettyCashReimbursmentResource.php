@@ -110,9 +110,10 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                                             ->columnSpan(1),
                                         Forms\Components\Select::make('Vendor_id')
                                             ->options(
-                                                Vendors::all()->pluck('name', 'id')
+                                                Vendors::all()->sortBy('name')->pluck('name', 'id')
                                             )
                                             ->native(false)
+                                            ->preload()
                                             ->columnSpan(2)
                                             ->required(),
                                         Forms\Components\TextInput::make('bill_no')
@@ -124,6 +125,7 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                                         Forms\Components\Select::make('sub_budget_id')
                                             ->searchable()
                                             ->required()
+                                            ->preload()
                                             ->options(function () {
                                                 return \App\Models\SubBudgetAccounts::with('department')
                                                     ->get()
@@ -229,7 +231,7 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-            ])
+            ])->defaultSort('date', 'desc')
             ->filters([
                 //
             ])
