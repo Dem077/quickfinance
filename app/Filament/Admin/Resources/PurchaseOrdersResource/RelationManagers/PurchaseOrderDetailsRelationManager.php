@@ -100,6 +100,7 @@ class PurchaseOrderDetailsRelationManager extends RelationManager
                             ->required()
                             ->disabled()
                             ->dehydrated()
+                            ->formatStateUsing(fn ($state) => number_format((float)$state, 2, '.', ''))
                             ->suffixAction(
                                 Forms\Components\Actions\Action::make('calculate')
                                     ->label('Calculate')
@@ -109,7 +110,8 @@ class PurchaseOrderDetailsRelationManager extends RelationManager
                                         $qty = (float) ($get('qty') ?? 0);
                                         $gst = (float) ($get('gst') ?? 0);
                                         $unitPrice = (float) ($get('unit_price') ?? 0);
-                                        $set('amount', $qty * $unitPrice + ($qty * $unitPrice * ($gst / 100)));
+                                        $calculatedAmount = $qty * $unitPrice + ($qty * $unitPrice * ($gst / 100));
+                                        $set('amount', round($calculatedAmount, 2));
                                     }), )
                             ->columnSpan(3),
                     ]),

@@ -125,7 +125,8 @@ class PurchaseOrdersResource extends Resource
                                             $qty = (float) ($item['qty'] ?? 0);
                                             $gst = (float) ($item['gst'] ?? 0);
                                             $unitPrice = (float) ($item['unit_price'] ?? 0);
-                                            $set("purchaseOrderDetails.{$key}.amount", $qty * $unitPrice + ($qty * $unitPrice * ($gst / 100)));
+                                            $calculate = $qty * $unitPrice + ($qty * $unitPrice * ($gst / 100));
+                                            $set("purchaseOrderDetails.{$key}.amount", round($calculate, 2));
                                         }
                                     }),
                             ])
@@ -230,6 +231,8 @@ class PurchaseOrdersResource extends Resource
                                             ->numeric()
                                             ->required()
                                             ->disabled()
+                                            ->mutateDehydratedStateUsing(fn ($state) => round((float)$state, 2))
+                                            ->formatStateUsing(fn ($state) => number_format((float)$state, 2, '.', ''))
                                             ->columnSpan(2),
                                     ]),
                             ])

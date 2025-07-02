@@ -182,11 +182,11 @@
                 </tr>
                 <tr>
                     <th>ADVANCE PAYMENT AMOUNT</th>
-                    <td>{{$record->advance_amount}}</td>
+                    <td>{{number_format($record->advance_amount,2)}}</td>
                 </tr>
                 <tr>
                     <th>BALANCE PAYMENT</th>
-                    <td>{{$record->balance_amount}}</td>
+                    <td>{{number_format($record->balance_amount,2)}}</td>
                 </tr>
                 {{-- @foreach ($items as $item)
                    <tr> 
