@@ -144,9 +144,17 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                                         Forms\Components\Select::make('po_id')
                                             ->label('Record ID')
                                             ->options(
-                                                PurchaseOrders::where('status', PurchaseOrderStatus::WaitingReimbursement->value)
+                                                \App\Models\PurchaseOrders::where('status', \App\Enums\PurchaseOrderStatus::WaitingReimbursement->value)
                                                     ->where('payment_method', 'petty_cash')
-                                                    ->pluck('po_no', 'id')
+                                                    ->with('purchaseRequest')
+                                                    ->get()
+                                                    ->mapWithKeys(function ($po) {
+                                                        $prNo = $po->purchaseRequest?->pr_no ?? 'N/A';
+                                                        return [
+                                                            $po->id => "{$prNo} ({$po->po_no})"
+                                                        ];
+                                                    })
+                                                    ->toArray()
                                             )
                                             ->native(false)
                                             ->searchable()
