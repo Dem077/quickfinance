@@ -114,6 +114,7 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                                             )
                                             ->native(false)
                                             ->preload()
+                                            ->searchable()
                                             ->columnSpan(2)
                                             ->required(),
                                         Forms\Components\TextInput::make('bill_no')
@@ -163,7 +164,7 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
 
                                         Forms\Components\TextInput::make('amount')
                                             ->columnSpan(1)
-                                            ->minValue(1)
+                                            ->inputMode('decimal')
                                             ->required()
                                             ->numeric(),
                                     ]),
