@@ -264,7 +264,7 @@
                         <td>{{$item->vendor->name??'N/A'}}</td>
                         <td>{{$item->bill_no??'N/A'}}</td>
                         <td>{{$item->details??'N/A'}}</td>
-                        <td>{{$item->purchaseOrder->po_no??'-'}}</td>
+                        <td>{{$item->purchaseOrder->purchaseRequest->pr_no??'-'}} ({{$item->purchaseOrder->po_no??'-'}})</td>
                         <td>{{$item->subBudget->code??'N/A'}}</td>
                         <td>{{$item->amount??'N/A'}}</td>
                    </tr>

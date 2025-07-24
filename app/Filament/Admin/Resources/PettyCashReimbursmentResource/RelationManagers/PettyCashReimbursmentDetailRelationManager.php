@@ -78,7 +78,6 @@ class PettyCashReimbursmentDetailRelationManager extends RelationManager
                 Forms\Components\TextInput::make('amount')
                     ->columnSpan(1)
                     ->disabled(fn ($record) => $record && $record->pettycashreimbursment->status->value !== 'draft')
-                    ->minValue(1)
                     ->required()
                     ->numeric(),
             ]);
@@ -96,7 +95,14 @@ class PettyCashReimbursmentDetailRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('bill_no'),
                 Tables\Columns\TextColumn::make('details'),
                 Tables\Columns\TextColumn::make('subBudget.code'),
-                Tables\Columns\TextColumn::make('purchaseOrder.po_no'),
+                Tables\Columns\TextColumn::make('purchaseOrder.po_no')
+                    ->label('PO / PR No')
+                    ->getStateUsing(function ($record) {
+                        $po = $record->purchaseOrder;
+                        $prNo = $po?->purchaseRequest?->pr_no ?? 'N/A';
+                        $poNo = $po?->po_no ?? 'N/A';
+                        return "{$poNo} ({$prNo})";
+                    }),
                 Tables\Columns\TextColumn::make('amount')
                     ->money('MVR', locale: 'us'),
             ])
