@@ -55,6 +55,9 @@
                                                 <v:textbox style="mso-fit-shape-to-text:true" inset="0,0,0,0">
                                             <![endif]-->
                                             <p style="margin: 0 0 20px 0; font-family: Arial, sans-serif; text-align: center;">You are {{ $type ?? ''}} has been Rejected</p>
+                                            @if($resubmit == true)
+                                                <p style="margin: 0 0 20px 0; font-family: Arial, sans-serif; text-align: center;">Kindly amend and resubmit your request.</p>
+                                            @endif
                                             {{-- <p style="margin: 0; font-family: Arial, sans-serif; text-align: center;">Status: {{ ucfirst($status) }}</p> --}}
                                             <!--[if gte mso 9]>
                                                 </v:textbox>

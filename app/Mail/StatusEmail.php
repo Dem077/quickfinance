@@ -21,6 +21,7 @@ class StatusEmail extends Mailable implements ShouldQueue
         public string $status = '',
         public string $reason = '',
         public string $by = '',
+        public bool $resubmit = false, // Added to handle resubmission logic
     ) {
         //
     }
@@ -47,6 +48,7 @@ class StatusEmail extends Mailable implements ShouldQueue
                 'status' => $this->status,
                 'reason' => $this->reason,
                 'by' => $this->by,
+                'resubmit' => $this->resubmit,
             ],
         );
 

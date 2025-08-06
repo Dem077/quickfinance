@@ -8,6 +8,7 @@ use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
+use Filament\Tables\Actions\BulkAction;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Auth;
 
@@ -120,6 +121,9 @@ class PettyCashReimbursmentDetailRelationManager extends RelationManager
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
+                    BulkAction::make('check')
+                        ->label('Check')
+                        ->icon('heroicon-o-check-circle'),
                 ]),
             ]);
     }
