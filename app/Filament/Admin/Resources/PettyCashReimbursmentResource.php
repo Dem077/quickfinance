@@ -410,7 +410,7 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                     }),
 
                 Tables\Actions\EditAction::make()
-                    ->visible(fn ($record) => $record->status->value === PettyCashStatus::Draft->value || $record->status->value === PettyCashStatus::FinApproved->value),
+                    ->visible(fn ($record) => $record->status->value === PettyCashStatus::Draft->value || $record->status->value === PettyCashStatus::DepApproved->value),
 
             ])
             ->bulkActions([
