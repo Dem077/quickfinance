@@ -29,6 +29,10 @@ class PurchaseRequests extends Model
         'supporting_document',
     ];
 
+    protected $casts = [
+        'status' => PurchaseRequestsStatus::class,
+    ];
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -43,7 +47,7 @@ class PurchaseRequests extends Model
     {
         return $this->belongsTo(Location::class, 'location_id');
     }
-    
+
     public function locations()
     {
         return $this->belongsToMany(Location::class, 'location_purchase_request', 'purchase_request_id', 'location_id');

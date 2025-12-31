@@ -292,6 +292,7 @@ class PurchaseOrdersResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
+            ->defaultSort('date', 'desc')
             ->filters([
                 //
             ])
@@ -299,7 +300,7 @@ class PurchaseOrdersResource extends Resource
                 Tables\Actions\EditAction::make()
                     ->visible(fn ($record) => (($record->status == PurchaseOrderStatus::Draft->value && Auth::user()->can('create_purchase::orders')) || (
                          Auth::user()->can('approve_purchase::requests')))),
-                        
+
                 Tables\Actions\Action::make('view_advance_form')
                     ->label('View Advance Form')
                     ->icon('heroicon-o-eye')

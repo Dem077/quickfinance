@@ -21,7 +21,6 @@ use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -93,7 +92,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                     ->maxLength(255),
                 Forms\Components\DatePicker::make('date')
                     ->native(false)
-                    ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests') || Auth::user()->is_hod == true && ! Auth::user()->can('send_approval_purchase::requests'))
+                    ->disabled(fn ($record) => $record?->user_id != Auth::user()->id && Auth::user()->can('approve_purchase::requests') || Auth::user()->is_hod == true && ! Auth::user()->can('send_approval_purchase::requests'))
                     ->closeOnDateSelection()
                     ->required(),
                 Forms\Components\Select::make('locations')
@@ -101,24 +100,24 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                     ->native(false)
                     ->multiple()
                     ->preload()
-                    ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests') || Auth::user()->is_hod == true && ! Auth::user()->can('send_approval_purchase::requests'))
+                    ->disabled(fn ($record) => $record?->user_id != Auth::user()->id && Auth::user()->can('approve_purchase::requests') || Auth::user()->is_hod == true && ! Auth::user()->can('send_approval_purchase::requests'))
                     ->required(),
                 Forms\Components\Select::make('project_id')
                     ->relationship('project', 'name')
                     ->native(false)
-                    ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests') || Auth::user()->is_hod == true && ! Auth::user()->can('send_approval_purchase::requests')),
+                    ->disabled(fn ($record) => $record?->user_id != Auth::user()->id && Auth::user()->can('approve_purchase::requests') || Auth::user()->is_hod == true && ! Auth::user()->can('send_approval_purchase::requests')),
                 Forms\Components\FileUpload::make('supporting_document')
                     ->label('Supporting Document')
                     ->openable()
-                    ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests') || Auth::user()->is_hod == true && ! Auth::user()->can('send_approval_purchase::requests')),
+                    ->disabled(fn ($record) => $record?->user_id != Auth::user()->id && Auth::user()->can('approve_purchase::requests') || Auth::user()->is_hod == true && ! Auth::user()->can('send_approval_purchase::requests')),
 
                 Forms\Components\TextInput::make('purpose')
                     ->label('Purpose / Reason')
                     ->required()
-                    ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests') || Auth::user()->is_hod == true && ! Auth::user()->can('send_approval_purchase::requests'))
+                    ->disabled(fn ($record) => $record?->user_id != Auth::user()->id && Auth::user()->can('approve_purchase::requests') || Auth::user()->is_hod == true && ! Auth::user()->can('send_approval_purchase::requests'))
                     ->maxLength(255),
                 Forms\Components\Hidden::make('user_id')
-                    ->disabled(fn ($record) => Auth::user()->can('approve_purchase::requests') || Auth::user()->is_hod == true && ! Auth::user()->can('send_approval_purchase::requests'))
+                    ->disabled(fn ($record) => $record?->user_id != Auth::user()->id && Auth::user()->can('approve_purchase::requests') || Auth::user()->is_hod == true && ! Auth::user()->can('send_approval_purchase::requests'))
                     ->default(fn () => Auth::id())
                     ->required(),
                 Section::make('Details')
@@ -201,7 +200,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                             ])
                             ->required(fn (string $operation): bool => $operation === 'create')
                             ->minItems(1),
-                    ])->hidden(fn (string $operation): bool => $operation === 'edit'),
+                    ])->hidden(fn (string $operation): bool => $operation !== 'create'),
             ]);
     }
 
@@ -209,112 +208,94 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('id')
-                    ->label('Record ID')
-                    ->toggleable(isToggledHiddenByDefault: true)
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('pr_no')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('date')
-                    ->date()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('locations_display')
-                    ->label('Location(s)')
-                    ->getStateUsing(function ($record) {
-                        // Collect names from both relations
-                        $names = [];
-
-                        // Single location (one-to-many)
-                        if ($record->location) {
-                            $names[] = $record->location->name;
-                        }
-
-                        // Many-to-many locations
-                        if ($record->locations && $record->locations->count()) {
-                            // Avoid duplicate if single location is also in many-to-many
-                            foreach ($record->locations as $loc) {
-                                if (!in_array($loc->name, $names)) {
-                                    $names[] = $loc->name;
+                Tables\Columns\Layout\Stack::make([
+                    Tables\Columns\Layout\Grid::make([
+                        'lg' => 2,
+                    ])
+                        ->schema([
+                            Tables\Columns\TextColumn::make('status')
+                                ->sortable()
+                                ->alignCenter()
+                                ->columnSpanFull()
+                                ->searchable()
+                                ->size('lg')
+                                ->weight('bold')
+                                ->extraAttributes(['class' => 'w-100'])
+                                ->badge(),
+                        Tables\Columns\TextColumn::make('pr_no')
+                            ->description('Purchase Request', 'above')
+                            ->searchable(),
+                        Tables\Columns\TextColumn::make('locations_display')
+                            ->description('Location(s)', 'above')
+                            ->getStateUsing(function ($record) {
+                                if (! $record) {
+                                    return 'N/A';
                                 }
-                            }
-                        }
+                                $names = [];
+                                if ($record->location) {
+                                    $names[] = $record->location->name;
+                                }
+                                if ($record->locations && $record->locations->count()) {
+                                    foreach ($record->locations as $loc) {
+                                        if (! in_array($loc->name, $names)) {
+                                            $names[] = $loc->name;
+                                        }
+                                    }
+                                }
 
-                        return implode(', ', $names) ?: 'N/A';
-                    })
-                    ->searchable()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('project.name')
-                    ->numeric()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('purpose')
-                    ->label('Purpose / Reason')
-                    ->searchable()
-                    ->words(5)
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('user.name')
-                    ->label('Requested By')
-                    ->numeric()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('total_est_cost')
-                    ->label('Total Estimated Cost')
-                    ->getStateUsing(fn ($record) => $record->purchaseRequestDetails->sum('est_cost'))
-                    ->numeric()
-                    ->money('MVR', locale: 'us')
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('status')
-                    ->label('Status')
-                    ->getStateUsing(fn ($record) => $record->status === PurchaseRequestsStatus::Submitted->value ? 'Submitted' :
-                        ($record->status === PurchaseRequestsStatus::HODApproved->value ? 'Department HOD Approved' :
-                        ($record->status === PurchaseRequestsStatus::HODRejected->value ? 'Department HOD Rejected' :
-                        ($record->status === PurchaseRequestsStatus::Approved->value ? 'Finance Approved' :
-                        ($record->status === PurchaseRequestsStatus::Canceled->value ? 'Finance Rejected' :
-                        ($record->status === PurchaseRequestsStatus::Closed->value ? 'Closed' :
-                        ($record->status === PurchaseRequestsStatus::DocumentUploaded->value ? 'Document Uploaded' : 'Draft')))))))
-                    ->sortable()
-                    ->searchable()
-                    ->badge()
-                    ->color(fn ($state) => match ($state) {
-                        'Closed' => 'success',
-                        'Department HOD Approved' => 'success',
-                        'Finance Approved' => 'success',
-                        'Document Uploaded' => 'info',
-                        'Finance Rejected' => 'danger',
-                        'Department HOD Rejected' => 'danger',
-                        'Submitted' => 'warning',
-                        'Draft' => 'gray',
-                        default => 'primary',
-                    }),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                                return implode(', ', $names) ?: 'N/A';
+                            })
+                            ->searchable(query: fn (Builder $query, string $search) => $query->where(function ($query) use ($search) {
+                                $query->whereHas('location', fn ($q) => $q->where('name', 'like', "%{$search}%"))
+                                    ->orWhereHas('locations', fn ($q) => $q->where('name', 'like', "%{$search}%"));
+                            })),
+                        Tables\Columns\TextColumn::make('date')
+                            ->description('Date', 'above')
+                            ->date()
+                            ->sortable(),  Tables\Columns\TextColumn::make('total_est_cost')
+                                ->description('Total Estimated Cost', 'above')
+                                ->getStateUsing(fn ($record) => $record?->purchaseRequestDetails?->sum('est_cost') ?? 0)
+                                ->numeric()
+                                ->money('MVR', locale: 'us')
+                                ->sortable(),
+                        Tables\Columns\TextColumn::make('user.name')
+                            ->description('Requested By', 'above')
+                            ->numeric()
+                            ->sortable(),
 
+                            Tables\Columns\TextColumn::make('project.name')
+                                ->description('Project', 'above')
+                                ->sortable(),
+                            Tables\Columns\TextColumn::make('purpose')
+                                ->description('Purpose / Reason', 'above')
+                                ->searchable()
+                                ->wrap()
+                                ->words(5)
+                                ->sortable(),
+                    ]),
+                ]),
             ])
             ->defaultSort('date', 'desc')
+            ->contentGrid([
+                'sm' => 1,
+                'md' => 1,
+                'xl' => 2,
+            ])
             ->filters([
-               SelectFilter::make('status')
+                SelectFilter::make('status')
                     ->label('Status')
-                    ->options([
-                        'draft' => 'Draft',
-                        'submitted' => 'Submitted',
-                        'hod_approved' => 'Department HOD Approved',
-                        'hod_rejected' => 'Department HOD Rejected',
-                        'approved' => 'Finance Approved',
-                        'canceled' => 'Finance Rejected',
-                        'document_uploaded' => 'Document Uploaded',
-                        'closed' => 'Closed',
-                    ])->default(fn () => Auth::user()->can('approve_purchase::requests') ? 'hod_approved' : ''),
+                    ->options(PurchaseRequestsStatus::class),
+                //                    ->default(fn () => Auth::user()->can('approve_purchase::requests') ? 'hod_approved' : ''),
             ])
             ->actions([
+                Tables\Actions\ViewAction::make()
+                    ->button(),
                 Tables\Actions\Action::make('submit_for_approval')
                     ->label('Submit for Approval')
                     ->icon('heroicon-o-paper-airplane')
                     ->color('warning')
-                    ->visible(fn ($record) => $record->status == PurchaseRequestsStatus::Draft->value &&
+                    ->button()
+                    ->visible(fn ($record) => $record->status == PurchaseRequestsStatus::Draft &&
                         Auth::user()->can('send_approval_purchase::requests')
                     )
                     ->action(function (PurchaseRequests $record, User $user) {
@@ -322,10 +303,6 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                             'status' => PurchaseRequestsStatus::Submitted->value,
                             // 'is_submited' => true,
                         ]);
-
-                        $hod = $record->user->department->user->email;
-
-                        Mail::to($hod)->queue(new NotificationEmail('Purchase Request '.$record->pr_no));
 
                         Notification::make()
                             ->title('Submitted for approval successfully')
@@ -336,15 +313,14 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                     ->label('Approve')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
-                    ->visible(fn ($record) => $record->status == PurchaseRequestsStatus::Submitted->value && $record->user->department->user->id == Auth::user()->id
+                    ->button()
+                    ->visible(fn ($record) => $record->status == PurchaseRequestsStatus::Submitted && $record->user->department->user->id == Auth::user()->id
                     )
                     ->action(function (PurchaseRequests $record) {
                         $record->update([
                             'approved_by_hod' => Auth::id(),
-                            'status' => PurchaseRequestsStatus::HODApproved->value,
+                            'status' => PurchaseRequestsStatus::HODApproved,
                         ]);
-                        $user = User::find($record->user_id);
-                        Mail::to($user->email)->queue(new StatusEmail('Purchase Request '.$record->pr_no, 'approved', '', 'HOD'));
 
                         Notification::make()
                             ->title('PR Approved successfully')
@@ -353,18 +329,17 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                     }),
                 Tables\Actions\Action::make('reject_purchase_request_hod')
                     ->label('Reject')
+                    ->button()
                     ->icon('heroicon-o-check-circle')
                     ->color('danger')
-                    ->visible(fn ($record) => $record->status == PurchaseRequestsStatus::Submitted->value && $record->user->department->user->id == Auth::user()->id
+                    ->visible(fn ($record) => $record->status == PurchaseRequestsStatus::Submitted && $record->user->department->user->id == Auth::user()->id
                     )
                     ->action(function (PurchaseRequests $record) {
                         $record->update([
                             'is_approved_by_hod' => true,
                             'approved_by_hod' => Auth::id(), // Actually to record who rejected
-                            'status' => PurchaseRequestsStatus::HODRejected->value,
+                            'status' => PurchaseRequestsStatus::HODRejected,
                         ]);
-                        $user = User::find($record->user_id);
-                        Mail::to($user->email)->queue(new StatusEmail('Purchase Request '.$record->pr_no, 'rejected', '', 'HOD'));
 
                         Notification::make()
                             ->title('PR Approved successfully')
@@ -375,18 +350,17 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                 // Finance Approval
                 Tables\Actions\Action::make('approve_purchase_request')
                     ->label('Approve')
+                    ->button()
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
-                    ->visible(fn ($record) => $record->status == PurchaseRequestsStatus::HODApproved->value &&
+                    ->visible(fn ($record) => $record->status == PurchaseRequestsStatus::HODApproved &&
                         Auth::user()->can('approve_purchase::requests')
                     )
                     ->action(function (PurchaseRequests $record) {
                         $record->update([
-                            'status' => PurchaseRequestsStatus::Approved->value,
+                            'status' => PurchaseRequestsStatus::Approved,
                             'approved_canceled_by' => Auth::id(),
                         ]);
-                        $user = User::find($record->user_id);
-                        Mail::to($user->email)->queue(new StatusEmail('Purchase Request '.$record->pr_no, 'approved', '', 'Finance'));
 
                         Notification::make()
                             ->title('PR Approved successfully')
@@ -395,6 +369,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                     }),
                 Tables\Actions\Action::make('cancel_purchase_request')
                     ->label('Cancel')
+                    ->button()
                     ->icon('heroicon-o-check-circle')
                     ->color('danger')
                     ->form([
@@ -403,18 +378,17 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                             ->required()
                             ->maxLength(255),
                     ])
-                    ->visible(fn ($record) => $record->status == PurchaseRequestsStatus::HODApproved->value &&
+                    ->visible(fn ($record) => $record->status == PurchaseRequestsStatus::HODApproved &&
                         Auth::user()->can('approve_purchase::requests')
                     )
                     ->action(function (PurchaseRequests $record, array $data) {
                         $record->update([
-                            'status' => PurchaseRequestsStatus::Canceled->value,
+                            'status' => PurchaseRequestsStatus::Canceled,
                             // 'is_canceled' => true,
                             'cancel_remark' => $data['cancel_remark'],
                             'approved_canceled_by' => Auth::id(),
                         ]);
-                        $user = User::find($record->user_id);
-                        Mail::to($user->email)->queue(new StatusEmail('Purchase Request '.$record->pr_no, 'canceled', $data['cancel_remark'], ''));
+
                         Notification::make()
                             ->title('PR Canceled successfully')
                             ->warning()
@@ -424,6 +398,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                     ->label('Close')
                     ->icon('heroicon-o-check-circle')
                     ->color('danger')
+                    ->button()
                     ->requiresConfirmation()
                     ->modalDescription('Are you sure you want to close this PR? This action cannot be undone.')
                     ->visible(fn ($record) => $record->status == PurchaseRequestsStatus::DocumentUploaded &&
@@ -432,14 +407,14 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                     ->action(function (PurchaseRequests $record) {
 
                         $record->update([
-                            'status' => PurchaseRequestsStatus::Closed->value,
+                            'status' => PurchaseRequestsStatus::Closed,
                             'is_closed_by' => Auth::id(),
                         ]);
                         $po = PurchaseOrders::where('is_closed', false)->where('pr_id', $record->id)->get();
                         if (! $po) {
                             foreach ($po as $p) {
                                 $p->update([
-                                    'status' => PurchaseOrderStatus::Closed->value,
+                                    'status' => PurchaseOrderStatus::Closed,
                                     'is_closed' => true,
                                     'is_closed_by' => Auth::id(),
                                 ]);
@@ -453,8 +428,9 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                     }),
                 Tables\Actions\Action::make('upload_document')
                     ->label('Upload Document')
+                    ->button()
                     ->icon('heroicon-o-document')
-                    ->visible(fn ($record) => $record->status == PurchaseRequestsStatus::Approved->value && Auth::user()->can('send_approval_purchase::requests'))
+                    ->visible(fn ($record) => $record->status == PurchaseRequestsStatus::Approved && Auth::user()->can('send_approval_purchase::requests'))
                     ->form([
                         Forms\Components\FileUpload::make('uploaded_document')
                             ->label('Document')
@@ -462,7 +438,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                     ])
                     ->action(function (PurchaseRequests $record, array $data) {
                         $record->update([
-                            'status' => PurchaseRequestsStatus::DocumentUploaded->value,
+                            'status' => PurchaseRequestsStatus::DocumentUploaded,
                             'uploaded_document' => $data['uploaded_document'],
                         ]);
                         Notification::make()
@@ -472,22 +448,25 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                     }),
                 Tables\Actions\Action::make('view_document')
                     ->label('View Document')
-                    ->icon('heroicon-o-eye')
+                    ->button()
+                    ->icon('heroicon-o-arrow-down-on-square')
                     ->visible(fn ($record) => $record->uploaded_document)
                     ->url(fn ($record) => asset('storage/'.$record->uploaded_document))
                     ->openUrlInNewTab(),
 
                 Tables\Actions\Action::make('download_pdf')
                     ->label('Download PDF')
-                    ->icon('heroicon-o-eye')
-                    ->visible(fn ($record) => $record->status == PurchaseRequestsStatus::Approved->value && Auth::user()->can('send_approval_purchase::requests'))
+                    ->icon('heroicon-o-arrow-down-on-square')
+                    ->button()
+                    ->visible(fn ($record) => $record->status == PurchaseRequestsStatus::Approved && Auth::user()->can('send_approval_purchase::requests'))
                     ->url(fn (PurchaseRequests $record) => route('purchase-requests.download', $record))
                     ->openUrlInNewTab(),
 
                 Tables\Actions\EditAction::make()
-                    ->visible(fn ($record) => ($record->status == PurchaseRequestsStatus::HODApproved->value && Auth::user()->can('approve_purchase::requests')) || ($record->status == PurchaseRequestsStatus::Draft->value && Auth::user()->can('send_approval_purchase::requests')) || ($record->status == PurchaseRequestsStatus::Submitted->value && $record->user->department->user->id == Auth::user()->id)),
+                    ->button()
+                    ->visible(fn ($record) => ($record->status == PurchaseRequestsStatus::HODApproved && Auth::user()->can('approve_purchase::requests')) || ($record->status == PurchaseRequestsStatus::Draft && Auth::user()->can('send_approval_purchase::requests')) || ($record->status == PurchaseRequestsStatus::Submitted && $record->user->department->user->id == Auth::user()->id)),
             ])
-            ->recordUrl(false)
+//            ->recordUrl(false)
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
@@ -507,6 +486,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
         return [
             'index' => Pages\ListPurchaseRequests::route('/'),
             'create' => Pages\CreatePurchaseRequests::route('/create'),
+            'view' => Pages\ViewPurchaseRequests::route('/{record}'),
             'edit' => Pages\EditPurchaseRequests::route('/{record}/edit'),
         ];
     }
