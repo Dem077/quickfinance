@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\PurchaseOrderStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -22,6 +23,10 @@ class PurchaseOrders extends Model
         'is_advance_form_required',
         'is_reimbursed',
         'status',
+    ];
+
+    protected $casts =[
+        'status' => PurchaseOrderStatus::class,
     ];
 
     public function vendor(): BelongsTo

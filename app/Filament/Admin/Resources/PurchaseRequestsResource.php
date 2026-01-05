@@ -6,8 +6,6 @@ use App\Enums\PurchaseOrderStatus;
 use App\Enums\PurchaseRequestsStatus;
 use App\Filament\Admin\Resources\PurchaseRequestsResource\Pages;
 use App\Filament\Admin\Resources\PurchaseRequestsResource\RelationManagers;
-use App\Mail\NotificationEmail;
-use App\Mail\StatusEmail;
 use App\Models\Departments;
 use App\Models\PurchaseOrders;
 use App\Models\PurchaseRequests;
@@ -25,7 +23,6 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Mail;
 
 class PurchaseRequestsResource extends Resource implements HasShieldPermissions
 {
@@ -222,46 +219,46 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                                 ->weight('bold')
                                 ->extraAttributes(['class' => 'w-100'])
                                 ->badge(),
-                        Tables\Columns\TextColumn::make('pr_no')
-                            ->description('Purchase Request', 'above')
-                            ->searchable(),
-                        Tables\Columns\TextColumn::make('locations_display')
-                            ->description('Location(s)', 'above')
-                            ->getStateUsing(function ($record) {
-                                if (! $record) {
-                                    return 'N/A';
-                                }
-                                $names = [];
-                                if ($record->location) {
-                                    $names[] = $record->location->name;
-                                }
-                                if ($record->locations && $record->locations->count()) {
-                                    foreach ($record->locations as $loc) {
-                                        if (! in_array($loc->name, $names)) {
-                                            $names[] = $loc->name;
+                            Tables\Columns\TextColumn::make('pr_no')
+                                ->description('Purchase Request', 'above')
+                                ->searchable(),
+                            Tables\Columns\TextColumn::make('locations_display')
+                                ->description('Location(s)', 'above')
+                                ->getStateUsing(function ($record) {
+                                    if (! $record) {
+                                        return 'N/A';
+                                    }
+                                    $names = [];
+                                    if ($record->location) {
+                                        $names[] = $record->location->name;
+                                    }
+                                    if ($record->locations && $record->locations->count()) {
+                                        foreach ($record->locations as $loc) {
+                                            if (! in_array($loc->name, $names)) {
+                                                $names[] = $loc->name;
+                                            }
                                         }
                                     }
-                                }
 
-                                return implode(', ', $names) ?: 'N/A';
-                            })
-                            ->searchable(query: fn (Builder $query, string $search) => $query->where(function ($query) use ($search) {
-                                $query->whereHas('location', fn ($q) => $q->where('name', 'like', "%{$search}%"))
-                                    ->orWhereHas('locations', fn ($q) => $q->where('name', 'like', "%{$search}%"));
-                            })),
-                        Tables\Columns\TextColumn::make('date')
-                            ->description('Date', 'above')
-                            ->date()
-                            ->sortable(),  Tables\Columns\TextColumn::make('total_est_cost')
+                                    return implode(', ', $names) ?: 'N/A';
+                                })
+                                ->searchable(query: fn (Builder $query, string $search) => $query->where(function ($query) use ($search) {
+                                    $query->whereHas('location', fn ($q) => $q->where('name', 'like', "%{$search}%"))
+                                        ->orWhereHas('locations', fn ($q) => $q->where('name', 'like', "%{$search}%"));
+                                })),
+                            Tables\Columns\TextColumn::make('date')
+                                ->description('Date', 'above')
+                                ->date()
+                                ->sortable(),  Tables\Columns\TextColumn::make('total_est_cost')
                                 ->description('Total Estimated Cost', 'above')
                                 ->getStateUsing(fn ($record) => $record?->purchaseRequestDetails?->sum('est_cost') ?? 0)
                                 ->numeric()
                                 ->money('MVR', locale: 'us')
                                 ->sortable(),
-                        Tables\Columns\TextColumn::make('user.name')
-                            ->description('Requested By', 'above')
-                            ->numeric()
-                            ->sortable(),
+                            Tables\Columns\TextColumn::make('user.name')
+                                ->description('Requested By', 'above')
+                                ->numeric()
+                                ->sortable(),
 
                             Tables\Columns\TextColumn::make('project.name')
                                 ->description('Project', 'above')
@@ -272,7 +269,9 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                                 ->wrap()
                                 ->words(5)
                                 ->sortable(),
-                    ]),
+                        ]),
+                ])->space(3)->extraAttributes([
+                    'class' => 'pb-2',
                 ]),
             ])
             ->defaultSort('date', 'desc')
@@ -328,7 +327,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                             ->send();
                     }),
                 Tables\Actions\Action::make('reject_purchase_request_hod')
-                    ->label('Reject')
+                    ->label('Reject and Send Back To Draft')
                     ->button()
                     ->icon('heroicon-o-check-circle')
                     ->color('danger')
@@ -336,14 +335,13 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                     )
                     ->action(function (PurchaseRequests $record) {
                         $record->update([
-                            'is_approved_by_hod' => true,
-                            'approved_by_hod' => Auth::id(), // Actually to record who rejected
-                            'status' => PurchaseRequestsStatus::HODRejected,
+                            'status' => PurchaseRequestsStatus::Draft,
                         ]);
 
                         Notification::make()
-                            ->title('PR Approved successfully')
-                            ->success()
+                            ->title('PR Rejected successfully')
+
+                            ->danger()
                             ->send();
                     }),
 
@@ -387,6 +385,24 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                             // 'is_canceled' => true,
                             'cancel_remark' => $data['cancel_remark'],
                             'approved_canceled_by' => Auth::id(),
+                        ]);
+
+                        Notification::make()
+                            ->title('PR Canceled successfully')
+                            ->warning()
+                            ->send();
+                    }),
+                Tables\Actions\Action::make('send_back_purchase_request')
+                    ->label('Send Back To Draft')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('warning')
+                    ->visible(fn ($record) => $record->status == PurchaseRequestsStatus::HODApproved &&
+                        Auth::user()->can('approve_purchase::requests')
+                    )
+                    ->action(function (PurchaseRequests $record, array $data) {
+                        $record->update([
+                            'status' => PurchaseRequestsStatus::Draft,
+                            // 'is_canceled' => true,
                         ]);
 
                         Notification::make()
@@ -468,9 +484,6 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
             ])
 //            ->recordUrl(false)
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
             ]);
     }
 

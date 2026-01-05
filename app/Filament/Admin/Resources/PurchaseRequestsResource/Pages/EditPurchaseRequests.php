@@ -2,7 +2,9 @@
 
 namespace App\Filament\Admin\Resources\PurchaseRequestsResource\Pages;
 
+use App\Enums\PurchaseRequestsStatus;
 use App\Filament\Admin\Resources\PurchaseRequestsResource;
+use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 
 class EditPurchaseRequests extends EditRecord
@@ -12,6 +14,8 @@ class EditPurchaseRequests extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            Actions\DeleteAction::make()
+                ->visible(fn ($record) => $record->status == PurchaseRequestsStatus::Draft),
         ];
     }
 }

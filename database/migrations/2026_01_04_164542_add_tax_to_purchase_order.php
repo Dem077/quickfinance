@@ -12,7 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('purchase_orders', function (Blueprint $table) {
-            $table->enum('status', ['submitted','reimbursed','reimbursement_pending','grn_created', 'closed', 'draft'])->default('draft');
+            $table->text('grn_number')->nullable()->after('payment_method');
+        });
+        Schema::table('purchase_order_details', function (Blueprint $table) {
+            $table->text('tax_amount')->nullable()->after('unit_price');
         });
     }
 
@@ -22,7 +25,11 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('purchase_orders', function (Blueprint $table) {
-            $table->dropColumn('status');
+            $table->dropColumn('tax_amount');
+            $table->dropColumn('grn_number');
+        });
+        Schema::table('purchase_order_details', function (Blueprint $table) {
+            $table->dropColumn('tax_amount');
         });
     }
 };

@@ -3,7 +3,9 @@
 namespace App\Filament\Admin\Resources\PurchaseOrdersResource\Pages;
 
 use App\Filament\Admin\Resources\PurchaseOrdersResource;
+use App\Models\Item;
 use App\Models\PurchaseOrderDetails;
+use App\Models\PurchaseRequests;
 use Filament\Resources\Pages\CreateRecord;
 
 class CreatePurchaseOrders extends CreateRecord
@@ -15,6 +17,9 @@ class CreatePurchaseOrders extends CreateRecord
         $purchaseOrderDetails = $this->data['purchaseOrderDetails'] ?? [];
 
         foreach ($purchaseOrderDetails as $detail) {
+            $item = Item::where('item_code',$detail['itemcode'])->first()->id;
+            $pr = PurchaseRequests::where('id' , $this->data['pr_id'])->first();
+            $pr->purchaseRequestDetails()->where('item_id',$item)->update(['is_utilized' => true]);
             PurchaseOrderDetails::create([
                 'po_id' => $this->record->id,
                 'itemcode' => $detail['itemcode'],
@@ -23,6 +28,7 @@ class CreatePurchaseOrders extends CreateRecord
                 'unit_measure' => $detail['unit_measure'],
                 'qty' => $detail['qty'],
                 'unit_price' => $detail['unit_price'],
+                'tax_amount' => $detail['tax_amount'],
                 'amount' => $detail['amount'],
             ]);
         }

@@ -26,6 +26,8 @@ class ViewPurchaseRequests extends ViewRecord
     {
         return [
 
+            Actions\DeleteAction::make()
+                ->visible(fn($record) => $record->status == PurchaseRequestsStatus::Draft ),
             Actions\Action::make('submit_for_approval')
                 ->label('Submit for Approval')
                 ->icon('heroicon-o-paper-airplane')
@@ -129,8 +131,25 @@ class ViewPurchaseRequests extends ViewRecord
                         'cancel_remark' => $data['cancel_remark'],
                         'approved_canceled_by' => Auth::id(),
                     ]);
-                    $user = User::find($record->user_id);
-                    Mail::to($user->email)->queue(new StatusEmail('Purchase Request '.$record->pr_no, 'canceled', $data['cancel_remark'], ''));
+
+                    Notification::make()
+                        ->title('PR Canceled successfully')
+                        ->warning()
+                        ->send();
+                }),
+            Actions\Action::make('send_back_purchase_request')
+                ->label('Send Back To Draft')
+                ->icon('heroicon-o-check-circle')
+                ->color('warning')
+                ->visible(fn ($record) => $record->status == PurchaseRequestsStatus::HODApproved &&
+                    Auth::user()->can('approve_purchase::requests')
+                )
+                ->action(function (PurchaseRequests $record, array $data) {
+                    $record->update([
+                        'status' => PurchaseRequestsStatus::Draft,
+                        // 'is_canceled' => true,
+                    ]);
+
                     Notification::make()
                         ->title('PR Canceled successfully')
                         ->warning()

@@ -7,13 +7,11 @@ use App\Enums\PurchaseRequestsStatus;
 use App\Filament\Admin\Resources\PurchaseOrdersResource\Pages;
 use App\Filament\Admin\Resources\PurchaseOrdersResource\RelationManagers;
 use App\Models\AdvanceForm;
-use App\Models\BudgetTransactionHistory;
 use App\Models\Item;
 use App\Models\PurchaseOrders;
 use App\Models\PurchaseRequestDetails;
 use App\Models\PurchaseRequests;
 use Filament\Forms;
-use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
@@ -60,24 +58,24 @@ class PurchaseOrdersResource extends Resource
                 Forms\Components\TextInput::make('po_no')
                     ->label('Record ID')
                     ->required()
-                    ->disabled(fn ($record) => $record && $record->status !== 'draft')
+                    ->disabled(fn ($record) => $record && $record->status !== PurchaseOrderStatus::Draft)
                     ->maxLength(255),
                 Forms\Components\Select::make('vendor_id')
                     ->relationship('vendor', 'name')
-                    ->disabled(fn ($record) => $record && $record->status !== 'draft')
+                    ->disabled(fn ($record) => $record && $record->status !== PurchaseOrderStatus::Draft)
                     ->required(),
                 Forms\Components\DatePicker::make('date')
                     ->native(false)
-                    ->disabled(fn ($record) => $record && $record->status !== 'draft')
+                    ->disabled(fn ($record) => $record && $record->status !== PurchaseOrderStatus::Draft)
                     ->closeOnDateSelection()
                     ->required(),
                 Forms\Components\Select::make('pr_id')
                     ->relationship('purchaseRequest', 'pr_no', function ($query) {
-                        return $query->whereNotNull('uploaded_document')->wherenot('status', PurchaseRequestsStatus::Closed->value);
+                        return $query->whereNotNull('uploaded_document')->wherenot('status', PurchaseRequestsStatus::Closed);
                     })
                     ->preload()
                     ->live()
-                    ->disabled(fn ($record) => $record && $record->status !== 'draft')
+                    ->disabled(fn ($record) => $record && $record->status !== PurchaseOrderStatus::Draft)
                     ->afterStateUpdated(function (Get $get, Set $set, $state) {
                         $set('purchaseRequestDetails.*.pr_id', $state);
                     })
@@ -85,7 +83,7 @@ class PurchaseOrdersResource extends Resource
                 Select::make('payment_method')
                     ->label('Payment Method')
                     ->live()
-                    ->disabled(fn ($record) => $record && $record->status !== 'draft')
+                    ->disabled(fn ($record) => $record && $record->status !== PurchaseOrderStatus::Draft)
                     ->native(false)
                     ->options([
                         'purchase_order' => 'Purchase Order',
@@ -96,7 +94,7 @@ class PurchaseOrdersResource extends Resource
                 Forms\Components\Radio::make('is_advance_form_required')
                     ->label('Advance Form Required')
                     ->inline()
-                    ->disabled(fn ($record) => $record && $record->status !== 'draft')
+                    ->disabled(fn ($record) => $record && $record->status !== PurchaseOrderStatus::Draft)
                     ->inlineLabel(false)
                     ->default('0')
                     ->options([
@@ -105,42 +103,42 @@ class PurchaseOrdersResource extends Resource
                     ])
                     ->visible(fn (Get $get) => $get('payment_method') === 'purchase_order')
                     ->required(),
-                Section::make('Item to be Utilized')
+                Forms\Components\Fieldset::make('Item to be Utilized')
+                    ->columns(['md' => 7, 'lg' => 7])
                     ->schema([
                         Forms\Components\Repeater::make('purchaseOrderDetails')
                             ->label('Items / Services')
+                            ->columnSpanFull()
                             ->extraItemActions([
                                 Forms\Components\Actions\Action::make('calculate_all')
                                     ->label('Generate Total')
                                     ->icon('heroicon-m-calculator')
                                     ->color('info')
-                                    ->tooltip('Generate Total Amount')
+                                    ->tooltip('Generate Grand Total')
                                     ->action(function (Get $get, Set $set) {
                                         $items = $get('purchaseOrderDetails');
                                         if (! is_array($items)) {
                                             return;
                                         }
 
-                                        foreach ($items as $key => $item) {
-                                            $qty = (float) ($item['qty'] ?? 0);
-                                            $gst = (float) ($item['gst'] ?? 0);
-                                            $unitPrice = (float) ($item['unit_price'] ?? 0);
-                                            $calculate = $qty * $unitPrice + ($qty * $unitPrice * ($gst / 100));
-                                            $set("purchaseOrderDetails.{$key}.amount", round($calculate, 2));
-                                        }
+                                        $subtotal = collect($items)->sum(fn ($item) => (float) ($item['amount'] ?? 0));
+                                        $gsttotal = collect($items)->sum(fn ($item) => (float) ($item['tax_amount'] ?? 0));
+
+                                        $set('gst_total', round($gsttotal, 3));
+                                        $set('total_amount', round($subtotal, 3));
                                     }),
                             ])
                             ->schema([
                                 Forms\Components\Grid::make()
                                     ->columns(14)
                                     ->schema([
-                                        Forms\Components\TextInput::make('itemcode')
-                                            ->label('Item Code')
-                                            ->required()
-                                            ->disabled()
-                                            ->live()
-                                            ->dehydrated(false)
-                                            ->columnSpan(2),
+                                        //                                        Forms\Components\TextInput::make('itemcode')
+                                        //                                            ->label('Item Code')
+                                        //                                            ->required()
+                                        //                                            ->disabled()
+                                        //                                            ->live()
+                                        //                                            ->dehydrated(false)
+                                        //                                            ->columnSpan(2),
                                         Forms\Components\Hidden::make('budget_account')
                                             ->label('Budget Code')
                                             ->required()
@@ -215,6 +213,8 @@ class PurchaseOrdersResource extends Resource
                                             ->inline()
                                             ->inlineLabel(false)
                                             ->default('0')
+                                            ->live()
+                                            ->reactive()
                                             ->columnSpan(2)
                                             ->options([
                                                 '0' => '0%',
@@ -224,21 +224,79 @@ class PurchaseOrdersResource extends Resource
                                             ->label('Unit Price')
                                             ->numeric()
                                             ->required()
-                                            ->columnSpan(2),
+                                            ->hintAction(
+                                                Forms\Components\Actions\Action::make('generate_amounts')
+                                                    ->iconButton()
+                                                    ->icon('heroicon-m-plus-circle')
+                                                    ->action(function ($record, Get $get, Set $set, $state) {
+                                                        $qty = (float) ($get('qty') ?? 0);
+                                                        $unitPrice = (float) ($get('unit_price') ?? 0);
+                                                        $gst = $get('gst');
+                                                        $subtotal = $qty * $unitPrice;
+                                                        $gstamount = $subtotal * ($gst / 100);
+                                                        $amount = $subtotal + $gstamount;
+                                                        $set('tax_amount', round($gstamount));
+                                                        $set('amount', round($amount, 3));
 
+                                                    }))
+                                            ->columnSpan(2),
+                                        Forms\Components\TextInput::make('tax_amount')
+                                            ->label('Tax amount')
+                                            ->numeric()
+                                            ->reactive()
+                                            ->live()
+                                            ->disabled(function (Get $get) {
+                                                $gst = $get('gst');
+
+                                                return $gst === '0';
+                                            })
+                                            ->afterStateUpdated(function ($state, Get $get, Set $set) {
+                                                $qty = (float) ($get('qty') ?? 0);
+                                                $unitPrice = (float) ($get('unit_price') ?? 0);
+                                                $subtotal = $qty * $unitPrice;
+                                                $amount = $subtotal + (float) $state;
+                                                $set('amount', round($amount, 3));
+                                            })
+                                            ->required()
+                                            ->mutateDehydratedStateUsing(fn ($state) => round((float) $state, 3))
+                                            ->formatStateUsing(fn ($state) => number_format((float) $state, 3, '.', ''))
+                                            ->columnSpan(2),
                                         Forms\Components\TextInput::make('amount')
                                             ->label('Amount')
                                             ->numeric()
                                             ->required()
                                             ->disabled()
-                                            ->mutateDehydratedStateUsing(fn ($state) => round((float)$state, 2))
-                                            ->formatStateUsing(fn ($state) => number_format((float)$state, 2, '.', ''))
+                                            ->mutateDehydratedStateUsing(fn ($state) => round((float) $state, 3))
+                                            ->formatStateUsing(fn ($state) => number_format((float) $state, 3, '.', ''))
                                             ->columnSpan(2),
                                     ]),
                             ])
                             ->required(fn (string $operation): bool => $operation === 'create')
                             ->minItems(1),
-                    ])->hidden(fn (string $operation): bool => $operation === 'edit'),
+                        Forms\Components\Hidden::make('test')
+                            ->columnSpan(3),
+                        Forms\Components\TextInput::make('gst_total')
+                            ->label('Tax Amount')
+                            ->inlineLabel()
+                            ->live()
+                            ->reactive()
+                            ->disabled()
+                            ->columnSpan(2),
+                        Forms\Components\TextInput::make('total_amount')
+                            ->label('Total Amount')
+                            ->inlineLabel()
+                            ->disabled()
+                            ->live()
+                            ->reactive()
+                            ->formatStateUsing(function (Get $get) {
+                                $items = $get('purchaseOrderDetails') ?? [];
+                                $total = collect($items)->sum(fn ($item) => (float) ($item['amount'] ?? 0));
+
+                                return number_format($total, 3, '.', '');
+                            })
+                            ->live()
+                            ->columnSpan(2),
+                    ])->hidden(fn (string $operation): bool => $operation !== 'create'),
             ]);
     }
 
@@ -246,87 +304,90 @@ class PurchaseOrdersResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('purchaseRequest.pr_no')
-                    ->numeric()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('vendor.name')
-                    ->numeric()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('po_no')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('payment_method')
-                    ->label('Payment Method')
-                    ->getStateUsing(fn ($record) => $record->payment_method === 'purchase_order' ? 'Purchase Order' : 'Petty Cash')
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('date')
-                    ->date('d-m-Y')
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('total_amount')
-                    ->label('Total Amount')
-                    ->money('MVR', locale: 'us')
-                    ->sortable()
-                    ->getStateUsing(fn ($record) => $record->purchaseOrderDetails->sum('amount')),
-                Tables\Columns\TextColumn::make('status')
-                    ->label('Status')
-                    ->getStateUsing(fn ($record) => $record->status === PurchaseOrderStatus::Submitted->value ? 'Submitted' :
-                    ($record->status === PurchaseOrderStatus::Reimbursed->value ? 'Reimbursed' :
-                    ($record->status === PurchaseOrderStatus::Closed->value ? 'Closed' :
-                    ($record->status === PurchaseOrderStatus::WaitingReimbursement->value ? 'Pending Reimbursement' : 'Draft')))
-                    )
-                    ->sortable()
-                    ->searchable()
-                    ->badge()
-                    ->color(fn ($state) => match ($state) {
-                        'Closed' => 'danger',
-                        'Submitted' => 'warning',
-                        'Draft' => 'gray',
-                        'Reimbursment Pending' => 'warning',
-                        default => 'primary',
-                    }),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\Layout\Stack::make([
+                    Tables\Columns\Layout\Grid::make([
+                        'lg' => 2,
+                    ])
+                        ->schema([
+                            Tables\Columns\TextColumn::make('status')
+                                ->sortable()
+                                ->alignCenter()
+                                ->columnSpanFull()
+                                ->searchable()
+                                ->size('lg')
+                                ->weight('bold')
+                                ->extraAttributes(['class' => 'w-100'])
+                                ->badge(),
+                            Tables\Columns\TextColumn::make('purchaseRequest.pr_no')
+                                ->description('Purchase Request', 'above')
+                                ->sortable(),
+                            Tables\Columns\TextColumn::make('vendor.name')
+                                ->description('Vendor', 'above')
+                                ->sortable(),
+                            Tables\Columns\TextColumn::make('po_no')
+                                ->description('PO Number', 'above')
+                                ->searchable(),
+                            Tables\Columns\TextColumn::make('payment_method')
+                                ->description('Payment Method', 'above')
+                                ->getStateUsing(fn ($record) => $record->payment_method === 'purchase_order' ? 'Purchase Order' : 'Petty Cash')
+                                ->sortable(),
+                            Tables\Columns\TextColumn::make('date')
+                                ->description('Date', 'above')
+                                ->date('d-m-Y')
+                                ->sortable(),
+                            Tables\Columns\TextColumn::make('total_amount')
+                                ->description('Total Amount', 'above')
+                                ->money('MVR', locale: 'us')
+                                ->sortable()
+                                ->getStateUsing(fn ($record) => $record->purchaseOrderDetails->sum('amount')),
+
+                        ]),
+                ])->space(3)->extraAttributes([
+                    'class' => 'pb-2',
+                ]),
+
             ])
             ->defaultSort('date', 'desc')
+            ->contentGrid([
+                'sm' => 1,
+                'md' => 1,
+                'xl' => 2,
+            ])
             ->filters([
                 //
             ])
             ->actions([
+                Tables\Actions\ViewAction::make()
+                    ->button(),
                 Tables\Actions\EditAction::make()
-                    ->visible(fn ($record) => (($record->status == PurchaseOrderStatus::Draft->value && Auth::user()->can('create_purchase::orders')) || (
-                         Auth::user()->can('approve_purchase::requests')))),
+                    ->button()
+                    ->visible(fn ($record) => $record->status === PurchaseOrderStatus::Draft && Auth::user()->can('create_purchase::orders')),
 
                 Tables\Actions\Action::make('view_advance_form')
                     ->label('View Advance Form')
                     ->icon('heroicon-o-eye')
+                    ->button()
                     ->visible(fn ($record): bool => ! empty($record->advance_form_id))
                     ->url(fn ($record): string => route('purchase-orders.advance-form.download', $record))
                     ->openUrlInNewTab(),
                 Tables\Actions\Action::make('purchase_order_submit')
                     ->label('Submit')
+                    ->button()
                     ->icon('heroicon-o-paper-airplane')
                     ->color('warning')
-                    ->visible(fn ($record) => $record->status == PurchaseOrderStatus::Draft->value &&
+                    ->visible(fn ($record) => $record->status == PurchaseOrderStatus::Draft &&
                         Auth::user()->can('create_purchase::orders')
                     )
                     ->action(function (PurchaseOrders $record) {
                         $record->update([
-                            'status' => PurchaseOrderStatus::Submitted->value,
+                            'status' => PurchaseOrderStatus::Submitted,
                             'is_submitted' => true,
                         ]);
                         foreach ($record->purchaseOrderDetails as $detail) {
 
                             $itemid = Item::where('item_code', $detail->itemcode)->first()->id;
 
-                            PurchaseRequestDetails::where('item_id', $itemid)->where('pr_id', $record->pr_id)->update([
-                                'is_utilized' => true,
-                            ]);
-                            PurchaseRequests::checkAndUpdateClosedStatus($record->pr_id);
+
                         }
                         Notification::make()
                             ->title('PO Submitted successfully')
@@ -337,11 +398,12 @@ class PurchaseOrdersResource extends Resource
                     ->label('Regenerate Advance Form')
                     ->icon('heroicon-o-document')
                     ->color('warning')
+                    ->button()
                     ->requiresConfirmation()
                     ->modalHeading('Advance Form Details')
                     ->modalSubheading('Please fill in the required fields')
                     ->modalButton('Generate')
-                    ->visible(fn ($record) => $record->advance_form_id && $record->is_advance_form_required && $record->status == PurchaseOrderStatus::Submitted->value && $record->payment_method == 'purchase_order' &&
+                    ->visible(fn ($record) => $record->advance_form_id && $record->is_advance_form_required && $record->status == PurchaseOrderStatus::Submitted && $record->payment_method == 'purchase_order' &&
                             Auth::user()->can('create_purchase::orders')
                     )
                     ->form([
@@ -376,9 +438,10 @@ class PurchaseOrdersResource extends Resource
                 Tables\Actions\Action::make('generate_advance_form')
                     ->label('Generate Advance Form')
                     ->icon('heroicon-o-document')
+                    ->button()
                     ->color('info')
                     ->modalHeading('Advance Form Details')
-                    ->visible(fn ($record) => ! $record->advance_form_id && $record->is_advance_form_required && $record->status == PurchaseOrderStatus::Submitted->value && $record->payment_method == 'purchase_order' && Auth::user()->can('create_purchase::orders')
+                    ->visible(fn ($record) => ! $record->advance_form_id && $record->is_advance_form_required && $record->status == PurchaseOrderStatus::Submitted && $record->payment_method == 'purchase_order' && Auth::user()->can('create_purchase::orders')
                     )
                     ->form([
                         Forms\Components\TextInput::make('qoation_no')
@@ -429,7 +492,8 @@ class PurchaseOrdersResource extends Resource
                 Tables\Actions\Action::make('upload_supporting_document')
                     ->label('Upload Reciept')
                     ->icon('heroicon-o-document')
-                    ->visible(fn ($record) => $record->payment_method == 'petty_cash' && ! $record->supporting_document && Auth::user()->can('create_purchase::orders') && $record->status !== PurchaseOrderStatus::Closed->value)
+                    ->button()
+                    ->visible(fn ($record) => $record->payment_method == 'petty_cash' && ! $record->supporting_document && Auth::user()->can('create_purchase::orders') && $record->status !== PurchaseOrderStatus::Closed)
                     ->form([
                         Forms\Components\FileUpload::make('supporting_document')
                             ->label('Document')
@@ -446,6 +510,7 @@ class PurchaseOrdersResource extends Resource
                     }),
                 Tables\Actions\Action::make('view_supporting_document')
                     ->label('View Reciept')
+                    ->button()
                     ->icon('heroicon-o-eye')
                     ->visible(fn ($record) => $record->supporting_document)
                     ->url(fn ($record) => asset('storage/'.$record->supporting_document))
@@ -456,37 +521,25 @@ class PurchaseOrdersResource extends Resource
                     ->icon('heroicon-o-check-circle')
                     ->color('danger')
                     ->requiresConfirmation()
+                    ->button()
                     ->modalDescription('Are you sure you want to close this PR? This action cannot be undone.')
-                    ->visible(fn ($record) => $record->status == PurchaseOrderStatus::Submitted->value && Auth::user()->can('approve_purchase::requests')
-                    || $record->status == PurchaseOrderStatus::Submitted->value && $record->supporting_document && $record->payment_method == 'petty_cash' && Auth::user()->can('create_purchase::orders')
+                    ->visible(fn ($record) => $record->status == PurchaseOrderStatus::Submitted && Auth::user()->can('approve_purchase::requests')
+                    || $record->status == PurchaseOrderStatus::Submitted && $record->supporting_document && $record->payment_method == 'petty_cash' && Auth::user()->can('create_purchase::orders')
                     )
                     ->action(function (PurchaseOrders $record) {
                         if ($record->payment_method == 'petty_cash') {
                             $record->update([
-                                'status' => PurchaseOrderStatus::WaitingReimbursement->value,
+                                'status' => PurchaseOrderStatus::WaitingReimbursement,
                                 'is_closed_by' => Auth::id(),
                             ]);
                         } else {
                             $record->update([
-                                'status' => PurchaseOrderStatus::Closed->value,
+                                'status' => PurchaseOrderStatus::Closed,
                                 'is_closed_by' => Auth::id(),
                             ]);
                         }
 
-                        if ($record->payment_method == 'purchase_order') {
-
-                            foreach ($record->purchaseOrderDetails as $detail) {
-                                $detail->budgetAccount->update([
-                                    'amount' => $detail->budgetAccount->amount - $detail->amount, ]);
-                                BudgetTransactionHistory::createtransaction($detail->budgetAccount->id, 'Purchase Order', $detail->amount, $detail->budgetAccount->amount, 'Purchase Order Closed for PO ('.$record->po_no.' | Item: '.$detail->desc.' )', Auth::id());
-                            }
-                            // $record->purchaseRequest->budgetAccount->update([
-                            //     'amount' => $record->purchaseRequest->budgetAccount->amount - $record->purchaseOrderDetails()->sum('amount'),
-                            // ]);
-
-                            // BudgetTransactionHistory::createtransaction($record->purchaseRequest->budgetAccount->id, 'Purchase Order', $record->purchaseOrderDetails()->sum('amount'), $record->purchaseRequest->budgetAccount->amount, 'Purchase Order Closed', Auth::id());
-
-                        }
+                        PurchaseRequests::checkAndUpdateClosedStatus($record->pr_id);
 
                         Notification::make()
                             ->title('PO Closed successfully')
@@ -516,6 +569,7 @@ class PurchaseOrdersResource extends Resource
             'index' => Pages\ListPurchaseOrders::route('/'),
             'create' => Pages\CreatePurchaseOrders::route('/create'),
             'edit' => Pages\EditPurchaseOrders::route('/{record}/edit'),
+            'view' => Pages\ViewPurchaseOrders::route('/{record}'),
         ];
     }
 }

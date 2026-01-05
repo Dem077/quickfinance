@@ -54,7 +54,7 @@ class PurchaseRequestsPolicy
         // dd($this->send_approval(Auth::user()));
         // dd($this->send_approval($user));
         // return $user->can('update_purchase::requests');
-        if ($purchaseRequests->status == PurchaseRequestsStatus::Approved->value || ($purchaseRequests->status == PurchaseRequestsStatus::Submitted->value && $this->send_approval(Auth::user()))) {
+        if ($purchaseRequests->status == PurchaseRequestsStatus::Approved || ($purchaseRequests->status == PurchaseRequestsStatus::Submitted && $this->send_approval(Auth::user()))) {
             return false;
         }
 

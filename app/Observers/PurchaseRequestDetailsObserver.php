@@ -17,16 +17,7 @@ class PurchaseRequestDetailsObserver
      */
     public function updated(PurchaseRequestDetails $purchaseRequestDetails): void
     {
-        // Debug logging
-        Log::info('PurchaseRequestDetails updated', [
-            'id' => $purchaseRequestDetails->id,
-            'is_utilized' => $purchaseRequestDetails->is_utilized,
-            'isDirty' => $purchaseRequestDetails->isDirty('is_utilized'),
-        ]);
 
-        if ($purchaseRequestDetails->isDirty('is_utilized') && $purchaseRequestDetails->is_utilized) {
-            $purchaseRequestDetails->purchaseRequest->checkAndUpdateClosedStatus();
-        }
     }
 
     /**

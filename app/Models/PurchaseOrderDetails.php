@@ -14,6 +14,7 @@ class PurchaseOrderDetails extends Model
         'unit_measure',
         'qty',
         'unit_price',
+        'tax_amount',
         'budget_account_id',
         'amount',
     ];

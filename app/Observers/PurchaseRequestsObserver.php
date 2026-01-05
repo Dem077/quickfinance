@@ -25,7 +25,9 @@ class PurchaseRequestsObserver
      */
     public function updated(PurchaseRequests $purchaseRequests): void
     {
-        //
+        if ($purchaseRequests->isDirty('status')) {
+            $this->handleStatusChange($purchaseRequests);
+        }
     }
 
     /**
