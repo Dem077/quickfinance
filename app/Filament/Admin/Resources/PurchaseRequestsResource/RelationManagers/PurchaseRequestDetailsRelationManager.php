@@ -36,14 +36,33 @@ class PurchaseRequestDetailsRelationManager extends RelationManager
                         Forms\Components\Select::make('budget_account_id')
                             ->label('Budget Account')
                             ->options(function () {
-                                return \App\Models\SubBudgetAccounts::with('department')
+                                $departmentId = Auth::user()?->department_id;
+
+                                return \App\Models\SubBudgetAccounts::with(['allocations' => function ($query) use ($departmentId) {
+                                    if ($departmentId) {
+                                        $query->where('department_id', $departmentId);
+                                    }
+                                }, 'allocations.department', 'allocations.location'])
                                     ->get()
+                                    ->filter(function ($row) use ($departmentId) {
+                                        return $departmentId
+                                            ? $row->allocations->firstWhere('department_id', $departmentId)
+                                            : $row->allocations->isNotEmpty();
+                                    })
                                     ->mapWithKeys(function ($row) {
-                                        return [
-                                            $row->id => $row->code.' - '.$row->name.
-                                                ($row->department ? ' ('.$row->department->name.
-                                                (isset($row->location) ? ' / '.$row->location->name : '').')' : ''),
-                                        ];
+                                        $allocation = $row->allocations->first();
+                                        $deptName = $allocation?->department?->name;
+                                        $amount = $allocation?->amount ?? 0;
+                                        $location = $allocation?->location?->name ? ' / '.$allocation->location->name : '';
+
+                                        $label = $row->code.' - '.$row->name;
+                                        if ($deptName) {
+                                            $label .= ' ('.$deptName.': '.number_format($amount, 2).$location.')';
+                                        } elseif ($location) {
+                                            $label .= ' ('.$location.')';
+                                        }
+
+                                        return [$row->id => $label];
                                     })
                                     ->toArray();
                             })

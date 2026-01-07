@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Departments extends Model
@@ -41,5 +42,12 @@ class Departments extends Model
     public function subBudgetAccounts()
     {
         return $this->hasMany(SubBudgetAccounts::class, 'department_id');
+    }
+
+    public function subBudgets()
+    {
+        return $this->belongsToMany(SubBudgetAccounts::class, 'sub_budget_department_allocations', 'department_id', 'sub_budget_account_id')
+            ->withPivot('amount')
+            ->withTimestamps();
     }
 }

@@ -20,7 +20,6 @@ class SubBudgetAccountsFactory extends Factory
         return [
             'name' => $this->faker->name,
             'code' => $this->faker->word,
-            'amount' => 500000,
             'budget_account_id' => BudgetAccounts::inRandomOrder()->first()->id,
         ];
     }

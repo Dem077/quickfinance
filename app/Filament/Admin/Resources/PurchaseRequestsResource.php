@@ -43,6 +43,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
             'delete_any',
             'send_approval',
             'approve',
+            'cancel',
         ];
     }
 
@@ -154,14 +155,24 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                                         Forms\Components\Select::make('budget_account')
                                             ->label('Budget Account')
                                             ->options(function () {
-                                                return \App\Models\SubBudgetAccounts::with('department')
+                                                $departmentId = Auth::user()?->department_id;
+
+                                                return \App\Models\SubBudgetAccounts::with(['allocations' => function ($query) use ($departmentId) {
+                                                    if ($departmentId) {
+                                                        $query->where('department_id', $departmentId);
+                                                    }
+                                                }, 'allocations.department'])
                                                     ->get()
+                                                    ->filter(function ($row) use ($departmentId) {
+                                                        return $departmentId
+                                                            ? $row->allocations->firstWhere('department_id', $departmentId)
+                                                            : $row->allocations->isNotEmpty();
+                                                    })
                                                     ->mapWithKeys(function ($row) {
-                                                        return [
-                                                            $row->id => $row->code.' - '.$row->name.
-                                                                ($row->department ? ' ('.$row->department->name.
-                                                                (isset($row->location) ? ' / '.$row->location->name : '').')' : ''),
-                                                        ];
+                                                        $allocation = $row->allocations->first();
+
+                                                        $label = $row->display_name;
+                                                        return [$row->id => $label];
                                                     })
                                                     ->toArray();
                                             })
@@ -365,8 +376,8 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                             ->success()
                             ->send();
                     }),
-                Tables\Actions\Action::make('cancel_purchase_request')
-                    ->label('Cancel')
+                Tables\Actions\Action::make('reject_purchase_request')
+                    ->label('Reject')
                     ->button()
                     ->icon('heroicon-o-check-circle')
                     ->color('danger')
@@ -378,6 +389,33 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                     ])
                     ->visible(fn ($record) => $record->status == PurchaseRequestsStatus::HODApproved &&
                         Auth::user()->can('approve_purchase::requests')
+                    )
+                    ->action(function (PurchaseRequests $record, array $data) {
+                        $record->update([
+                            'status' => PurchaseRequestsStatus::Rejected,
+                            // 'is_canceled' => true,
+                            'cancel_remark' => $data['cancel_remark'],
+                            'approved_canceled_by' => Auth::id(),
+                        ]);
+
+                        Notification::make()
+                            ->title('PR Rejected successfully')
+                            ->warning()
+                            ->send();
+                    }),
+                Tables\Actions\Action::make('cancel_purchase_request')
+                    ->label('Cancel')
+                    ->button()
+                    ->icon('heroicon-o-check-circle')
+                    ->color('danger')
+                    ->form([
+                        Forms\Components\Textarea::make('cancel_remark')
+                            ->label('Cancellation Reason')
+                            ->required()
+                            ->maxLength(255),
+                    ])
+                    ->visible(fn ($record) => $record->status !== PurchaseRequestsStatus::Draft &&
+                        Auth::user()->can('cancel_purchase::requests')
                     )
                     ->action(function (PurchaseRequests $record, array $data) {
                         $record->update([
@@ -396,6 +434,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                     ->label('Send Back To Draft')
                     ->icon('heroicon-o-check-circle')
                     ->color('warning')
+                    ->button()
                     ->visible(fn ($record) => $record->status == PurchaseRequestsStatus::HODApproved &&
                         Auth::user()->can('approve_purchase::requests')
                     )

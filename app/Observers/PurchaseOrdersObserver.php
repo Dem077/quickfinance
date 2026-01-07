@@ -6,6 +6,7 @@ use App\Enums\PurchaseOrderStatus;
 use App\Models\BudgetTransactionHistory;
 use App\Models\PurchaseOrders;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Optional;
 
 class PurchaseOrdersObserver
 {
@@ -23,11 +24,26 @@ class PurchaseOrdersObserver
     public function updated(PurchaseOrders $purchaseOrders): void
     {
         if ($purchaseOrders->payment_method == 'purchase_order' && $purchaseOrders->status === PurchaseOrderStatus::Closed) {
-
             foreach ($purchaseOrders->purchaseOrderDetails as $detail) {
-                $detail->budgetAccount->update([
-                    'amount' => $detail->budgetAccount->amount - $detail->amount, ]);
-                BudgetTransactionHistory::createtransaction($detail->budgetAccount->id, 'Purchase Order', $detail->amount, $detail->budgetAccount->amount, 'Purchase Order Closed for PO ('.$record->po_no.' | Item: '.$detail->desc.' )', Auth::id());
+                // Reduce the allocation for the department tied to this purchase order detail.
+                $allocation = $detail->budgetAccount
+                    ->allocations()
+                    ->where('department_id', $purchaseOrders->purchaseRequest?->department_id)
+                    ->first();
+
+                if ($allocation) {
+                    $newAmount = $allocation->amount - $detail->amount;
+                    $allocation->update(['amount' => $newAmount]);
+
+                    BudgetTransactionHistory::createtransaction(
+                        $detail->budgetAccount->id,
+                        'Purchase Order',
+                        $detail->amount,
+                        $detail->budgetAccount->allocations()->sum('amount'),
+                        'Purchase Order Closed for PO ('.$purchaseOrders->po_no.' | Item: '.$detail->desc.' )',
+                        Auth::id()
+                    );
+                }
             }
         }
     }

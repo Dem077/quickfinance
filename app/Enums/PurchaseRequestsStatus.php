@@ -14,6 +14,7 @@ enum PurchaseRequestsStatus: string implements HasLabel , HasColor
     case DocumentUploaded = 'document_uploaded';
     case Canceled = 'canceled';
     case Approved = 'approved';
+    case Rejected = 'rejected';
     case Closed = 'closed';
 
     public function getLabel(): ?string
@@ -24,8 +25,9 @@ enum PurchaseRequestsStatus: string implements HasLabel , HasColor
             self::HODApproved => 'Department HOD Approved',
             self::HODRejected => 'Department HOD Rejected',
             self::DocumentUploaded => 'Document Uploaded',
-            self::Canceled => 'Finance Rejected',
+            self::Canceled => 'Canceled',
             self::Approved => 'Finance Approved',
+            self::Rejected => 'Finance Rejected',
             self::Closed => 'Closed',
         };
     }
@@ -38,6 +40,7 @@ enum PurchaseRequestsStatus: string implements HasLabel , HasColor
             self::HODRejected => 'danger',
             self::DocumentUploaded => 'info',
             self::Canceled => 'danger',
+            self::Rejected => 'danger',
             self::Approved => 'success',
             self::Closed => 'success',
         };

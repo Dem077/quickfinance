@@ -44,9 +44,9 @@ class BudgetAccountsResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('name')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('total')
+                Tables\Columns\TextColumn::make('total_amount')
                     ->label('Total')
-                    ->getStateUsing(fn ($record) => $record->subBudgetAccounts->sum('amount'))
+                    ->getStateUsing(fn ($record) => $record->subBudgetAccounts->sum(fn ($subBudget) => $subBudget->allocations->sum('amount')))
                     ->money('MVR', locale: 'us'),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
