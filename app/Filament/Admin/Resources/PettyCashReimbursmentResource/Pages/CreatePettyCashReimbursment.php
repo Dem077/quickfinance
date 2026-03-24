@@ -21,6 +21,7 @@ class CreatePettyCashReimbursment extends CreateRecord
                 'bill_no' => $detail['bill_no'],
                 'date' => $detail['date'],
                 'sub_budget_id' => $detail['sub_budget_id'],
+                'item_id' => $detail['item_id'],
                 'details' => $detail['details'],
                 'po_id' => $detail['po_id'],
                 'amount' => $detail['amount'],

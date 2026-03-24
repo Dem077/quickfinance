@@ -17,13 +17,14 @@ class CreatePurchaseOrders extends CreateRecord
         $purchaseOrderDetails = $this->data['purchaseOrderDetails'] ?? [];
 
         foreach ($purchaseOrderDetails as $detail) {
-            $item = Item::where('item_code',$detail['itemcode'])->first()->id;
+            $item = Item::where('item_code',$detail['itemcode'])->first();
             $pr = PurchaseRequests::where('id' , $this->data['pr_id'])->first();
-            $pr->purchaseRequestDetails()->where('item_id',$item)->update(['is_utilized' => true]);
+            $pr->purchaseRequestDetails()->where('item_id',$item->id)->update(['is_utilized' => true]);
             PurchaseOrderDetails::create([
                 'po_id' => $this->record->id,
+                'item_id' => $item->id,
                 'itemcode' => $detail['itemcode'],
-                'desc' => $detail['desc'],
+                'desc' => $item->name,
                 'budget_account_id' => $detail['budget_account'],
                 'unit_measure' => $detail['unit_measure'],
                 'qty' => $detail['qty'],

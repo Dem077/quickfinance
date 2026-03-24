@@ -171,7 +171,7 @@ class PurchaseOrdersResource extends Resource
                                                     ->whereNotIn('item_id', $selectedItems)
                                                     ->with('items')  // Eager load items relationship
                                                     ->get()
-                                                    ->pluck('items.name', 'items.name')  // Use the correct relationship and column
+                                                    ->pluck('items.name', 'id')  // Use the correct relationship and column
                                                     ->toArray();
                                             })
                                             ->disableOptionsWhenSelectedInSiblingRepeaterItems()
@@ -179,9 +179,7 @@ class PurchaseOrdersResource extends Resource
                                             ->afterStateUpdated(function ($state, Get $get, Set $set) {
                                                 if ($state) {
                                                     $prItem = PurchaseRequestDetails::where('pr_id', $get('../../pr_id'))
-                                                        ->whereHas('items', function ($query) use ($state) {
-                                                            $query->where('name', $state);
-                                                        })
+                                                        ->where('id', $state)
                                                         ->with('items', 'budgetAccount')
                                                         ->first();
 

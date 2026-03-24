@@ -8,20 +8,23 @@ use App\Filament\Admin\Resources\PettyCashReimbursmentResource\Pages;
 use App\Filament\Admin\Resources\PettyCashReimbursmentResource\RelationManagers\PettyCashReimbursmentDetailRelationManager;
 use App\Mail\NotificationEmail;
 use App\Mail\StatusEmail;
-use Illuminate\Database\Eloquent\Builder;
 use App\Models\BudgetTransactionHistory;
 use App\Models\PettyCashReimbursment;
+use App\Models\PurchaseOrderDetails;
 use App\Models\PurchaseOrders;
+use App\Models\PurchaseRequestDetails;
 use App\Models\SubBudgetAccounts;
 use App\Models\User;
 use App\Models\Vendors;
 use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
 use Filament\Forms;
-use Filament\Forms\Components\Section;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
+use Filament\Forms\Set;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 
@@ -44,7 +47,6 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
             'fin_hod_approve',
         ];
     }
-
 
     public static function getEloquentQuery(): Builder
     {
@@ -71,7 +73,7 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
         return parent::getEloquentQuery()
             ->where('user_id', $user->id);
     }
-    
+
     public static function form(Form $form): Form
     {
         return $form
@@ -95,53 +97,40 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                 Forms\Components\Hidden::make('status')
                     ->default(PettyCashStatus::Draft)
                     ->required(),
-                Section::make('Details')
+                Forms\Components\Fieldset::make('Details')
                     ->schema([
                         Forms\Components\Repeater::make('reimbursementsitems')
                             ->label('Items / Services')
+                            ->columnSpanFull()
                             ->schema([
                                 Forms\Components\Grid::make()
-                                    ->columns(13)
+                                    ->columns(4)
                                     ->schema([
+                                        Forms\Components\Radio::make('is_from_pr')
+                                            ->label('Is from PR?')
+                                            ->boolean()
+                                            ->default(true)
+                                            ->inline()
+                                            ->reactive()
+                                            ->live()
+                                            ->inlineLabel(false)
+                                            ->afterStateUpdated(function (Get $get, Set $set) {
+
+                                                $set('po_id', null);
+                                                $set('Vendor_id', null);
+                                                $set('bill_no', null);
+                                                $set('item_id', null);
+                                                $set('details', null);
+                                                $set('sub_budget_id', null);
+                                                $set('amount', null);
+
+                                            })
+                                            ->columnSpan(4),
                                         Forms\Components\DatePicker::make('date')
                                             ->native(false)
                                             ->closeOnDateSelection()
                                             ->required()
                                             ->columnSpan(1),
-                                        Forms\Components\Select::make('Vendor_id')
-                                            ->options(
-                                                Vendors::all()->sortBy('name')->pluck('name', 'id')
-                                            )
-                                            ->native(false)
-                                            ->preload()
-                                            ->searchable()
-                                            ->columnSpan(2)
-                                            ->required(),
-                                        Forms\Components\TextInput::make('bill_no')
-                                            ->columnSpan(2)
-                                            ->required(),
-                                        Forms\Components\TextInput::make('details')
-                                            ->columnSpan(2)
-                                            ->required(),
-                                        Forms\Components\Select::make('sub_budget_id')
-                                            ->searchable()
-                                            ->required()
-                                            ->preload()
-                                            ->options(function () {
-                                                return \App\Models\SubBudgetAccounts::with('department')
-                                                    ->get()
-                                                    ->mapWithKeys(function ($row) {
-                                                        return [
-                                                            $row->id => $row->code.' - '.$row->name.
-                                                                ($row->department ? ' ('.$row->department->name.
-                                                                (isset($row->location) ? ' / '.$row->location->name : '').')' : ''),
-                                                        ];
-                                                    })
-                                                    ->toArray();
-                                            })
-                                            ->native(false)
-                                            ->columnSpan(3)
-                                            ->nullable(),
                                         Forms\Components\Select::make('po_id')
                                             ->label('Record ID')
                                             ->options(
@@ -151,20 +140,123 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                                                     ->get()
                                                     ->mapWithKeys(function ($po) {
                                                         $prNo = $po->purchaseRequest?->pr_no ?? 'N/A';
+
                                                         return [
-                                                            $po->id => "{$prNo} ({$po->po_no})"
+                                                            $po->id => "{$prNo} ({$po->po_no})",
                                                         ];
                                                     })
                                                     ->toArray()
                                             )
                                             ->native(false)
                                             ->searchable()
+                                            ->reactive()
+                                            ->live()
+                                            ->hidden(fn (Forms\Get $get) => $get('is_from_pr') == false)
+                                            ->columnSpan(1)
+                                            ->nullable(),
+                                        Forms\Components\Select::make('Vendor_id')
+                                            ->options(
+                                                Vendors::all()->sortBy('name')->pluck('name', 'id')
+                                            )
+                                            ->native(false)
+                                            ->preload()
+                                            ->searchable()
+                                            ->columnSpan(1)
+                                            ->required(),
+                                        Forms\Components\TextInput::make('bill_no')
+                                            ->columnSpan(fn (Forms\Get $get) => $get('is_from_pr') == true ? 1 : 2)
+                                            ->required(),
+                                        Forms\Components\Select::make('item_id')
+                                            ->label('Description')
+                                            ->native(false)
+                                            ->options(function (Get $get, $state, $record) {
+                                                $poId = $get('po_id');
+                                                if (! $poId) {
+                                                    return [];
+                                                }
+
+                                                $details = collect($get('../../reimbursementsitems') ?? []);
+
+                                                $currentIndex = $details->search(function ($item) use ($state) {
+                                                    return $item['item_id'] === $state;
+                                                });
+
+                                                $selectedItems = $details
+                                                    ->filter(function ($item, $index) use ($currentIndex) {
+                                                        return $index !== $currentIndex;
+                                                    })
+                                                    ->pluck('item_id')
+                                                    ->filter()
+                                                    ->toArray();
+
+                                                return PurchaseOrderDetails::where('po_id', $poId)
+                                                    ->whereNotIn('item_id', $selectedItems)
+                                                    ->with('items')
+                                                    ->get()
+                                                    ->filter(fn ($detail) => $detail->items !== null && $detail->items->name !== null)
+                                                    ->mapWithKeys(fn ($detail) => [$detail->item_id => $detail->items->name])
+                                                    ->toArray();
+                                            })
+                                            ->disableOptionsWhenSelectedInSiblingRepeaterItems()
+                                            ->hidden(fn (Forms\Get $get) => $get('is_from_pr') == false)
+                                            ->live()
+                                            ->afterStateUpdated(function ($state, Get $get, Set $set) {
+                                                if ($state) {
+                                                    $poId = $get('po_id');
+                                                    if ($poId) {
+                                                        $poDetail = PurchaseOrderDetails::where('po_id', $poId)
+                                                            ->where('item_id', $state)
+                                                            ->first();
+
+                                                        if ($poDetail) {
+                                                            $set('amount', $poDetail->amount);
+                                                        }
+                                                    }
+                                                }
+                                            })
+                                            ->required()
+                                            ->columnSpan(2),
+                                        Forms\Components\TextInput::make('details')
                                             ->columnSpan(2)
+                                            ->hidden(fn (Forms\Get $get) => $get('is_from_pr') == true)
+                                            ->required(),
+                                        Forms\Components\Select::make('sub_budget_id')
+                                            ->searchable()
+                                            ->preload()
+                                            ->options(function () {
+                                                $departmentId = Auth::user()?->department_id;
+
+                                                return \App\Models\SubBudgetAccounts::with(['allocations' => function ($query) use ($departmentId) {
+                                                    if ($departmentId) {
+                                                        $query->where('department_id', $departmentId);
+                                                    }
+                                                }, 'allocations.department'])
+                                                    ->get()
+                                                    ->filter(function ($row) use ($departmentId) {
+                                                        return $departmentId
+                                                            ? $row->allocations->firstWhere('department_id', $departmentId)
+                                                            : $row->allocations->isNotEmpty();
+                                                    })
+                                                    ->mapWithKeys(function ($row) {
+                                                        $allocation = $row->allocations->first();
+
+                                                        $label = $row->display_name;
+
+                                                        return [$row->id => $label];
+                                                    })
+                                                    ->toArray();
+                                            })
+                                            ->native(false)
+                                            ->required()
+                                            ->columnSpan(1)
                                             ->nullable(),
 
                                         Forms\Components\TextInput::make('amount')
                                             ->columnSpan(1)
                                             ->inputMode('decimal')
+                                            ->live()
+                                            ->reactive()
+                                            ->readOnly(fn (Get $get) => $get('is_from_pr') == true)
                                             ->required()
                                             ->numeric(),
                                     ]),
@@ -216,10 +308,10 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                     ->sortable()
                     ->getStateUsing(fn ($record) => $record->status->value === PettyCashStatus::Submitted->value ? 'Submitted' :
                         ($record->status->value === PettyCashStatus::DepApproved->value ? 'Department HOD Approved' :
-                        ($record->status->value === PettyCashStatus::Dep_Reject->value ? 'Department HOD Rejected' :
-                        ($record->status->value === PettyCashStatus::FinApproved->value ? 'Finance Approved' :
-                        ($record->status->value === PettyCashStatus::Fin_Reject->value ? 'Finance Rejected' :
-                        ($record->status->value === PettyCashStatus::Rembursed->value ? 'Rembursed' : 'Draft'))))))
+                            ($record->status->value === PettyCashStatus::Dep_Reject->value ? 'Department HOD Rejected' :
+                                ($record->status->value === PettyCashStatus::FinApproved->value ? 'Finance Approved' :
+                                    ($record->status->value === PettyCashStatus::Fin_Reject->value ? 'Finance Rejected' :
+                                        ($record->status->value === PettyCashStatus::Rembursed->value ? 'Rembursed' : 'Draft'))))))
                     ->searchable()
                     ->badge()
                     ->color(fn ($state) => match ($state) {
@@ -293,7 +385,7 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
 
                         $useremail = $record->user->email;
 
-                        Mail::to($useremail)->queue(new StatusEmail('Petty Cash Request '.$record->id, 'rejected', '', 'Department HOD' , true));
+                        Mail::to($useremail)->queue(new StatusEmail('Petty Cash Request '.$record->id, 'rejected', '', 'Department HOD', true));
 
                         $pv_approvers = User::permission('pv_approve_petty::cash::reimbursment')->get();
                         foreach ($pv_approvers as $approver) {
@@ -348,8 +440,6 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                         }
                         $useremail = $record->user->email;
                         Mail::to($useremail)->queue(new StatusEmail('Petty Cash Request '.$record->id, 'approved', '', 'Finance'));
-
-
 
                     }),
                 Tables\Actions\Action::make('fin_reject')

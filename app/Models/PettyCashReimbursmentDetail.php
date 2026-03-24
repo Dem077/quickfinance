@@ -10,6 +10,7 @@ class PettyCashReimbursmentDetail extends Model
     protected $fillable = [
         'date',
         'Vendor_id',
+        'item_id',
         'details',
         'po_id',
         'amount',
@@ -28,6 +29,10 @@ class PettyCashReimbursmentDetail extends Model
         return $this->belongsTo(PurchaseOrders::class, 'po_id');
     }
 
+    public function items()
+    {
+        return $this->belongsTo(Item::class, 'item_id');
+    }
     public function subBudget()
     {
         return $this->belongsTo(SubBudgetAccounts::class, 'sub_budget_id');
