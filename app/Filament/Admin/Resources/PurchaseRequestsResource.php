@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Resources;
 
 use App\Enums\PurchaseOrderStatus;
 use App\Enums\PurchaseRequestsStatus;
+use App\Enums\UnitsEnum;
 use App\Filament\Admin\Resources\PurchaseRequestsResource\Pages;
 use App\Filament\Admin\Resources\PurchaseRequestsResource\RelationManagers;
 use App\Models\Departments;
@@ -139,18 +140,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                                             ->required()
                                             ->searchable()
                                             ->native(false)
-                                            ->options([
-                                                'Kg' => 'Kg',
-                                                'Case' => 'Case',
-                                                'Pcs' => 'Pcs',
-                                                'Ltr' => 'Ltr',
-                                                'Each' => 'Each',
-                                                'Bottle' => 'Bottle',
-                                                'Bags' => 'Bags',
-                                                'Feet' => 'Feet',
-                                                'Meter' => 'Meter',
-                                                '-' => '-',
-                                            ])
+                                            ->options(UnitsEnum::class)
                                             ->columnSpan(2),
                                         Forms\Components\Select::make('budget_account')
                                             ->label('Budget Account')
@@ -177,6 +167,27 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                                                     ->toArray();
                                             })
                                             ->searchable()
+                                            ->reactive()
+                                            ->helperText(function (Forms\Get $get): string {
+                                                $budgetAccountId = $get('budget_account');
+                                                $departmentId = Auth::user()?->department_id;
+
+                                                if (! $budgetAccountId || ! $departmentId) {
+                                                    return 'Select a budget account to view your department allocation.';
+                                                }
+
+                                                $account = SubBudgetAccounts::with([
+                                                    'allocations' => fn ($query) => $query->where('department_id', $departmentId),
+                                                ])->find($budgetAccountId);
+
+                                                $allocatedAmount = $account?->allocations->first()?->amount;
+
+                                                if ($allocatedAmount === null) {
+                                                    return 'No allocation found for your department.';
+                                                }
+
+                                                return 'Allocated budget: MVR ' . number_format((float) $allocatedAmount, 2);
+                                            })
                                             ->required()
                                             ->columnSpan(2),
                                         Forms\Components\TextInput::make('amount')
@@ -196,8 +207,20 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                                                     }
                                                     $budgetAccountId = $get('budget_account');
                                                     if ($budgetAccountId) {
-                                                        $account = SubBudgetAccounts::find($budgetAccountId);
-                                                        if ($account && $value > $account->amount) {
+                                                        $departmentId = Auth::user()?->department_id;
+
+                                                        $account = SubBudgetAccounts::with([
+                                                            'allocations' => fn ($query) => $query->where('department_id', $departmentId),
+                                                        ])->find($budgetAccountId);
+
+                                                        $departmentAllocation = $account?->allocations->first();
+
+                                                        if (! $departmentAllocation) {
+                                                            $fail('This budget code is not allocated to your department.');
+                                                            return;
+                                                        }
+
+                                                        if ($value > $departmentAllocation->amount) {
                                                             $fail("You don't have enough funds for this budget code.");
                                                         }
                                                     }
@@ -264,7 +287,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                                 ->description('Total Estimated Cost', 'above')
                                 ->getStateUsing(fn ($record) => $record?->purchaseRequestDetails?->sum('est_cost') ?? 0)
                                 ->numeric()
-                                ->money('MVR', locale: 'us')
+                                ->money('MVR',)
                                 ->sortable(),
                             Tables\Columns\TextColumn::make('user.name')
                                 ->description('Requested By', 'above')

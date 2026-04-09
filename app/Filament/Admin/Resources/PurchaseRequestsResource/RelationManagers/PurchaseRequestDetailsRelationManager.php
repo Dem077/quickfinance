@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources\PurchaseRequestsResource\RelationManagers;
 
+use App\Enums\UnitsEnum;
 use App\Models\SubBudgetAccounts;
 use Closure;
 use Filament\Forms;
@@ -17,6 +18,8 @@ class PurchaseRequestDetailsRelationManager extends RelationManager
 
     public function form(Form $form): Form
     {
+        $ownerRequestUserId = $this->getOwnerRecord()?->user_id;
+
         return $form
             ->schema([
                 Forms\Components\Grid::make()
@@ -24,14 +27,25 @@ class PurchaseRequestDetailsRelationManager extends RelationManager
                     ->schema([
                         Forms\Components\Select::make('item_id')
                             ->relationship('items', 'name')
-                            ->disabled(fn ($record) => $record->purchaseRequest->user_id != Auth::user()->id && Auth::user()->can('approve_purchase::requests') || Auth::user()->is_hod == true && ! Auth::user()->can('send_approval_purchase::requests'))
+                            ->disabled(function ($record) use ($ownerRequestUserId): bool {
+                                $requestOwnerId = $record?->purchaseRequest?->user_id ?? $ownerRequestUserId;
+
+                                return ($requestOwnerId != Auth::id() && Auth::user()->can('approve_purchase::requests'))
+                                    || (Auth::user()->is_hod == true && ! Auth::user()->can('send_approval_purchase::requests'));
+                            })
                             ->required()
                             ->searchable()
                             ->columnSpan(2),
-                        Forms\Components\TextInput::make('unit')
-                            ->disabled(fn ($record) => $record->purchaseRequest->user_id != Auth::user()->id && Auth::user()->can('approve_purchase::requests') || Auth::user()->is_hod == true && ! Auth::user()->can('send_approval_purchase::requests'))
+                        Forms\Components\Select::make('unit')
+                            ->disabled(function ($record) use ($ownerRequestUserId): bool {
+                                $requestOwnerId = $record?->purchaseRequest?->user_id ?? $ownerRequestUserId;
+
+                                return ($requestOwnerId != Auth::id() && Auth::user()->can('approve_purchase::requests'))
+                                    || (Auth::user()->is_hod == true && ! Auth::user()->can('send_approval_purchase::requests'));
+                            })
+                            ->options(UnitsEnum::class)
+                            ->native(false)
                             ->required()
-                            ->maxLength(255)
                             ->columnSpan(2),
                         Forms\Components\Select::make('budget_account_id')
                             ->label('Budget Account')
@@ -67,15 +81,32 @@ class PurchaseRequestDetailsRelationManager extends RelationManager
                                     ->toArray();
                             })
                             ->searchable()
-                            ->disabled(fn ($record) => $record->purchaseRequest->user_id != Auth::user()->id && Auth::user()->is_hod == true && ! Auth::user()->can('send_approval_purchase::requests') && ! Auth::user()->can('approve_purchase::requests'))
+                            ->disabled(function ($record) use ($ownerRequestUserId): bool {
+                                $requestOwnerId = $record?->purchaseRequest?->user_id ?? $ownerRequestUserId;
+
+                                return $requestOwnerId != Auth::id()
+                                    && Auth::user()->is_hod == true
+                                    && ! Auth::user()->can('send_approval_purchase::requests')
+                                    && ! Auth::user()->can('approve_purchase::requests');
+                            })
                             ->required()
                             ->columnSpan(4),
                         Forms\Components\TextInput::make('amount')
-                            ->disabled(fn ($record) => $record->purchaseRequest->user_id != Auth::user()->id && Auth::user()->can('approve_purchase::requests') || Auth::user()->is_hod == true && ! Auth::user()->can('send_approval_purchase::requests'))
+                            ->disabled(function ($record) use ($ownerRequestUserId): bool {
+                                $requestOwnerId = $record?->purchaseRequest?->user_id ?? $ownerRequestUserId;
+
+                                return ($requestOwnerId != Auth::id() && Auth::user()->can('approve_purchase::requests'))
+                                    || (Auth::user()->is_hod == true && ! Auth::user()->can('send_approval_purchase::requests'));
+                            })
                             ->maxLength(255)
                             ->columnSpan(2),
                         Forms\Components\TextInput::make('est_cost')
-                            ->disabled(fn ($record) => $record->purchaseRequest->user_id != Auth::user()->id && Auth::user()->can('approve_purchase::requests') || Auth::user()->is_hod == true && ! Auth::user()->can('send_approval_purchase::requests'))
+                            ->disabled(function ($record) use ($ownerRequestUserId): bool {
+                                $requestOwnerId = $record?->purchaseRequest?->user_id ?? $ownerRequestUserId;
+
+                                return ($requestOwnerId != Auth::id() && Auth::user()->can('approve_purchase::requests'))
+                                    || (Auth::user()->is_hod == true && ! Auth::user()->can('send_approval_purchase::requests'));
+                            })
                             ->required()
                             ->numeric()
                             ->reactive()
@@ -86,8 +117,20 @@ class PurchaseRequestDetailsRelationManager extends RelationManager
                                     }
                                     $budgetAccountId = $get('budget_account_id');
                                     if ($budgetAccountId) {
-                                        $account = SubBudgetAccounts::find($budgetAccountId);
-                                        if ($account && $value > $account->amount) {
+                                        $departmentId = Auth::user()?->department_id;
+
+                                        $account = SubBudgetAccounts::with([
+                                            'allocations' => fn ($query) => $query->where('department_id', $departmentId),
+                                        ])->find($budgetAccountId);
+
+                                        $departmentAllocation = $account?->allocations->first();
+
+                                        if (! $departmentAllocation) {
+                                            $fail('This budget code is not allocated to your department.');
+                                            return;
+                                        }
+
+                                        if ($value > $departmentAllocation->amount) {
                                             $fail("You don't have enough funds for this budget code.");
                                         }
                                     }

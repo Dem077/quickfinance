@@ -158,7 +158,7 @@ class PettyCashReimbursmentDetailRelationManager extends RelationManager
                         return "{$poNo} ({$prNo})";
                     }),
                 Tables\Columns\TextColumn::make('amount')
-                    ->money('MVR', locale: 'us'),
+                    ->money('MVR',),
             ])
             ->filters([
                 //

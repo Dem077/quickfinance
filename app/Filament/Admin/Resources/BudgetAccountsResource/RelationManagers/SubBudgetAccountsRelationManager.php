@@ -86,7 +86,7 @@ class SubBudgetAccountsRelationManager extends RelationManager
                     ->wrap(),
                 Tables\Columns\TextColumn::make('total_amount')
                     ->label('Total')
-                    ->money('MVR', locale: 'us'),
+                    ->money('MVR',),
             ])
             ->filters([
                 //

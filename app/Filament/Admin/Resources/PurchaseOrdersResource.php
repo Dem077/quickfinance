@@ -12,6 +12,7 @@ use App\Models\PurchaseOrders;
 use App\Models\PurchaseRequestDetails;
 use App\Models\PurchaseRequests;
 use Filament\Forms;
+use App\Enums\UnitsEnum;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
@@ -194,11 +195,12 @@ class PurchaseOrdersResource extends Resource
                                             ->disabled(fn (Get $get) => ! $get('../../pr_id'))
                                             ->required()
                                             ->columnSpan(2),
-                                        Forms\Components\TextInput::make('unit_measure')
+                                        Forms\Components\Select::make('unit_measure')
                                             ->label('U/M')
+                                            ->native(false)
+                                            ->options(UnitsEnum::class)
                                             ->required()
                                             ->disabled()
-                                            ->maxLength(255)
                                             ->columnSpan(2),
                                         Forms\Components\TextInput::make('qty')
                                             ->label('Quantity')
@@ -335,7 +337,7 @@ class PurchaseOrdersResource extends Resource
                                 ->sortable(),
                             Tables\Columns\TextColumn::make('total_amount')
                                 ->description('Total Amount', 'above')
-                                ->money('MVR', locale: 'us')
+                                ->money('MVR',)
                                 ->sortable()
                                 ->getStateUsing(fn ($record) => $record->purchaseOrderDetails->sum('amount')),
 

@@ -14,6 +14,7 @@ use App\Models\PurchaseOrderDetails;
 use App\Models\PurchaseOrders;
 use App\Models\PurchaseRequestDetails;
 use App\Models\SubBudgetAccounts;
+use App\Models\SubBudgetDepartmentAllocation;
 use App\Models\User;
 use App\Models\Vendors;
 use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
@@ -301,7 +302,7 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                     }),
                 Tables\Columns\TextColumn::make('total_amount')
                     ->label('Total Amount')
-                    ->money('MVR', locale: 'us')
+                    ->money('MVR',)
                     ->getStateUsing(fn ($record) => $record->pettyCashReimbursmentDetails->sum('amount'))
                     ->sortable(),
                 Tables\Columns\TextColumn::make('status')
@@ -415,9 +416,22 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                         ]);
 
                         foreach ($record->pettyCashReimbursmentDetails as $detail) {
+                            $departmentId = $record->user?->department_id;
 
-                            $detail->subBudget->update([
-                                'amount' => $detail->subBudget->amount - $detail->amount,
+                            if (! $departmentId) {
+                                continue;
+                            }
+
+                            $allocation = SubBudgetDepartmentAllocation::where('sub_budget_account_id', $detail->sub_budget_id)
+                                ->where('department_id', $departmentId)
+                                ->first();
+
+                            if (! $allocation) {
+                                continue;
+                            }
+
+                            $allocation->update([
+                                'amount' => $allocation->amount - $detail->amount,
                             ]);
 
                             if ($detail->purchaseOrder !== null) {
@@ -430,7 +444,7 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                                 $detail->sub_budget_id,
                                 'Petty Cash Reimbursement',
                                 $detail->amount,
-                                SubBudgetAccounts::find($detail->sub_budget_id)->amount,
+                                (float) $allocation->fresh()->amount,
                                 'Petty Cash Reimbursement for Request ID '.$record->id,
                                 Auth::id()
                             );

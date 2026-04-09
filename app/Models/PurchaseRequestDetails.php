@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\UnitsEnum;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -15,6 +16,10 @@ class PurchaseRequestDetails extends Model
         'pr_id',
         'is_utilized',
         'est_cost',
+    ];
+
+    protected $casts = [
+        'unit' => UnitsEnum::class,
     ];
 
     public function purchaseRequest(): BelongsTo
