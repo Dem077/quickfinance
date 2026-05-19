@@ -4,6 +4,7 @@ namespace App\Providers\Filament;
 
 use Filament\Enums\ThemeMode;
 use App\Livewire\MyCustomProfileComponent;
+use App\Http\Middleware\RemindSignatureIfMissing;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
@@ -61,7 +62,7 @@ class AdminPanelProvider extends PanelProvider
                     ->gridColumns([
                         'default' => 1,
                         'sm' => 2,
-                        'lg' => 3,
+                        'lg' => 2,
                     ])
                     ->sectionColumnSpan(1)
                     ->checkboxListColumns([
@@ -112,6 +113,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
+                RemindSignatureIfMissing::class,
             ]);
     }
 }

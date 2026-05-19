@@ -9,6 +9,8 @@ use App\Observers\AdvanceFormObserver;
 use App\Observers\PurchaseRequestDetailsObserver;
 use App\Policies\ActivityPolicy;
 use App\Policies\PurchaseRequestsPolicy;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Spatie\Activitylog\Models\Activity;
@@ -32,5 +34,11 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Activity::class, ActivityPolicy::class);
         PurchaseRequestDetails::observe(PurchaseRequestDetailsObserver::class);
         AdvanceForm::observe(AdvanceFormObserver::class);
+
+        Event::listen(Login::class, function (Login $event): void {
+            if (blank($event->user->signature)) {
+                session()->put('remind_signature', true);
+            }
+        });
     }
 }
