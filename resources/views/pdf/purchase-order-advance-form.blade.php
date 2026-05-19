@@ -209,20 +209,32 @@
                 </tr>
             </thead>
             <tbody>
-                <tr > 
-                    <td style="height: 70px; border-right: 1px solid #000"></td>
-                    <td style="height: 70px; border-right: 1px solid #000"></td>
-                    <td style="height: 70px;"></td>
+                <tr>
+                    <td style="height: 70px; text-align: center; border-right: 1px solid #000">
+                        @if($record->user?->signature && $record->status !== \App\Enums\AdvanceFormStatus::Draft)
+                            <img src="{{ $record->user->signature }}" alt="Signature" style="width: 30%; height: 10%;">
+                        @endif
+                    </td>
+                    <td style="height: 70px; text-align: center; border-right: 1px solid #000">
+                        @if($record->hodApprovedBy?->signature)
+                            <img src="{{ $record->hodApprovedBy->signature }}" alt="Signature" style="width: 30%; height: 10%;">
+                        @endif
+                    </td>
+                    <td style="height: 70px; text-align: center;">
+                        @if($record->mdDmdApprovedBy?->signature)
+                            <img src="{{ $record->mdDmdApprovedBy->signature }}" alt="Signature" style="width: 30%; height: 10%;">
+                        @endif
+                    </td>
                 </tr>
                 <tr>
-                    <td style="padding: 0%; text-align:center; width:33%; border-right: 1px solid #000"><strong>{{$record->user->name}}</strong></td>
-                    <td style="padding: 0%; text-align:center; width:33%; border-right: 1px solid #000"><strong>{{$record->user->department->user->name}}</strong></td>
-                    <td style="padding: 0%; text-align:center; width:33%;"><strong></strong></td>
+                    <td style="padding: 0%; text-align:center; width:33%; border-right: 1px solid #000"><strong>{{ $record->user?->name }}</strong></td>
+                    <td style="padding: 0%; text-align:center; width:33%; border-right: 1px solid #000"><strong>{{ $record->hodApprovedBy?->name }}</strong></td>
+                    <td style="padding: 0%; text-align:center; width:33%;"><strong>{{ $record->mdDmdApprovedBy?->name }}</strong></td>
                 </tr>
                 <tr>
-                    <td style="padding: 0%; text-align:center; height:30px; width:33%; border-right: 1px solid #000">{{$record->user->designation}}</td>
-                    <td style="padding: 0%; text-align:center; height:30px; width:33%; border-right: 1px solid #000">{{$record->user->department->user->designation}}</td>
-                    <td style="padding: 0%; text-align:center; height:30px; width:33%;">Managing Director / DMD /GM</td>
+                    <td style="padding: 0%; text-align:center; height:30px; width:33%; border-right: 1px solid #000">{{ $record->user?->designation }}</td>
+                    <td style="padding: 0%; text-align:center; height:30px; width:33%; border-right: 1px solid #000">{{ $record->hodApprovedBy?->designation ?? 'HOD'}}</td>
+                    <td style="padding: 0%; text-align:center; height:30px; width:33%;">{{ $record->mdDmdApprovedBy?->designation ?? 'Managing Director / DMD / GM' }}</td>
                 </tr>
             </tbody>
         </table>

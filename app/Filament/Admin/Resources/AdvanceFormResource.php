@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources;
 
+use App\Enums\AdvanceFormStatus;
 use App\Filament\Admin\Resources\AdvanceFormResource\Pages;
 use App\Models\AdvanceForm;
 use Filament\Forms;
@@ -49,6 +50,11 @@ class AdvanceFormResource extends Resource
                 Forms\Components\Select::make('vendors_id')
                     ->relationship('vendor', 'name')
                     ->required(),
+                Forms\Components\Select::make('status')
+                    ->options(AdvanceFormStatus::class)
+                    ->default(AdvanceFormStatus::Draft)
+                    ->native(false)
+                    ->required(),
             ]);
     }
 
@@ -65,6 +71,12 @@ class AdvanceFormResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('request_number')
                     ->searchable(),
+                Tables\Columns\TextColumn::make('status')
+                    ->badge()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('purchaseOrder.po_no')
+                    ->label('PO No.')
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('advance_percentage')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('advance_amount')
@@ -83,7 +95,8 @@ class AdvanceFormResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('status')
+                    ->options(AdvanceFormStatus::class),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),

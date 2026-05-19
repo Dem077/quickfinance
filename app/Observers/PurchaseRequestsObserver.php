@@ -59,6 +59,12 @@ class PurchaseRequestsObserver
         $status = $purchaseRequest->status;
         $pruser = $purchaseRequest->user;
         $hod = $pruser->department->user->email;
+        $finance = User::WhereHas('roles.permissions', function ($query) {
+            $query->where('name', 'approve_purchase::requests');
+        })->pluck('email')->toArray();
+        $md_dmd = User::WhereHas('roles.permissions', function ($query) {
+            $query->where('name', 'md_dmd_approve_purchase::requests');
+        })->pluck('email')->toArray();
         $proce = User::WhereHas('roles.permissions', function ($query) {
             $query->where('name', 'view_any_purchase::orders')->orwhere('name', 'view_purchase::orders');
         })->pluck('email')->toArray();
@@ -66,11 +72,21 @@ class PurchaseRequestsObserver
         match ($status) {
             PurchaseRequestsStatus::Submitted->value => Mail::to($hod)->queue(new NotificationEmail('Purchase Request '.$purchaseRequest->pr_no)),
 
+            PurchaseRequestsStatus::HODApproved->value => Mail::to($finance)->queue(new NotificationEmail('Purchase Request '.$purchaseRequest->pr_no)),
+
+            PurchaseRequestsStatus::Approved->value => Mail::to($md_dmd)->queue(new NotificationEmail('Purchase Request '.$purchaseRequest->pr_no)),
+
             PurchaseRequestsStatus::HODApproved->value => Mail::to($pruser->email)->queue(new StatusEmail('Purchase Request '.$purchaseRequest->pr_no, 'approved', '', 'HOD')),
 
             PurchaseRequestsStatus::HODRejected->value => Mail::to($pruser->email)->queue(new StatusEmail('Purchase Request '.$purchaseRequest->pr_no, 'rejected', '', 'HOD')),
 
             PurchaseRequestsStatus::Approved->value => Mail::to($pruser->email)->queue(new StatusEmail('Purchase Request '.$purchaseRequest->pr_no, 'approved', '', 'Finance')),
+
+            PurchaseRequestsStatus::Rejected->value => Mail::to($pruser->email)->queue(new StatusEmail('Purchase Request '.$purchaseRequest->pr_no, 'rejected', '', 'Finance')),
+
+            PurchaseRequestsStatus::MD_DMD_Approved->value => Mail::to($pruser->email)->queue(new StatusEmail('Purchase Request '.$purchaseRequest->pr_no, 'approved', '', 'MD / DMD')),
+
+            PurchaseRequestsStatus::MD_DMD_Rejected->value => Mail::to($pruser->email)->queue(new StatusEmail('Purchase Request '.$purchaseRequest->pr_no, 'rejected', '', 'MD / DMD')),
 
             PurchaseRequestsStatus::Canceled->value => Mail::to($pruser->email)->queue(new StatusEmail('Purchase Request '.$purchaseRequest->pr_no, 'canceled', $purchaseRequest->cancel_remark, '')),
 

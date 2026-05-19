@@ -2,8 +2,10 @@
 
 namespace App\Providers;
 
+use App\Models\AdvanceForm;
 use App\Models\PurchaseRequestDetails;
 use App\Models\PurchaseRequests;
+use App\Observers\AdvanceFormObserver;
 use App\Observers\PurchaseRequestDetailsObserver;
 use App\Policies\ActivityPolicy;
 use App\Policies\PurchaseRequestsPolicy;
@@ -29,5 +31,6 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(PurchaseRequests::class, PurchaseRequestsPolicy::class);
         Gate::policy(Activity::class, ActivityPolicy::class);
         PurchaseRequestDetails::observe(PurchaseRequestDetailsObserver::class);
+        AdvanceForm::observe(AdvanceFormObserver::class);
     }
 }

@@ -7,11 +7,13 @@ use App\Enums\PurchaseRequestsStatus;
 use App\Enums\UnitsEnum;
 use App\Filament\Admin\Resources\PurchaseOrdersResource\Pages;
 use App\Filament\Admin\Resources\PurchaseOrdersResource\RelationManagers;
+use App\Enums\AdvanceFormStatus;
 use App\Models\AdvanceForm;
 use App\Models\Item;
 use App\Models\PurchaseOrders;
 use App\Models\PurchaseRequestDetails;
 use App\Models\PurchaseRequests;
+use Filament\Tables\Actions\ActionGroup;
 use Filament\Forms;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Form;
@@ -25,8 +27,9 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
+use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
 
-class PurchaseOrdersResource extends Resource
+class PurchaseOrdersResource extends Resource implements HasShieldPermissions
 {
     protected static ?string $model = PurchaseOrders::class;
 
@@ -52,6 +55,7 @@ class PurchaseOrdersResource extends Resource
             'delete',
             'delete_any',
             'generate_advance_form',
+            'md_dmd_approve_advance_form',
         ];
     }
 
@@ -345,6 +349,16 @@ class PurchaseOrdersResource extends Resource
                                 ->money('MVR')
                                 ->sortable()
                                 ->getStateUsing(fn ($record) => $record->purchaseOrderDetails->sum('amount')),
+                            Tables\Columns\TextColumn::make('advanceForm.status')
+                                ->sortable()
+                                ->description('Advanceform Status', 'above')
+                                ->alignleft()
+                                ->columnSpanFull()
+                                ->searchable()
+                                ->size('lg')
+                                ->weight('bold')
+                                ->extraAttributes(['class' => 'w-100'])
+                                ->badge(),
 
                         ]),
                 ])->space(3)->extraAttributes([
@@ -402,13 +416,7 @@ class PurchaseOrdersResource extends Resource
                     ->button()
                     ->visible(fn ($record) => $record->status === PurchaseOrderStatus::Draft && Auth::user()->can('create_purchase::orders')),
 
-                Tables\Actions\Action::make('view_advance_form')
-                    ->label('View Advance Form')
-                    ->icon('heroicon-o-eye')
-                    ->button()
-                    ->visible(fn ($record): bool => ! empty($record->advance_form_id))
-                    ->url(fn ($record): string => route('purchase-orders.advance-form.download', $record))
-                    ->openUrlInNewTab(),
+                
                 Tables\Actions\Action::make('purchase_order_submit')
                     ->label('Submit')
                     ->button()
@@ -432,100 +440,230 @@ class PurchaseOrdersResource extends Resource
                             ->success()
                             ->send();
                     }),
-                Tables\Actions\Action::make('regenerate_advance_form')
-                    ->label('Regenerate Advance Form')
-                    ->icon('heroicon-o-document')
-                    ->color('warning')
-                    ->button()
-                    ->requiresConfirmation()
-                    ->modalHeading('Advance Form Details')
-                    ->modalSubheading('Please fill in the required fields')
-                    ->modalButton('Generate')
-                    ->visible(fn ($record) => $record->advance_form_id && $record->is_advance_form_required && $record->status == PurchaseOrderStatus::Submitted && $record->payment_method == 'purchase_order' &&
-                            Auth::user()->can('create_purchase::orders')
-                    )
-                    ->form([
-                        Forms\Components\TextInput::make('qoation_no')
-                            ->label('Qoaution No')
-                            ->required(),
-                        Forms\Components\TextInput::make('expected_delivery')
-                            ->label('Expected Delivery In Days')
-                            ->required(),
-                        Forms\Components\TextInput::make('advance_amount')
-                            ->label('Advance Amount %')
-                            ->numeric()
-                            ->suffix('%')
-                            ->required(),
-                    ])
-                    ->action(function (array $data, PurchaseOrders $record) {
+                ActionGroup::make([
+                    Tables\Actions\Action::make('submite_advance_form')
+                        ->label('Submit Form')
+                        ->icon('heroicon-o-paper-airplane')
+                        ->color('success')
+                        //->button()
+                        ->requiresConfirmation()
+                        ->modalHeading('Advance Form Details')
+                        ->modalSubheading('Please fill in the required fields')
+                        ->modalButton('Submit')
+                        ->visible(fn ($record) => $record->advance_form_id
+                            && $record->is_advance_form_required
+                            && $record->status == PurchaseOrderStatus::Submitted
+                            && $record->payment_method == 'purchase_order'
+                            && Auth::user()->can('create_purchase::orders')
+                            && $record->advanceForm?->status === AdvanceFormStatus::Draft
+                            && $record->advanceForm?->generated_by == Auth::id()
+                        )
+                        ->action(function (PurchaseOrders $record) {
+                            $record->advanceForm?->update([
+                                'status' => AdvanceFormStatus::Submitted,
+                            ]);
 
-                        // Create the Advance Form record with user inputs
-                        $advanceForm = $record->advanceForm()->update([
-                            'qoation_no' => $data['qoation_no'],
-                            'expected_delivery' => $data['expected_delivery'],
-                            'advance_percentage' => ($data['advance_amount']),
-                            'advance_amount' => (($data['advance_amount'] / 100) * $record->purchaseOrderDetails()->sum('amount')),
-                            'balance_amount' => $record->purchaseOrderDetails()->sum('amount') - ($data['advance_amount'] / 100) * $record->purchaseOrderDetails()->sum('amount'),
-                            'generated_by' => Auth::id(),
-                        ]);
+                            Notification::make()
+                                ->title('Advance form submitted successfully')
+                                ->success()
+                                ->send();
+                        }),
+                    Tables\Actions\Action::make('hod_approve_advance_form')
+                        ->label('HOD Approve Form')
+                        ->icon('heroicon-o-check-circle')
+                        ->color('success')
+                        //->button()
+                        ->requiresConfirmation()
+                        ->visible(fn ($record) => $record->advance_form_id
+                            && $record->is_advance_form_required
+                            && $record->payment_method == 'purchase_order'
+                            && $record->advanceForm?->status === AdvanceFormStatus::Submitted
+                            && $record->advanceForm?->user->department->user->id == Auth::id()
+                        )
+                        ->action(function (PurchaseOrders $record) {
+                            $record->advanceForm?->update([
+                                'status' => AdvanceFormStatus::HOD_Approved,
+                                'hod_approved_by' => Auth::id(),
+                            ]);
 
-                        // Redirect to the route that generates the PDF with the advance form data
-                        return redirect()->route('purchase-orders.advance-form.download', $record);
+                            Notification::make()
+                                ->title('Advance form HOD approved successfully')
+                                ->success()
+                                ->send();
+                        }),
+                        
+                    Tables\Actions\Action::make('hod_reject_advance_form')
+                        ->label('HOD Reject Form')
+                        ->icon('heroicon-o-x-circle')
+                        ->color('danger')
+                        //->button()
+                        ->requiresConfirmation()
+                        ->visible(fn ($record) => 
+                            $record->advance_form_id
+                            && $record->is_advance_form_required
+                            && $record->payment_method == 'purchase_order'
+                            && $record->advanceForm?->status === AdvanceFormStatus::Submitted
+                            && $record->advanceForm?->user->department->user->id == Auth::id()
+                        )
+                        ->action(function (PurchaseOrders $record) {
+                            $record->advanceForm?->update([
+                                'status' => AdvanceFormStatus::HOD_Rejected,
+                            ]);
 
-                    }),
-                Tables\Actions\Action::make('generate_advance_form')
-                    ->label('Generate Advance Form')
-                    ->icon('heroicon-o-document')
-                    ->button()
-                    ->color('info')
-                    ->modalHeading('Advance Form Details')
-                    ->visible(fn ($record) => ! $record->advance_form_id && $record->is_advance_form_required && $record->status == PurchaseOrderStatus::Submitted && $record->payment_method == 'purchase_order' && Auth::user()->can('create_purchase::orders')
-                    )
-                    ->form([
-                        Forms\Components\TextInput::make('qoation_no')
-                            ->label('Qoaution No')
-                            ->required(),
-                        Forms\Components\TextInput::make('expected_delivery')
-                            ->label('Expected Delivery In Days')
-                            ->numeric()
-                            ->required(),
-                        Forms\Components\TextInput::make('advance_amount')
-                            ->label('Advance Amount %')
-                            ->numeric()
-                            ->suffix('%')
-                            ->required(),
-                    ])
-                    ->action(function (array $data, PurchaseOrders $record) {
+                            Notification::make()
+                                ->title('Advance form HOD rejected successfully')
+                                
+                                ->danger()
+                                ->send();
+                        }),
+                    Tables\Actions\Action::make('md_dmd_approve_advance_form')
+                        ->label('MD / DMD Approve Form')
+                        ->icon('heroicon-o-check-circle')
+                        ->color('success')
+                        ->requiresConfirmation()
+                        ->visible(fn ($record) => $record->advanceForm?->status === AdvanceFormStatus::HOD_Approved && Auth::user()->can('md_dmd_approve_advance_form_purchase::orders')
+                        )
+                        ->action(function (PurchaseOrders $record) {
+                            $record->advanceForm?->update([
+                                'status' => AdvanceFormStatus::DMD_MD_Approved,
+                                'md_dmd_approved_by' => Auth::id(),
+                            ]);
 
-                        $count = 1157 + 1;
+                            Notification::make()
+                                ->title('Advance form MD / DMD approved successfully')
+                                ->success()
+                                ->send();
+                        }),
+                    Tables\Actions\Action::make('md_dmd_reject_advance_form')
+                        ->label('MD / DMD Reject Form')
+                        ->icon('heroicon-o-x-circle')
+                        ->color('danger')
+                        ->requiresConfirmation()
+                        ->visible(fn ($record) => $record->advanceForm?->status === AdvanceFormStatus::HOD_Approved && Auth::user()->can('md_dmd_approve_advance_form_purchase::orders')
+                        )
+                        ->action(function (PurchaseOrders $record) {
+                            $record->advanceForm?->update([
+                                'status' => AdvanceFormStatus::DMD_MD_Rejected,
+                            ]);
 
-                        do {
-                            $request_number = sprintf('LADV/PROC/%04d', $count);
-                            $exists = AdvanceForm::where('request_number', $request_number)->exists();
-                            if ($exists) {
-                                $count++;
-                            }
-                        } while ($exists);
+                            Notification::make()
+                                ->title('Advance form MD / DMD rejected successfully')
+                                ->danger()
+                                ->send();
+                        }),
+                    Tables\Actions\Action::make('regenerate_advance_form')
+                        ->label('Regenerate Form')
+                        ->icon('heroicon-o-document')
+                        ->color('warning')
+                        //->button()
+                        ->requiresConfirmation()
+                        ->modalHeading('Advance Form Details')
+                        ->modalSubheading('Please fill in the required fields')
+                        ->modalButton('Generate')
+                        ->visible(fn ($record) => $record->advance_form_id
+                                && $record->is_advance_form_required
+                                && $record->status == PurchaseOrderStatus::Submitted
+                                && $record->payment_method == 'purchase_order'
+                                && Auth::user()->can('generate_advance_form_purchase::orders')
+                                && $record->advanceForm?->status === AdvanceFormStatus::Draft
+                        )
+                        ->form([
+                            Forms\Components\TextInput::make('qoation_no')
+                                ->label('Qoaution No')
+                                ->required(),
+                            Forms\Components\TextInput::make('expected_delivery')
+                                ->label('Expected Delivery In Days')
+                                ->required(),
+                            Forms\Components\TextInput::make('advance_amount')
+                                ->label('Advance Amount %')
+                                ->numeric()
+                                ->suffix('%')
+                                ->required(),
+                        ])
+                        ->action(function (array $data, PurchaseOrders $record) {
 
-                        // Create the Advance Form record with user inputs
-                        $advanceForm = $record->advanceForm()->create([
-                            'qoation_no' => $data['qoation_no'],
-                            'expected_delivery' => $data['expected_delivery'],
-                            'advance_percentage' => ($data['advance_amount']),
-                            'advance_amount' => (($data['advance_amount'] / 100) * $record->purchaseOrderDetails()->sum('amount')),
-                            'request_number' => $request_number,
-                            'vendors_id' => $record->vendor_id,
-                            'balance_amount' => $record->purchaseOrderDetails()->sum('amount') - ($data['advance_amount'] / 100) * $record->purchaseOrderDetails()->sum('amount'),
-                            'generated_by' => Auth::id(),
-                        ]);
-                        $record->update([
-                            'advance_form_id' => $advanceForm->id,
-                        ]);
+                            $record->advanceForm()->update([
+                                'qoation_no' => $data['qoation_no'],
+                                'expected_delivery' => $data['expected_delivery'],
+                                'advance_percentage' => ($data['advance_amount']),
+                                'advance_amount' => (($data['advance_amount'] / 100) * $record->purchaseOrderDetails()->sum('amount')),
+                                'balance_amount' => $record->purchaseOrderDetails()->sum('amount') - ($data['advance_amount'] / 100) * $record->purchaseOrderDetails()->sum('amount'),
+                                'generated_by' => Auth::id(),
+                            ]);
 
-                        // Redirect to the route that generates the PDF with the advance form data
-                        return redirect()->route('purchase-orders.advance-form.download', $record);
+                            // Redirect to the route that generates the PDF with the advance form data
+                            return redirect()->route('purchase-orders.advance-form.download', $record);
 
-                    }),
+                        }),
+                    Tables\Actions\Action::make('generate_advance_form')
+                        ->label('Generate Form')
+                        ->icon('heroicon-o-document')
+                        //->button()
+                        ->color('info')
+                        ->modalHeading('Advance Form Details')
+                        ->visible(fn ($record) => ! $record->advance_form_id && $record->is_advance_form_required && $record->status == PurchaseOrderStatus::Submitted && $record->payment_method == 'purchase_order' && Auth::user()->can('generate_advance_form_purchase::orders')
+                        )
+                        ->form([
+                            Forms\Components\TextInput::make('qoation_no')
+                                ->label('Qoaution No')
+                                ->required(),
+                            Forms\Components\TextInput::make('expected_delivery')
+                                ->label('Expected Delivery In Days')
+                                ->numeric()
+                                ->required(),
+                            Forms\Components\TextInput::make('advance_amount')
+                                ->label('Advance Amount %')
+                                ->numeric()
+                                ->suffix('%')
+                                ->required(),
+                        ])
+                        ->action(function (array $data, PurchaseOrders $record) {
+
+                            $count = 1157 + 1;
+
+                            do {
+                                $request_number = sprintf('LADV/PROC/%04d', $count);
+                                $exists = AdvanceForm::where('request_number', $request_number)->exists();
+                                if ($exists) {
+                                    $count++;
+                                }
+                            } while ($exists);
+
+                            // Create the Advance Form record with user inputs
+                            $advanceForm = $record->advanceForm()->create([
+                                'qoation_no' => $data['qoation_no'],
+                                'expected_delivery' => $data['expected_delivery'],
+                                'advance_percentage' => ($data['advance_amount']),
+                                'advance_amount' => (($data['advance_amount'] / 100) * $record->purchaseOrderDetails()->sum('amount')),
+                                'request_number' => $request_number,
+                                'vendors_id' => $record->vendor_id,
+                                'balance_amount' => $record->purchaseOrderDetails()->sum('amount') - ($data['advance_amount'] / 100) * $record->purchaseOrderDetails()->sum('amount'),
+                                'generated_by' => Auth::id(),
+                                'status' => AdvanceFormStatus::Draft,
+                            ]);
+                            $record->update([
+                                'advance_form_id' => $advanceForm->id,
+                            ]);
+
+                            Notification::make()
+                                ->title('Advance form generated successfully')
+                                ->success()
+                                ->send();
+                            // Redirect to the route that generates the PDF with the advance form data
+                           // return redirect()->route('purchase-orders.advance-form.download', $record);
+
+                        }),
+                    Tables\Actions\Action::make('view_advance_form')
+                        ->label('View Form')
+                        ->icon('heroicon-o-eye')
+                       // ->button()
+                        ->visible(fn ($record): bool => ! empty($record->advance_form_id))
+                        ->url(fn ($record): string => route('purchase-orders.advance-form.download', $record))
+                        ->openUrlInNewTab(),
+                ])  
+                ->button()
+                ->label('Manage Advance Form'),
+                
 
                 Tables\Actions\Action::make('upload_supporting_document')
                     ->label('Upload Reciept')

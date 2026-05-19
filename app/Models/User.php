@@ -127,4 +127,13 @@ class User extends Authenticatable implements FilamentUser, HasAvatar
     {
         return $this->hasMany(PurchaseRequests::class, 'approved_by_hod');
     }
+    public function AdvanceformmdDmdApprovedBy(): HasOne
+    {
+        return $this->hasOne(AdvanceForm::class, 'md_dmd_approved_by');
+    }
+
+    public function AdvanceformhodApprovedBy(): HasOne
+    {
+        return $this->hasOne(AdvanceForm::class, 'hod_approved_by');
+    }
 }

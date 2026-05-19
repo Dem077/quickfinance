@@ -16,6 +16,11 @@ class PurchaseOrdersPolicy
         return $user->can('generate_advance_form_purchase::orders');
     }
 
+    public function md_dmd_approve_advance_form(User $user): bool
+    {
+        return $user->can('md_dmd_approve_advance_form_purchase::orders');
+    }
+
     /**
      * Determine whether the user can view any models.
      */

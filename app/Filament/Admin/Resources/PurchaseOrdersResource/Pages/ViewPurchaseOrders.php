@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Resources\PurchaseOrdersResource\Pages;
 
 use App\Enums\PurchaseOrderStatus;
 use App\Filament\Admin\Resources\PurchaseOrdersResource;
+use App\Enums\AdvanceFormStatus;
 use App\Models\AdvanceForm;
 use App\Models\BudgetTransactionHistory;
 use App\Models\Item;
@@ -90,8 +91,12 @@ class ViewPurchaseOrders extends ViewRecord
                 ->modalHeading('Advance Form Details')
                 ->modalSubheading('Please fill in the required fields')
                 ->modalButton('Generate')
-                ->visible(fn ($record) => $record->advance_form_id && $record->is_advance_form_required && $record->status == PurchaseOrderStatus::Submitted && $record->payment_method == 'purchase_order' &&
-                    Auth::user()->can('create_purchase::orders')
+                ->visible(fn ($record) => $record->advance_form_id
+                    && $record->is_advance_form_required
+                    && $record->status == PurchaseOrderStatus::Submitted
+                    && $record->payment_method == 'purchase_order'
+                    && Auth::user()->can('create_purchase::orders')
+                    && $record->advanceForm?->status === AdvanceFormStatus::Draft
                 )
                 ->form([
                     TextInput::make('qoation_no')
@@ -109,7 +114,7 @@ class ViewPurchaseOrders extends ViewRecord
                 ->action(function (array $data, PurchaseOrders $record) {
 
                     // Create the Advance Form record with user inputs
-                    $advanceForm = $record->advanceForm()->update([
+                    $record->advanceForm()->update([
                         'qoation_no' => $data['qoation_no'],
                         'expected_delivery' => $data['expected_delivery'],
                         'advance_percentage' => ($data['advance_amount']),
@@ -166,6 +171,7 @@ class ViewPurchaseOrders extends ViewRecord
                         'vendors_id' => $record->vendor_id,
                         'balance_amount' => $record->purchaseOrderDetails()->sum('amount') - ($data['advance_amount'] / 100) * $record->purchaseOrderDetails()->sum('amount'),
                         'generated_by' => Auth::id(),
+                        'status' => AdvanceFormStatus::Submitted,
                     ]);
                     $record->update([
                         'advance_form_id' => $advanceForm->id,
