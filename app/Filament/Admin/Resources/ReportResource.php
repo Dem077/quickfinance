@@ -4,12 +4,15 @@ namespace App\Filament\Admin\Resources;
 
 use App\Filament\Admin\Resources\ReportResource\Pages;
 use App\Models\ReportTemplate;
+use App\Services\ReportGenerator;
+use App\Support\ReportFieldCatalog;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
+use Filament\Forms\Set;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Support\Facades\Schema;
 
 class ReportResource extends Resource
 {
@@ -19,77 +22,107 @@ class ReportResource extends Resource
 
     protected static ?string $navigationGroup = 'Reports';
 
-    public static function getAvailableModels(): array
-    {
-        return [
-            'PurchaseRequests' => 'Purchase Requests',
-            'PurchaseOrders' => 'Purchase Orders',
-            'PettyCashReimbursment' => 'Petty Cash',
-            'SubBudgetAccounts' => 'Sub Budget Accounts',
-            'BudgetTransactionHistory' => 'Budget Transactions',
-            // Add other models as needed
-        ];
-    }
+    protected static ?string $navigationLabel = 'Report Templates';
+
+    protected static ?string $modelLabel = 'report template';
+
+    protected static ?string $pluralModelLabel = 'report templates';
+
+    protected static ?int $navigationSort = 10;
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Report Configuration')
+                Forms\Components\Section::make('Report details')
+                    ->description('Name the template and choose which data source to export.')
                     ->schema([
                         Forms\Components\TextInput::make('name')
                             ->required()
-                            ->maxLength(255),
-
-                        Forms\Components\Hidden::make('created_by')
-                            ->default(auth()->id())
-                            ->required(),
+                            ->maxLength(255)
+                            ->columnSpanFull(),
 
                         Forms\Components\Select::make('model_type')
-                            ->label('Select Model')
-                            ->options(self::getAvailableModels())
+                            ->label('Data source')
+                            ->options(ReportFieldCatalog::MODELS)
                             ->required()
-                            ->reactive()
-                            ->afterStateUpdated(fn ($state, Forms\Set $set) => $set('selected_fields', [])),
+                            ->native(false)
+                            ->searchable()
+                            ->live()
+                            ->afterStateUpdated(fn (Set $set) => $set('field_configs', [])),
 
+                        Forms\Components\Textarea::make('description')
+                            ->rows(2)
+                            ->maxLength(65535)
+                            ->columnSpanFull(),
+                    ])
+                    ->columns(2),
+
+                Forms\Components\Section::make('Fields & filters')
+                    ->description('Add columns to export. Filters work on direct table columns only.')
+                    ->schema([
                         Forms\Components\Repeater::make('field_configs')
-                            ->label('Select Fields with Filters')
+                            ->label('Columns')
                             ->schema([
                                 Forms\Components\Select::make('field')
-                                    ->label('Field')
-                                    ->options(function (callable $get) {
-                                        $modelType = $get('../../model_type');
-                                        if (! $modelType) {
-                                            return [];
-                                        }
-
-                                        return collect(self::getFieldsWithRelations($modelType))
-                                            ->mapWithKeys(fn ($config, $field) => [
-                                                $field => $config['label'],
-                                            ]);
+                                    ->label('Column')
+                                    ->options(fn (Get $get): array => collect(
+                                        ReportFieldCatalog::fieldsFor($get('../../model_type') ?? '')
+                                    )->mapWithKeys(fn (array $config, string $field) => [
+                                        $field => $config['label'],
+                                    ])->all())
+                                    ->required()
+                                    ->searchable()
+                                    ->native(false)
+                                    ->live()
+                                    ->afterStateUpdated(function (Set $set): void {
+                                        $set('filter_type', null);
+                                        $set('filter_value', null);
+                                        $set('filter_value_from', null);
+                                        $set('filter_value_to', null);
+                                        $set('filter_values', []);
                                     })
-                                    ->reactive()
-                                    ->required(),
+                                    ->columnSpan(2),
 
                                 Forms\Components\Select::make('filter_type')
-                                    ->label('Filter Type')
-                                    ->options([
-                                        'equals' => 'Equals',
-                                        'contains' => 'Contains',
-                                        'starts_with' => 'Starts With',
-                                        'ends_with' => 'Ends With',
-                                        'greater_than' => 'Greater Than',
-                                        'less_than' => 'Less Than',
-                                        'between' => 'Between',
-                                        'in' => 'In List',
-                                    ])
-                                    ->visible(fn (callable $get) => filled($get('field')))
-                                    ->reactive(),
+                                    ->label('Filter')
+                                    ->options(fn (Get $get): array => ReportFieldCatalog::filterTypesForField(
+                                        $get('../../model_type') ?? '',
+                                        $get('field'),
+                                    ))
+                                    ->placeholder('No filter')
+                                    ->native(false)
+                                    ->live()
+                                    ->visible(fn (Get $get): bool => filled($get('field')) && ! str_contains((string) $get('field'), '.'))
+                                    ->columnSpan(1),
+
+                                Forms\Components\Select::make('filter_value')
+                                    ->label('Value')
+                                    ->options(fn (Get $get): array => ReportFieldCatalog::statusOptions(
+                                        $get('../../model_type') ?? '',
+                                        $get('field'),
+                                    ))
+                                    ->searchable()
+                                    ->native(false)
+                                    ->visible(fn (Get $get): bool => filled($get('filter_type'))
+                                        && ! in_array($get('filter_type'), ['between', 'in'], true)
+                                        && ReportFieldCatalog::isStatusField($get('../../model_type') ?? '', $get('field')))
+                                    ->dehydrated(fn (Get $get): bool => ReportFieldCatalog::isStatusField(
+                                        $get('../../model_type') ?? '',
+                                        $get('field'),
+                                    ))
+                                    ->columnSpan(1),
 
                                 Forms\Components\TextInput::make('filter_value')
-                                    ->label('Filter Value')
-                                    ->visible(fn (callable $get) => filled($get('field')) &&
-                                        ! in_array($get('filter_type'), ['between', 'in'])),
+                                    ->label('Value')
+                                    ->visible(fn (Get $get): bool => filled($get('filter_type'))
+                                        && ! in_array($get('filter_type'), ['between', 'in'], true)
+                                        && ! ReportFieldCatalog::isStatusField($get('../../model_type') ?? '', $get('field')))
+                                    ->dehydrated(fn (Get $get): bool => ! ReportFieldCatalog::isStatusField(
+                                        $get('../../model_type') ?? '',
+                                        $get('field'),
+                                    ))
+                                    ->columnSpan(1),
 
                                 Forms\Components\Grid::make(2)
                                     ->schema([
@@ -98,32 +131,63 @@ class ReportResource extends Resource
                                         Forms\Components\TextInput::make('filter_value_to')
                                             ->label('To'),
                                     ])
-                                    ->visible(fn (callable $get) => $get('filter_type') === 'between'),
+                                    ->visible(fn (Get $get): bool => $get('filter_type') === 'between'
+                                        && ! ReportFieldCatalog::isStatusField($get('../../model_type') ?? '', $get('field')))
+                                    ->columnSpan(2),
+
+                                Forms\Components\Select::make('filter_values')
+                                    ->label('Values')
+                                    ->options(fn (Get $get): array => ReportFieldCatalog::statusOptions(
+                                        $get('../../model_type') ?? '',
+                                        $get('field'),
+                                    ))
+                                    ->multiple()
+                                    ->searchable()
+                                    ->native(false)
+                                    ->visible(fn (Get $get): bool => $get('filter_type') === 'in'
+                                        && ReportFieldCatalog::isStatusField($get('../../model_type') ?? '', $get('field')))
+                                    ->dehydrated(fn (Get $get): bool => ReportFieldCatalog::isStatusField(
+                                        $get('../../model_type') ?? '',
+                                        $get('field'),
+                                    ))
+                                    ->columnSpan(2),
 
                                 Forms\Components\TagsInput::make('filter_values')
                                     ->label('Values')
-                                    ->visible(fn (callable $get) => $get('filter_type') === 'in'),
+                                    ->visible(fn (Get $get): bool => $get('filter_type') === 'in'
+                                        && ! ReportFieldCatalog::isStatusField($get('../../model_type') ?? '', $get('field')))
+                                    ->dehydrated(fn (Get $get): bool => ! ReportFieldCatalog::isStatusField(
+                                        $get('../../model_type') ?? '',
+                                        $get('field'),
+                                    ))
+                                    ->columnSpan(2),
                             ])
                             ->columns(4)
-                            ->columnSpanFull(),
-
-                        Forms\Components\Grid::make(2)
-                            ->schema([
-                                Forms\Components\DatePicker::make('from_date')
-                                    ->label('From Date')
-                                    ->native(false)
-                                    ->closeOnDateSelection(),
-                                Forms\Components\DatePicker::make('to_date')
-                                    ->label('To Date')
-                                    ->native(false)
-                                    ->closeOnDateSelection()
-                                    ->after('from_date'),
-                            ]),
-
-                        Forms\Components\Textarea::make('description')
-                            ->maxLength(65535)
+                            ->defaultItems(1)
+                            ->addActionLabel('Add column')
+                            ->reorderable()
+                            ->collapsible()
+                            ->itemLabel(fn (array $state): ?string => filled($state['field'] ?? null)
+                                ? str($state['field'])->replace('.', ' · ')->replace('_', ' ')->title()->toString()
+                                : 'New column')
                             ->columnSpanFull(),
                     ]),
+
+                Forms\Components\Section::make('Date range')
+                    ->description('Optional. Limits rows by created date on the selected data source.')
+                    ->schema([
+                        Forms\Components\DatePicker::make('from_date')
+                            ->label('From')
+                            ->native(false)
+                            ->closeOnDateSelection(),
+                        Forms\Components\DatePicker::make('to_date')
+                            ->label('To')
+                            ->native(false)
+                            ->closeOnDateSelection()
+                            ->after('from_date'),
+                    ])
+                    ->columns(2)
+                    ->collapsed(),
             ]);
     }
 
@@ -132,213 +196,64 @@ class ReportResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable()
+                    ->description(fn (ReportTemplate $record): ?string => $record->description),
+
                 Tables\Columns\TextColumn::make('model_type')
-                    ->label('Report Type'),
+                    ->label('Data source')
+                    ->formatStateUsing(fn (string $state): string => ReportFieldCatalog::modelLabel($state))
+                    ->badge()
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('field_configs')
+                    ->label('Columns')
+                    ->formatStateUsing(function (mixed $state): string {
+                        if (is_string($state)) {
+                            $state = json_decode($state, true);
+                        }
+
+                        return (string) count(is_array($state) ? $state : []);
+                    })
+                    ->alignCenter(),
+
                 Tables\Columns\TextColumn::make('creator.name')
-                    ->label('Created By'),
+                    ->label('Created by')
+                    ->toggleable(),
+
                 Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
+                    ->label('Created')
+                    ->dateTime('d M Y H:i')
                     ->sortable(),
             ])
+            ->defaultSort('created_at', 'desc')
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('model_type')
+                    ->label('Data source')
+                    ->options(ReportFieldCatalog::MODELS),
             ])
             ->actions([
+                Tables\Actions\Action::make('generate')
+                    ->label('Download CSV')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->color('success')
+                    ->action(fn (ReportTemplate $record) => app(ReportGenerator::class)->download($record)),
+
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
-                Tables\Actions\Action::make('generate')
-                    ->label('Generate Report')
-                    ->icon('heroicon-o-document-arrow-down')
-                    ->action(function (ReportTemplate $record) {
-                        return static::generateReport($record);
-                    }),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
-            ]);
-
-    }
-
-    public static function getFieldsWithRelations(string $modelType): array
-    {
-        $modelClass = "App\\Models\\{$modelType}";
-        if (! class_exists($modelClass)) {
-            return [];
-        }
-
-        $model = new $modelClass;
-        $fields = collect(Schema::getColumnListing($model->getTable()))
-            ->mapWithKeys(fn ($field) => [
-                $field => [
-                    'label' => ucwords(str_replace('_', ' ', $field)),
-                    'type' => 'column',
-                    'relation' => null,
-                ],
-            ]);
-
-        // Add relationship fields
-        foreach ($model->getRelations() as $relation => $type) {
-            $relationModel = $model->{$relation}()->getRelated();
-            $relationFields = Schema::getColumnListing($relationModel->getTable());
-
-            foreach ($relationFields as $field) {
-                $fields->put("{$relation}.{$field}", [
-                    'label' => ucwords(str_replace('_', ' ', $relation)).' '.ucwords(str_replace('_', ' ', $field)),
-                    'type' => 'relation',
-                    'relation' => $relation,
-                ]);
-            }
-        }
-
-        return $fields->toArray();
-    }
-
-    protected static function generateReport(ReportTemplate $template)
-    {
-        $modelClass = "App\\Models\\{$template->model_type}";
-        $query = $modelClass::query();
-
-        // Handle relations
-        $relations = collect($template->field_configs)
-            ->pluck('field')
-            ->filter(fn ($field) => str_contains($field, '.'))
-            ->map(fn ($field) => explode('.', $field)[0])
-            ->unique()
-            ->toArray();
-
-        foreach ($relations as $relation) {
-            $query->with($relation);
-        }
-
-        // Apply field filters
-        foreach ($template->field_configs as $config) {
-            if (empty($config['filter_type'])) {
-                continue;
-            }
-
-            $field = $config['field'];
-            $filterType = $config['filter_type'];
-            $value = $config['filter_value'] ?? null;
-
-            switch ($filterType) {
-                case 'equals':
-                    $query->where($field, $value);
-                    break;
-                case 'contains':
-                    $query->where($field, 'like', "%{$value}%");
-                    break;
-                case 'starts_with':
-                    $query->where($field, 'like', "{$value}%");
-                    break;
-                case 'ends_with':
-                    $query->where($field, 'like', "%{$value}");
-                    break;
-                case 'greater_than':
-                    $query->where($field, '>', $value);
-                    break;
-                case 'less_than':
-                    $query->where($field, '<', $value);
-                    break;
-                case 'between':
-                    $query->whereBetween($field, [
-                        $config['filter_value_from'],
-                        $config['filter_value_to'],
-                    ]);
-                    break;
-                case 'in':
-                    $query->whereIn($field, $config['filter_values']);
-                    break;
-            }
-        }
-
-        // Apply date range filter
-        if (! empty($template->from_date) && ! empty($template->to_date)) {
-            $query->whereBetween('created_at', [
-                $template->from_date.' 00:00:00',
-                $template->to_date.' 23:59:59',
-            ]);
-        }
-
-        // Get selected fields
-        $selectedFields = collect($template->field_configs)->pluck('field')->toArray();
-        $records = $query->get($selectedFields);
-
-        // Generate CSV
-        $csv = \League\Csv\Writer::createFromFileObject(new \SplTempFileObject);
-
-        // Add headers with proper labels
-        $headers = collect($template->field_configs)
-            ->pluck('field')
-            ->map(fn ($field) => ucwords(str_replace('_', ' ', $field)))
-            ->toArray();
-        $csv->insertOne($headers);
-
-        // Add data rows
-        foreach ($records as $record) {
-            $row = [];
-            foreach ($selectedFields as $field) {
-                if (str_contains($field, '.')) {
-                    // Handle relation fields
-                    $parts = explode('.', $field);
-                    $value = $record;
-                    foreach ($parts as $part) {
-                        $value = $value->{$part} ?? null;
-                    }
-                    $row[] = self::formatValue($value);
-                } else {
-                    $row[] = self::formatValue($record->{$field});
-                }
-            }
-            $csv->insertOne($row);
-        }
-
-        // Return downloadable response
-        return response()->streamDownload(
-            function () use ($csv) {
-                echo $csv->toString();
-            },
-            "{$template->name}-".now()->format('Y-m-d').'.csv',
-            ['Content-Type' => 'text/csv']
-        );
-    }
-
-    protected static function formatValue($value): string
-    {
-        if (is_null($value)) {
-            return '';
-        }
-
-        if ($value instanceof \BackedEnum) {
-            return $value->value;
-        }
-
-        if ($value instanceof \UnitEnum) {
-            return $value->name;
-        }
-
-        if ($value instanceof \DateTime) {
-            return $value->format('Y-m-d H:i:s');
-        }
-
-        if (is_object($value)) {
-            return method_exists($value, '__toString') ? (string) $value : get_class($value);
-        }
-
-        if (is_array($value)) {
-            return json_encode($value);
-        }
-
-        return (string) $value;
+            ])
+            ->emptyStateHeading('No report templates yet')
+            ->emptyStateDescription('Create a template to export filtered data as CSV.');
     }
 
     public static function getRelations(): array
     {
-        return [
-            //
-        ];
+        return [];
     }
 
     public static function getPages(): array
