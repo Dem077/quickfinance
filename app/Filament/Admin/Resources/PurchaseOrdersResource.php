@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Resources;
 
 use App\Enums\PurchaseOrderStatus;
 use App\Enums\PurchaseRequestsStatus;
+use App\Enums\UnitsEnum;
 use App\Filament\Admin\Resources\PurchaseOrdersResource\Pages;
 use App\Filament\Admin\Resources\PurchaseOrdersResource\RelationManagers;
 use App\Models\AdvanceForm;
@@ -12,7 +13,6 @@ use App\Models\PurchaseOrders;
 use App\Models\PurchaseRequestDetails;
 use App\Models\PurchaseRequests;
 use Filament\Forms;
-use App\Enums\UnitsEnum;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
@@ -20,7 +20,10 @@ use Filament\Forms\Set;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 
 class PurchaseOrdersResource extends Resource
@@ -72,7 +75,7 @@ class PurchaseOrdersResource extends Resource
                     ->required(),
                 Forms\Components\Select::make('pr_id')
                     ->relationship('purchaseRequest', 'pr_no', function ($query) {
-                        return $query->whereNotNull('uploaded_document')->wherenot('status', PurchaseRequestsStatus::Closed);
+                        return $query->where('status', PurchaseRequestsStatus::MD_DMD_Approved)->wherenot('status', PurchaseRequestsStatus::Closed);
                     })
                     ->preload()
                     ->live()
@@ -320,9 +323,11 @@ class PurchaseOrdersResource extends Resource
                                 ->badge(),
                             Tables\Columns\TextColumn::make('purchaseRequest.pr_no')
                                 ->description('Purchase Request', 'above')
+                                ->searchable()
                                 ->sortable(),
                             Tables\Columns\TextColumn::make('vendor.name')
                                 ->description('Vendor', 'above')
+                                ->searchable()
                                 ->sortable(),
                             Tables\Columns\TextColumn::make('po_no')
                                 ->description('PO Number', 'above')
@@ -337,7 +342,7 @@ class PurchaseOrdersResource extends Resource
                                 ->sortable(),
                             Tables\Columns\TextColumn::make('total_amount')
                                 ->description('Total Amount', 'above')
-                                ->money('MVR',)
+                                ->money('MVR')
                                 ->sortable()
                                 ->getStateUsing(fn ($record) => $record->purchaseOrderDetails->sum('amount')),
 
@@ -354,7 +359,41 @@ class PurchaseOrdersResource extends Resource
                 'xl' => 2,
             ])
             ->filters([
-                //
+                SelectFilter::make('status')
+                    ->options(PurchaseOrderStatus::class),
+                SelectFilter::make('pr_id')
+                    ->label('Purchase Request')
+                    ->relationship('purchaseRequest', 'pr_no')
+                    ->searchable()
+                    ->preload(),
+                SelectFilter::make('vendor_id')
+                    ->label('Vendor')
+                    ->relationship('vendor', 'name')
+                    ->searchable()
+                    ->preload(),
+                SelectFilter::make('payment_method')
+                    ->label('Payment Method')
+                    ->options([
+                        'purchase_order' => 'Purchase Order',
+                        'petty_cash' => 'Petty Cash',
+                    ]),
+                Filter::make('date_range')
+                    ->label('Date Range')
+                    ->form([
+                        Forms\Components\DatePicker::make('date_from')->label('Date From')->native(false),
+                        Forms\Components\DatePicker::make('date_until')->label('Date To')->native(false),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                $data['date_from'] ?? null,
+                                fn (Builder $query, $date): Builder => $query->whereDate('date', '>=', $date)
+                            )
+                            ->when(
+                                $data['date_until'] ?? null,
+                                fn (Builder $query, $date): Builder => $query->whereDate('date', '<=', $date)
+                            );
+                    }),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make()
@@ -386,7 +425,6 @@ class PurchaseOrdersResource extends Resource
                         foreach ($record->purchaseOrderDetails as $detail) {
 
                             $itemid = Item::where('item_code', $detail->itemcode)->first()->id;
-
 
                         }
                         Notification::make()

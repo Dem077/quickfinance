@@ -70,4 +70,17 @@ class SubBudgetAccounts extends Model
     {
         return (int) $this->allocations->sum('amount');
     }
+
+    public function getSelectLabel(): string
+    {
+        if (filled($this->display_name)) {
+            return $this->display_name;
+        }
+
+        $parts = array_filter([$this->code, $this->name]);
+
+        return $parts !== []
+            ? implode(' - ', $parts)
+            : 'Sub Budget #'.$this->id;
+    }
 }

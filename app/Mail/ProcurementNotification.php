@@ -28,7 +28,7 @@ class ProcurementNotification extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: "New Procure Request",
+            subject: 'New Procure Request',
         );
     }
 

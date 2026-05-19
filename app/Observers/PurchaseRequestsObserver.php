@@ -59,7 +59,7 @@ class PurchaseRequestsObserver
         $status = $purchaseRequest->status;
         $pruser = $purchaseRequest->user;
         $hod = $pruser->department->user->email;
-        $proce = User::WhereHas('roles.permissions', function ($query)  {
+        $proce = User::WhereHas('roles.permissions', function ($query) {
             $query->where('name', 'view_any_purchase::orders')->orwhere('name', 'view_purchase::orders');
         })->pluck('email')->toArray();
 
@@ -74,8 +74,8 @@ class PurchaseRequestsObserver
 
             PurchaseRequestsStatus::Canceled->value => Mail::to($pruser->email)->queue(new StatusEmail('Purchase Request '.$purchaseRequest->pr_no, 'canceled', $purchaseRequest->cancel_remark, '')),
 
-            //For Procurement User Notification - to be implemented
-            PurchaseRequestsStatus::DocumentUploaded->value => Mail::to($proce)->queue(new ProcurementNotification($purchaseRequest->pr_no)),
+            // For Procurement User Notification - to be implemented
+            PurchaseRequestsStatus::MD_DMD_Approved->value => Mail::to($proce)->queue(new ProcurementNotification($purchaseRequest->pr_no)),
 
             default => null,
         };

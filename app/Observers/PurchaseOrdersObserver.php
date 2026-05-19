@@ -6,7 +6,6 @@ use App\Enums\PurchaseOrderStatus;
 use App\Models\BudgetTransactionHistory;
 use App\Models\PurchaseOrders;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Optional;
 
 class PurchaseOrdersObserver
 {

@@ -5,7 +5,7 @@ namespace App\Enums;
 use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasLabel;
 
-enum PurchaseOrderStatus: string implements HasLabel , HasColor
+enum PurchaseOrderStatus: string implements HasColor, HasLabel
 {
     case Submitted = 'submitted';
     case Closed = 'closed';
@@ -17,7 +17,7 @@ enum PurchaseOrderStatus: string implements HasLabel , HasColor
 
     public function getLabel(): ?string
     {
-        return match($this) {
+        return match ($this) {
             self::Draft => 'Draft',
             self::Submitted => 'Submitted',
             self::GRNCreated => 'GRN Created',
@@ -26,9 +26,10 @@ enum PurchaseOrderStatus: string implements HasLabel , HasColor
             self::Closed => 'Closed',
         };
     }
+
     public function getColor(): ?string
     {
-        return match($this) {
+        return match ($this) {
             self::Draft => 'gray',
             self::Submitted => 'primary',
             self::Reimbursed => 'success',

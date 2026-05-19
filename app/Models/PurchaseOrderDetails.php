@@ -30,6 +30,7 @@ class PurchaseOrderDetails extends Model
     {
         return $this->belongsTo(Item::class, 'item_id');
     }
+
     public function budgetAccount(): BelongsTo
     {
         return $this->belongsTo(SubBudgetAccounts::class, 'budget_account_id');

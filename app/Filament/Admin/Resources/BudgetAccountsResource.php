@@ -47,7 +47,7 @@ class BudgetAccountsResource extends Resource
                 Tables\Columns\TextColumn::make('total_amount')
                     ->label('Total')
                     ->getStateUsing(fn ($record) => $record->subBudgetAccounts->sum(fn ($subBudget) => $subBudget->allocations->sum('amount')))
-                    ->money('MVR',),
+                    ->money('MVR'),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()

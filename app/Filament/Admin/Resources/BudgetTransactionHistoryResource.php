@@ -66,12 +66,12 @@ class BudgetTransactionHistoryResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('transaction_amount')
                     ->numeric()
-                    ->money('MVR',)
+                    ->money('MVR')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('transaction_balance')
                     ->label('Account Balance')
                     ->numeric()
-                    ->money('MVR',)
+                    ->money('MVR')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('transactionBy.name')
                     ->numeric()

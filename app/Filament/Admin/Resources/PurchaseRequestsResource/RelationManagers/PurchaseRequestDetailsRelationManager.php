@@ -127,6 +127,7 @@ class PurchaseRequestDetailsRelationManager extends RelationManager
 
                                         if (! $departmentAllocation) {
                                             $fail('This budget code is not allocated to your department.');
+
                                             return;
                                         }
 

@@ -12,7 +12,6 @@ use App\Models\BudgetTransactionHistory;
 use App\Models\PettyCashReimbursment;
 use App\Models\PurchaseOrderDetails;
 use App\Models\PurchaseOrders;
-use App\Models\PurchaseRequestDetails;
 use App\Models\SubBudgetAccounts;
 use App\Models\SubBudgetDepartmentAllocation;
 use App\Models\User;
@@ -157,7 +156,13 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                                             ->nullable(),
                                         Forms\Components\Select::make('Vendor_id')
                                             ->options(
-                                                Vendors::all()->sortBy('name')->pluck('name', 'id')
+                                                Vendors::query()
+                                                    ->orderBy('name')
+                                                    ->get()
+                                                    ->mapWithKeys(fn (Vendors $vendor) => [
+                                                        $vendor->id => $vendor->name ?? 'Vendor #'.$vendor->id,
+                                                    ])
+                                                    ->toArray()
                                             )
                                             ->native(false)
                                             ->preload()
@@ -222,12 +227,11 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                                             ->hidden(fn (Forms\Get $get) => $get('is_from_pr') == true)
                                             ->required(),
                                         Forms\Components\Select::make('sub_budget_id')
-                                            ->searchable()
-                                            ->preload()
+                                            ->label('Budget Account')
                                             ->options(function () {
                                                 $departmentId = Auth::user()?->department_id;
 
-                                                return \App\Models\SubBudgetAccounts::with(['allocations' => function ($query) use ($departmentId) {
+                                                return SubBudgetAccounts::with(['allocations' => function ($query) use ($departmentId) {
                                                     if ($departmentId) {
                                                         $query->where('department_id', $departmentId);
                                                     }
@@ -238,14 +242,32 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                                                             ? $row->allocations->firstWhere('department_id', $departmentId)
                                                             : $row->allocations->isNotEmpty();
                                                     })
-                                                    ->mapWithKeys(function ($row) {
-                                                        $allocation = $row->allocations->first();
-
-                                                        $label = $row->display_name;
-
-                                                        return [$row->id => $label];
-                                                    })
+                                                    ->mapWithKeys(fn ($row) => [
+                                                        $row->id => $row->getSelectLabel(),
+                                                    ])
                                                     ->toArray();
+                                            })
+                                            ->searchable()
+                                            ->reactive()
+                                            ->helperText(function (Forms\Get $get): string {
+                                                $budgetAccountId = $get('sub_budget_id');
+                                                $departmentId = Auth::user()?->department_id;
+
+                                                if (! $budgetAccountId || ! $departmentId) {
+                                                    return 'Select a budget account to view your department allocation.';
+                                                }
+
+                                                $account = SubBudgetAccounts::with([
+                                                    'allocations' => fn ($query) => $query->where('department_id', $departmentId),
+                                                ])->find($budgetAccountId);
+
+                                                $allocatedAmount = $account?->allocations->first()?->amount;
+
+                                                if ($allocatedAmount === null) {
+                                                    return 'No allocation found for your department.';
+                                                }
+
+                                                return 'Allocated budget: MVR '.number_format((float) $allocatedAmount, 2);
                                             })
                                             ->native(false)
                                             ->required()
@@ -302,7 +324,7 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                     }),
                 Tables\Columns\TextColumn::make('total_amount')
                     ->label('Total Amount')
-                    ->money('MVR',)
+                    ->money('MVR')
                     ->getStateUsing(fn ($record) => $record->pettyCashReimbursmentDetails->sum('amount'))
                     ->sortable(),
                 Tables\Columns\TextColumn::make('status')

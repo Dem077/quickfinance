@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('purchase_orders', function (Blueprint $table) {
-            $table->enum('status', ['submitted', 'reimbursed', 'reimbursement_pending', 'grn_created', 'closed', 'draft'])->default('draft');
+        Schema::table('users', function (Blueprint $table) {
+            $table->longText('signature')->nullable()->after('avatar_url');
         });
     }
 
@@ -21,8 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('purchase_orders', function (Blueprint $table) {
-            $table->dropColumn('status');
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropColumn('signature');
         });
     }
 };

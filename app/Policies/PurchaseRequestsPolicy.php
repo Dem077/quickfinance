@@ -17,15 +17,26 @@ class PurchaseRequestsPolicy
         return $user->can('send_approval_purchase::requests');
     }
 
+    /**
+     * Finance Approval.
+     */
     public function approve(User $user): bool
     {
         return $user->can('approve_purchase::requests');
     }
+
     public function cancel(User $user): bool
     {
         return $user->can('cancel_purchase::requests');
     }
 
+    /**
+     * Finance Approval.
+     */
+    public function md_dmd_approve(User $user): bool
+    {
+        return $user->can('md_dmd_approve_purchase::requests');
+    }
 
     /**
      * Determine whether the user can view any models.

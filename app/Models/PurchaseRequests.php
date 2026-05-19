@@ -22,6 +22,7 @@ class PurchaseRequests extends Model
         'cancel_remark',
         'uploaded_document',
         'approved_canceled_by',
+        'approved_by_md_dmd',
         'is_closed',
         'is_closed_by',
         'status',
@@ -71,6 +72,11 @@ class PurchaseRequests extends Model
     public function hodapprovedby(): BelongsTo
     {
         return $this->belongsTo(User::class, 'approved_by_hod');
+    }
+
+    public function mdDmdApprovedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by_md_dmd');
     }
 
     public static function checkAndUpdateClosedStatus($id)

@@ -44,6 +44,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
             'delete_any',
             'send_approval',
             'approve',
+            'md_dmd_approve',
             'cancel',
         ];
     }
@@ -56,6 +57,15 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
 
         if (Auth::user()->can('approve_purchase::requests')) {
             return parent::getEloquentQuery()->whereNot('status', PurchaseRequestsStatus::Draft->value);
+        }
+
+        if (Auth::user()->can('md_dmd_approve_purchase::requests')) {
+            return parent::getEloquentQuery()->whereIn('status', [
+                PurchaseRequestsStatus::Approved->value,
+                PurchaseRequestsStatus::MD_DMD_Approved->value,
+                PurchaseRequestsStatus::MD_DMD_Rejected->value,
+                PurchaseRequestsStatus::Closed->value,
+            ]);
         }
 
         if (Auth::user()->view_all_pr == true) {
@@ -75,7 +85,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                 });
         }
         if (Auth::user()->can('view_purchase::requests') && Auth::user()->can('create_purchase::orders')) {
-            return parent::getEloquentQuery()->where('status', PurchaseRequestsStatus::Approved->value)->orwhere('status', PurchaseRequestsStatus::DocumentUploaded->value)->orwhere('status', PurchaseRequestsStatus::Closed->value);
+            return parent::getEloquentQuery()->where('status', PurchaseRequestsStatus::MD_DMD_Approved->value)->orwhere('status', PurchaseRequestsStatus::Closed->value);
         }
 
         return parent::getEloquentQuery()->where('user_id', Auth::id());
@@ -158,12 +168,9 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                                                             ? $row->allocations->firstWhere('department_id', $departmentId)
                                                             : $row->allocations->isNotEmpty();
                                                     })
-                                                    ->mapWithKeys(function ($row) {
-                                                        $allocation = $row->allocations->first();
-
-                                                        $label = $row->display_name;
-                                                        return [$row->id => $label];
-                                                    })
+                                                    ->mapWithKeys(fn ($row) => [
+                                                        $row->id => $row->getSelectLabel(),
+                                                    ])
                                                     ->toArray();
                                             })
                                             ->searchable()
@@ -186,7 +193,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                                                     return 'No allocation found for your department.';
                                                 }
 
-                                                return 'Allocated budget: MVR ' . number_format((float) $allocatedAmount, 2);
+                                                return 'Allocated budget: MVR '.number_format((float) $allocatedAmount, 2);
                                             })
                                             ->required()
                                             ->columnSpan(2),
@@ -217,6 +224,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
 
                                                         if (! $departmentAllocation) {
                                                             $fail('This budget code is not allocated to your department.');
+
                                                             return;
                                                         }
 
@@ -287,7 +295,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                                 ->description('Total Estimated Cost', 'above')
                                 ->getStateUsing(fn ($record) => $record?->purchaseRequestDetails?->sum('est_cost') ?? 0)
                                 ->numeric()
-                                ->money('MVR',)
+                                ->money('MVR')
                                 ->sortable(),
                             Tables\Columns\TextColumn::make('user.name')
                                 ->description('Requested By', 'above')
@@ -479,7 +487,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                     ->button()
                     ->requiresConfirmation()
                     ->modalDescription('Are you sure you want to close this PR? This action cannot be undone.')
-                    ->visible(fn ($record) => $record->status == PurchaseRequestsStatus::DocumentUploaded &&
+                    ->visible(fn ($record) => $record->status == PurchaseRequestsStatus::MD_DMD_Approved &&
                         Auth::user()->can('approve_purchase::requests')
                     )
                     ->action(function (PurchaseRequests $record) {
@@ -504,23 +512,23 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                             ->success()
                             ->send();
                     }),
-                Tables\Actions\Action::make('upload_document')
-                    ->label('Upload Document')
+                Tables\Actions\Action::make('approve_purchase_request_md_dmd')
+                    ->label('MD / DMD Approve')
                     ->button()
-                    ->icon('heroicon-o-document')
-                    ->visible(fn ($record) => $record->status == PurchaseRequestsStatus::Approved && Auth::user()->can('send_approval_purchase::requests'))
-                    ->form([
-                        Forms\Components\FileUpload::make('uploaded_document')
-                            ->label('Document')
-                            ->required(),
-                    ])
-                    ->action(function (PurchaseRequests $record, array $data) {
+                    ->icon('heroicon-o-check-circle')
+                    ->color('success')
+                    ->visible(fn ($record) => $record->status == PurchaseRequestsStatus::Approved &&
+                        Auth::user()->can('md_dmd_approve_purchase::requests')
+                    )
+                    ->action(function (PurchaseRequests $record) {
                         $record->update([
-                            'status' => PurchaseRequestsStatus::DocumentUploaded,
-                            'uploaded_document' => $data['uploaded_document'],
+                            'status' => PurchaseRequestsStatus::MD_DMD_Approved,
+                            'approved_canceled_by' => Auth::id(),
+                            'approved_by_md_dmd' => Auth::id(),
                         ]);
+
                         Notification::make()
-                            ->title('Document uploaded successfully')
+                            ->title('PR approved by MD / DMD successfully')
                             ->success()
                             ->send();
                     }),
@@ -536,7 +544,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                     ->label('Download PDF')
                     ->icon('heroicon-o-arrow-down-on-square')
                     ->button()
-                    ->visible(fn ($record) => $record->status == PurchaseRequestsStatus::Approved && Auth::user()->can('send_approval_purchase::requests'))
+                    ->visible(fn ($record) => in_array($record->status, [PurchaseRequestsStatus::Approved, PurchaseRequestsStatus::MD_DMD_Approved]) && Auth::user()->can('send_approval_purchase::requests'))
                     ->url(fn (PurchaseRequests $record) => route('purchase-requests.download', $record))
                     ->openUrlInNewTab(),
 

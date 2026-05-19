@@ -15,7 +15,7 @@ class EditPurchaseOrders extends EditRecord
     {
         return [
             Actions\DeleteAction::make()
-                ->visible(fn($record) => $record->status == PurchaseOrderStatus::Draft )
+                ->visible(fn ($record) => $record->status == PurchaseOrderStatus::Draft)
                 ->before(function (Actions\DeleteAction $action) {
 
                     $poId = $this->record->id;

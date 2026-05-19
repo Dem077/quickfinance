@@ -3,7 +3,6 @@
 namespace App\Observers;
 
 use App\Models\PurchaseRequestDetails;
-use Illuminate\Support\Facades\Log;
 
 class PurchaseRequestDetailsObserver
 {
@@ -15,10 +14,7 @@ class PurchaseRequestDetailsObserver
     /**
      * Handle the PurchaseRequestDetails "updated" event.
      */
-    public function updated(PurchaseRequestDetails $purchaseRequestDetails): void
-    {
-
-    }
+    public function updated(PurchaseRequestDetails $purchaseRequestDetails): void {}
 
     /**
      * Handle the PurchaseRequestDetails "deleted" event.

@@ -33,6 +33,7 @@ class PettyCashReimbursmentDetail extends Model
     {
         return $this->belongsTo(Item::class, 'item_id');
     }
+
     public function subBudget()
     {
         return $this->belongsTo(SubBudgetAccounts::class, 'sub_budget_id');

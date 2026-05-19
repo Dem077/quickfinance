@@ -25,10 +25,11 @@
         "livewire/livewire": "^3.0",
         "mpdf/mpdf": "^8.2",
         "njxqlus/filament-progressbar": "^1.0",
+        "plesk/ext-laravel-integration": "*",
+        "saade/filament-autograph": "*",
         "swisnl/filament-backgrounds": "^1.1",
         "ysfkaya/filament-phone-input": "^3.1",
-        "z3d0x/filament-logger": "^0.7.0",
-        "plesk/ext-laravel-integration": "*"
+        "z3d0x/filament-logger": "^0.7.0"
     },
     "require-dev": {
         "barryvdh/laravel-debugbar": "^3.12",

@@ -12,7 +12,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('purchase_requests', function (Blueprint $table) {
-            $table->enum('status', ['submitted', 'canceled', 'document_uploaded', 'approved', 'rejected', 'closed', 'draft'])->default('draft');
+            $table->foreignId('approved_by_md_dmd')
+                ->nullable()
+                ->after('approved_by_hod')
+                ->constrained('users')
+                ->nullOnDelete();
         });
     }
 
@@ -22,7 +26,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('purchase_requests', function (Blueprint $table) {
-            $table->dropColumn('status');
+            $table->dropConstrainedForeignId('approved_by_md_dmd');
         });
     }
 };

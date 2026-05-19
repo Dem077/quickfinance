@@ -11,7 +11,6 @@ use App\Models\PurchaseOrders;
 use App\Models\PurchaseRequests;
 use App\Models\User;
 use Filament\Actions;
-use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
@@ -27,7 +26,7 @@ class ViewPurchaseRequests extends ViewRecord
         return [
 
             Actions\DeleteAction::make()
-                ->visible(fn($record) => $record->status == PurchaseRequestsStatus::Draft ),
+                ->visible(fn ($record) => $record->status == PurchaseRequestsStatus::Draft),
             Actions\Action::make('submit_for_approval')
                 ->label('Submit for Approval')
                 ->icon('heroicon-o-paper-airplane')
@@ -35,15 +34,15 @@ class ViewPurchaseRequests extends ViewRecord
                 ->visible(fn () => $this->record->status == PurchaseRequestsStatus::Draft &&
                     Auth::user()->can('send_approval_purchase::requests')
                 )
-                ->action(function ( User $user) {
+                ->action(function (User $user) {
                     $this->record->update([
                         'status' => PurchaseRequestsStatus::Submitted,
                         // 'is_submited' => true,
                     ]);
 
-                    $hod =   $this->record->user->department->user->email;
+                    $hod = $this->record->user->department->user->email;
 
-                    Mail::to($hod)->queue(new NotificationEmail('Purchase Request '.  $this->record->pr_no));
+                    Mail::to($hod)->queue(new NotificationEmail('Purchase Request '.$this->record->pr_no));
 
                     Notification::make()
                         ->title('Submitted for approval successfully')
@@ -161,7 +160,7 @@ class ViewPurchaseRequests extends ViewRecord
                 ->color('danger')
                 ->requiresConfirmation()
                 ->modalDescription('Are you sure you want to close this PR? This action cannot be undone.')
-                ->visible(fn ($record) => $record->status == PurchaseRequestsStatus::DocumentUploaded &&
+                ->visible(fn ($record) => $record->status == PurchaseRequestsStatus::MD_DMD_Approved &&
                     Auth::user()->can('approve_purchase::requests')
                 )
                 ->action(function (PurchaseRequests $record) {
@@ -186,22 +185,21 @@ class ViewPurchaseRequests extends ViewRecord
                         ->success()
                         ->send();
                 }),
-            Actions\Action::make('upload_document')
-                ->label('Upload Document')
-                ->icon('heroicon-o-document')
-                ->visible(fn ($record) => $record->status == PurchaseRequestsStatus::Approved && Auth::user()->can('send_approval_purchase::requests'))
-                ->form([
-                    FileUpload::make('uploaded_document')
-                        ->label('Document')
-                        ->required(),
-                ])
-                ->action(function (PurchaseRequests $record, array $data) {
+            Actions\Action::make('approve_purchase_request_md_dmd')
+                ->label('MD / DMD Approve')
+                ->icon('heroicon-o-check-circle')
+                ->color('success')
+                ->visible(fn ($record) => $record->status == PurchaseRequestsStatus::Approved &&
+                    Auth::user()->can('md_dmd_approve_purchase::requests')
+                )
+                ->action(function (PurchaseRequests $record) {
                     $record->update([
-                        'status' => PurchaseRequestsStatus::DocumentUploaded,
-                        'uploaded_document' => $data['uploaded_document'],
+                        'status' => PurchaseRequestsStatus::MD_DMD_Approved,
+                        'approved_canceled_by' => Auth::id(),
+                        'approved_by_md_dmd' => Auth::id(),
                     ]);
                     Notification::make()
-                        ->title('Document uploaded successfully')
+                        ->title('PR approved by MD / DMD successfully')
                         ->success()
                         ->send();
                 }),
@@ -215,7 +213,7 @@ class ViewPurchaseRequests extends ViewRecord
             Actions\Action::make('download_pdf')
                 ->label('Download PDF')
                 ->icon('heroicon-o-eye')
-                ->visible(fn ($record) => $record->status == PurchaseRequestsStatus::Approved && Auth::user()->can('send_approval_purchase::requests'))
+                ->visible(fn ($record) => in_array($record->status, [PurchaseRequestsStatus::Approved, PurchaseRequestsStatus::MD_DMD_Approved]) && Auth::user()->can('send_approval_purchase::requests'))
                 ->url(fn (PurchaseRequests $record) => route('purchase-requests.download', $record))
                 ->openUrlInNewTab(),
 

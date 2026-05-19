@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources\PettyCashReimbursmentResource\RelationManagers;
 
+use App\Models\SubBudgetAccounts;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
@@ -93,7 +94,7 @@ class PettyCashReimbursmentDetailRelationManager extends RelationManager
                     })
                     ->hidden(fn (Forms\Get $get) => $get('is_from_pr') == false)
                     ->live()
-                    ->afterStateUpdated(function ($state, Get $get, Set $set , $record) {
+                    ->afterStateUpdated(function ($state, Get $get, Set $set, $record) {
                         if ($state) {
                             $poId = $get('po_id');
                             if ($poId) {
@@ -115,15 +116,49 @@ class PettyCashReimbursmentDetailRelationManager extends RelationManager
                     ->disabled(fn ($record) => $record && $record->pettycashreimbursment->status->value !== 'draft')
                     ->required(),
                 Forms\Components\Select::make('sub_budget_id')
-                    ->relationship('SubBudget', 'code')
-                    ->getOptionLabelFromRecordUsing(
-                        fn ($record) => $record->department_id
-                            ? "{$record->name} - {$record->department->name} ({$record->code})"
-                            : "{$record->name} ({$record->code})"
-                    )
-                    ->native(false)
+                    ->label('Budget Account')
+                    ->options(function () {
+                        $departmentId = Auth::user()?->department_id;
+
+                        return SubBudgetAccounts::with(['allocations' => function ($query) use ($departmentId) {
+                            if ($departmentId) {
+                                $query->where('department_id', $departmentId);
+                            }
+                        }, 'allocations.department'])
+                            ->get()
+                            ->filter(function ($row) use ($departmentId) {
+                                return $departmentId
+                                    ? $row->allocations->firstWhere('department_id', $departmentId)
+                                    : $row->allocations->isNotEmpty();
+                            })
+                            ->mapWithKeys(fn ($row) => [
+                                $row->id => $row->getSelectLabel(),
+                            ])
+                            ->toArray();
+                    })
                     ->searchable()
-                    ->preload()
+                    ->reactive()
+                    ->helperText(function (Forms\Get $get): string {
+                        $budgetAccountId = $get('sub_budget_id');
+                        $departmentId = Auth::user()?->department_id;
+
+                        if (! $budgetAccountId || ! $departmentId) {
+                            return 'Select a budget account to view your department allocation.';
+                        }
+
+                        $account = SubBudgetAccounts::with([
+                            'allocations' => fn ($query) => $query->where('department_id', $departmentId),
+                        ])->find($budgetAccountId);
+
+                        $allocatedAmount = $account?->allocations->first()?->amount;
+
+                        if ($allocatedAmount === null) {
+                            return 'No allocation found for your department.';
+                        }
+
+                        return 'Allocated budget: MVR '.number_format((float) $allocatedAmount, 2);
+                    })
+                    ->native(false)
                     ->required()
                     ->columnSpan(1)
                     ->nullable(),
@@ -158,7 +193,7 @@ class PettyCashReimbursmentDetailRelationManager extends RelationManager
                         return "{$poNo} ({$prNo})";
                     }),
                 Tables\Columns\TextColumn::make('amount')
-                    ->money('MVR',),
+                    ->money('MVR'),
             ])
             ->filters([
                 //

@@ -5,7 +5,7 @@ namespace App\Enums;
 use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasLabel;
 
-enum UnitsEnum: string implements HasLabel , HasColor
+enum UnitsEnum: string implements HasColor, HasLabel
 {
     case Kg = 'Kg';
     case Case = 'Case';
@@ -18,10 +18,9 @@ enum UnitsEnum: string implements HasLabel , HasColor
     case Meter = 'Meter';
     case NONE = '-';
 
-
     public function getLabel(): ?string
     {
-        return match($this) {
+        return match ($this) {
             self::Kg => 'Kg',
             self::Case => 'Case',
             self::Pcs => 'Pcs',
@@ -34,9 +33,10 @@ enum UnitsEnum: string implements HasLabel , HasColor
             self::NONE => '-',
         };
     }
+
     public function getColor(): ?string
     {
-        return match($this) {
+        return match ($this) {
             self::Kg => 'gray',
             self::Case => 'gray',
             self::Pcs => 'gray',
@@ -49,5 +49,4 @@ enum UnitsEnum: string implements HasLabel , HasColor
             self::NONE => 'gray',
         };
     }
-
 }

@@ -25,7 +25,7 @@ class ViewPurchaseOrders extends ViewRecord
     {
         return [
             Actions\DeleteAction::make()
-                ->visible(fn($record) => $record->status == PurchaseOrderStatus::Draft )
+                ->visible(fn ($record) => $record->status == PurchaseOrderStatus::Draft)
                 ->before(function (Actions\DeleteAction $action) {
 
                     $poId = $this->record->id;
@@ -182,7 +182,7 @@ class ViewPurchaseOrders extends ViewRecord
                 ->button()
                 ->visible(fn ($record) => $record->payment_method == 'petty_cash' && ! $record->supporting_document && Auth::user()->can('create_purchase::orders') && $record->status !== PurchaseOrderStatus::Closed)
                 ->form([
-                   FileUpload::make('supporting_document')
+                    FileUpload::make('supporting_document')
                         ->label('Document')
                         ->required(),
                 ])

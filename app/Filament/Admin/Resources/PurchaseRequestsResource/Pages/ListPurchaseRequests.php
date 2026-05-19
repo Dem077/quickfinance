@@ -24,6 +24,8 @@ class ListPurchaseRequests extends ListRecords
 
     public function getTabs(): array
     {
+        $tabs = [];
+
         // this is for USer
         // Draft tab - only for users who can create requests
         if (Auth::user()->can('send_approval_purchase::requests')) {
@@ -50,8 +52,8 @@ class ListPurchaseRequests extends ListRecords
                 ->icon('heroicon-o-exclamation-circle');
 
             $tabs['procurement'] = Tab::make('Pending Procurement')
-                ->modifyQueryUsing(fn (Builder $query) => $query->where('status', PurchaseRequestsStatus::DocumentUploaded)->where('user_id', Auth::user()->id))
-                ->badge(PurchaseRequests::query()->where('status', PurchaseRequestsStatus::DocumentUploaded)->where('user_id', Auth::user()->id)->count())
+                ->modifyQueryUsing(fn (Builder $query) => $query->where('status', PurchaseRequestsStatus::MD_DMD_Approved)->where('user_id', Auth::user()->id))
+                ->badge(PurchaseRequests::query()->where('status', PurchaseRequestsStatus::MD_DMD_Approved)->where('user_id', Auth::user()->id)->count())
                 ->badgeColor('warning')
                 ->icon('heroicon-o-exclamation-circle');
 
@@ -87,8 +89,8 @@ class ListPurchaseRequests extends ListRecords
                 ->icon('heroicon-o-x-circle');
 
             $tabs['hodprocurement'] = Tab::make('Pending Procurement')
-                ->modifyQueryUsing(fn (Builder $query) => $query->where('status', PurchaseRequestsStatus::DocumentUploaded)->where('user_id', Auth::user()->id))
-                ->badge(PurchaseRequests::query()->where('status', PurchaseRequestsStatus::DocumentUploaded)->where('user_id', Auth::user()->id)->count())
+                ->modifyQueryUsing(fn (Builder $query) => $query->where('status', PurchaseRequestsStatus::MD_DMD_Approved)->where('user_id', Auth::user()->id))
+                ->badge(PurchaseRequests::query()->where('status', PurchaseRequestsStatus::MD_DMD_Approved)->where('user_id', Auth::user()->id)->count())
                 ->badgeColor('warning')
                 ->icon('heroicon-o-exclamation-circle');
 
@@ -144,6 +146,58 @@ class ListPurchaseRequests extends ListRecords
                 ])->count())
                 ->badgeColor('danger')
                 ->icon('heroicon-o-check-badge');
+        }
+
+        // MD / DMD approvers
+        if (Auth::user()->can('md_dmd_approve_purchase::requests')) {
+            $mdDmdStatuses = [
+                PurchaseRequestsStatus::Approved,
+                PurchaseRequestsStatus::MD_DMD_Approved,
+                PurchaseRequestsStatus::MD_DMD_Rejected,
+                PurchaseRequestsStatus::Closed,
+            ];
+
+            $tabs['all'] = Tab::make('All')
+                ->modifyQueryUsing(fn (Builder $query) => $query->whereIn('status', $mdDmdStatuses))
+                ->badge(PurchaseRequests::query()->whereIn('status', $mdDmdStatuses)->count())
+                ->icon('heroicon-o-rectangle-stack');
+
+            $tabs['md_dmd_pending'] = Tab::make('Pending Approval')
+                ->modifyQueryUsing(fn (Builder $query) => $query->where('status', PurchaseRequestsStatus::Approved))
+                ->badge(PurchaseRequests::query()->where('status', PurchaseRequestsStatus::Approved)->count())
+                ->badgeColor('warning')
+                ->icon('heroicon-o-clock');
+
+            $tabs['md_dmd_approved'] = Tab::make('MD / DMD Approved')
+                ->modifyQueryUsing(fn (Builder $query) => $query->where('status', PurchaseRequestsStatus::MD_DMD_Approved))
+                ->badge(PurchaseRequests::query()->where('status', PurchaseRequestsStatus::MD_DMD_Approved)->count())
+                ->badgeColor('success')
+                ->icon('heroicon-o-check-circle');
+
+            $tabs['md_dmd_rejected'] = Tab::make('Rejected')
+                ->modifyQueryUsing(fn (Builder $query) => $query->whereIn('status', [
+                    PurchaseRequestsStatus::MD_DMD_Rejected,
+                    PurchaseRequestsStatus::Canceled,
+                ]))
+                ->badge(PurchaseRequests::query()->whereIn('status', [
+                    PurchaseRequestsStatus::MD_DMD_Rejected,
+                    PurchaseRequestsStatus::Canceled,
+                ])->count())
+                ->badgeColor('danger')
+                ->icon('heroicon-o-x-circle');
+
+            $tabs['md_dmd_completed'] = Tab::make('Completed')
+                ->modifyQueryUsing(fn (Builder $query) => $query->where('status', PurchaseRequestsStatus::Closed))
+                ->badge(PurchaseRequests::query()->where('status', PurchaseRequestsStatus::Closed)->count())
+                ->badgeColor('success')
+                ->icon('heroicon-o-check-badge');
+        }
+
+        // Fallback when user can view the list but no tab block matched above
+        if ($tabs === [] && Auth::user()->can('view_any_purchase::requests')) {
+            $tabs['all'] = Tab::make('All')
+                ->badge(PurchaseRequests::query()->count())
+                ->icon('heroicon-o-rectangle-stack');
         }
 
         return $tabs;

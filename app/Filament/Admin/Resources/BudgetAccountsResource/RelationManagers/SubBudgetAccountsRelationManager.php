@@ -76,17 +76,16 @@ class SubBudgetAccountsRelationManager extends RelationManager
                     ->bulleted()
                     ->state(fn (SubBudgetAccounts $record) => $record->allocations
                         ->loadMissing('department', 'location')
-                        ->map(fn ($allocation) =>
-                            ($allocation->department?->name ?? 'Department') .
-                            ($allocation->location ? ' / ' . $allocation->location->name : '') .
-                            ': ' . number_format($allocation->amount, 2)
+                        ->map(fn ($allocation) => ($allocation->department?->name ?? 'Department').
+                            ($allocation->location ? ' / '.$allocation->location->name : '').
+                            ': '.number_format($allocation->amount, 2)
                         )
                         ->values()
                         ->all())
                     ->wrap(),
                 Tables\Columns\TextColumn::make('total_amount')
                     ->label('Total')
-                    ->money('MVR',),
+                    ->money('MVR'),
             ])
             ->filters([
                 //

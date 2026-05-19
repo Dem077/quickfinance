@@ -34,6 +34,7 @@ class User extends Authenticatable implements FilamentUser, HasAvatar
         'location_id',
         'bank_account_name',
         'bank_account_no',
+        'signature',
     ];
 
     /**

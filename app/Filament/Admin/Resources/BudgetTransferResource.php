@@ -66,7 +66,7 @@ class BudgetTransferResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('amount')
                     ->numeric()
-                    ->money('MVR',)
+                    ->money('MVR')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()

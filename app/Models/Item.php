@@ -23,6 +23,7 @@ class Item extends Model
     {
         return $this->hasMany(PurchaseOrderDetails::class, 'item_id');
     }
+
     public function pettyCashReimbursmentDetails()
     {
         return $this->hasMany(PettyCashReimbursmentDetail::class, 'item_id');

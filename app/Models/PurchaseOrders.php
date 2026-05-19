@@ -25,7 +25,7 @@ class PurchaseOrders extends Model
         'status',
     ];
 
-    protected $casts =[
+    protected $casts = [
         'status' => PurchaseOrderStatus::class,
     ];
 

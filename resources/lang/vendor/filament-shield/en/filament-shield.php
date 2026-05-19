@@ -80,6 +80,7 @@ return [
         'restore_any' => 'Restore Any',
         'replicate' => 'Replicate',
         'approve' => 'Finance Approve Purchase Requests',
+        'md_dmd_approve' => 'MD / DMD Approve Purchase Requests',
         'send_approval' => 'Send for Approval',
         'pv_approve' => 'Approve and Add PV',
         'fin_hod_approve' => 'Finance HOD Approval',
