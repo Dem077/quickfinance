@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\ItemTypeEnum;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -19,6 +20,7 @@ class ItemFactory extends Factory
         return [
             'item_code' => $this->faker->word,
             'name' => $this->faker->name,
+            'type' => ItemTypeEnum::Other,
         ];
     }
 }

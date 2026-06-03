@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\ItemTypeEnum;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -12,6 +13,11 @@ class Item extends Model
     protected $fillable = [
         'item_code',
         'name',
+        'type',
+    ];
+
+    protected $casts = [
+        'type' => ItemTypeEnum::class,
     ];
 
     public function purchaseRequestDetails()

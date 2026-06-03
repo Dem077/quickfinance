@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources;
 
+use App\Enums\ItemTypeEnum;
 use App\Filament\Admin\Resources\ItemResource\Pages;
 use App\Models\Item;
 use Filament\Forms;
@@ -28,6 +29,11 @@ class ItemResource extends Resource
                 Forms\Components\TextInput::make('name')
                     ->required()
                     ->maxLength(255),
+                Forms\Components\Select::make('type')
+                    ->options(ItemTypeEnum::class)
+                    ->default(ItemTypeEnum::Other)
+                    ->native(false)
+                    ->required(),
             ]);
     }
 
@@ -39,6 +45,9 @@ class ItemResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('name')
                     ->searchable(),
+                Tables\Columns\TextColumn::make('type')
+                    ->badge()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
