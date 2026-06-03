@@ -45,6 +45,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
             'approve',
             'md_dmd_approve',
             'cancel',
+            'close',
         ];
     }
 
@@ -487,7 +488,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                     ->requiresConfirmation()
                     ->modalDescription('Are you sure you want to close this PR? This action cannot be undone.')
                     ->visible(fn ($record) => $record->status == PurchaseRequestsStatus::MD_DMD_Approved &&
-                        Auth::user()->can('approve_purchase::requests')
+                        Auth::user()->can('close_purchase::requests')
                     )
                     ->action(function (PurchaseRequests $record) {
 

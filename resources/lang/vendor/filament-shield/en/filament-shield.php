@@ -86,5 +86,6 @@ return [
         'fin_hod_approve' => 'Finance HOD Approval',
         'generate_advance_form' => 'Generate Advance Form',
         'md_dmd_approve_advance_form' => 'MD / DMD Approve Advance Form',
+        'close' => 'Close',
     ],
 ];

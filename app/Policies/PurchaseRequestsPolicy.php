@@ -38,6 +38,11 @@ class PurchaseRequestsPolicy
         return $user->can('md_dmd_approve_purchase::requests');
     }
 
+    public function close(User $user): bool
+    {
+        return $user->can('close_purchase::requests');
+    }
+
     /**
      * Determine whether the user can view any models.
      */

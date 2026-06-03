@@ -21,6 +21,11 @@ class PurchaseOrdersPolicy
         return $user->can('md_dmd_approve_advance_form_purchase::orders');
     }
 
+    public function close(User $user): bool
+    {
+        return $user->can('close_purchase::orders');
+    }
+
     /**
      * Determine whether the user can view any models.
      */

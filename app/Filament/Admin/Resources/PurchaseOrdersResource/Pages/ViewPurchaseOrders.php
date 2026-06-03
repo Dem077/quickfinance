@@ -216,8 +216,12 @@ class ViewPurchaseOrders extends ViewRecord
                 ->requiresConfirmation()
                 ->button()
                 ->modalDescription('Are you sure you want to close this PR? This action cannot be undone.')
-                ->visible(fn ($record) => $record->status == PurchaseOrderStatus::Submitted && Auth::user()->can('approve_purchase::requests')
-                    || $record->status == PurchaseOrderStatus::Submitted && $record->supporting_document && $record->payment_method == 'petty_cash' && Auth::user()->can('create_purchase::orders')
+                ->visible(fn ($record) => $record->status == PurchaseOrderStatus::Submitted
+                    && Auth::user()->can('close_purchase::orders')
+                    && (
+                        $record->payment_method === 'purchase_order'
+                        || ($record->payment_method === 'petty_cash' && $record->supporting_document)
+                    )
                 )
                 ->action(function (PurchaseOrders $record) {
                     if ($record->payment_method == 'petty_cash') {

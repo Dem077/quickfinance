@@ -140,6 +140,17 @@ class PettyCashReimbursment extends Model
         return $this->hasMany(PettyCashReimbursmentDetail::class, 'petty_cash_reimb_id');
     }
 
+    public function hasPvNumbers(): bool
+    {
+        if (blank($this->pv_number)) {
+            return false;
+        }
+
+        $pvNumbers = json_decode($this->pv_number, true);
+
+        return is_array($pvNumbers) && count($pvNumbers) > 0;
+    }
+
     public function hasBudgetBeenDeducted(): bool
     {
         return $this->budget_deducted_at !== null;

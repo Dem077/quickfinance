@@ -419,9 +419,13 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                     ->label('Add PV')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
-                    ->visible(fn ($record) => $record->status->value === PettyCashStatus::FinApproved->value && Auth::user()->can('pv_approve_petty::cash::reimbursment'))
+                    ->visible(fn (PettyCashReimbursment $record) => in_array($record->status->value, [
+                        PettyCashStatus::DepApproved->value,
+                        PettyCashStatus::FinApproved->value,
+                    ], true)
+                        && Auth::user()->can('pv_approve_petty::cash::reimbursment')
+                        && ! $record->hasPvNumbers())
                     ->form([
-
                         Forms\Components\Repeater::make('pv_numbers')
                             ->label('PV Numbers')
                             ->simple(
@@ -429,12 +433,48 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                                     ->required(),
                             ),
                     ])
-                    ->action(function ($record, array $data) {
+                    ->action(function (PettyCashReimbursment $record, array $data) {
+                        $record->update([
+                            'pv_number' => json_encode($data['pv_numbers']),
+                            'verified_by' => Auth::id(),
+                        ]);
+                    }),
+                Tables\Actions\Action::make('fin_reject')
+                    ->label('Reject')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->icon('heroicon-o-x-circle')
+                    ->visible(fn (PettyCashReimbursment $record) => $record->status->value === PettyCashStatus::DepApproved->value
+                        && $record->hasPvNumbers()
+                        && Auth::user()->can('fin_hod_approve_petty::cash::reimbursment'))
+                    ->action(function (PettyCashReimbursment $record) {
+                        $record->update([
+                            'status' => PettyCashStatus::Draft,
+                            'pv_number' => null,
+                            'verified_by' => null,
+                        ]);
+
+                        $useremail = $record->user->email;
+
+                        Mail::to($useremail)->queue(new StatusEmail('Petty Cash Request '.$record->id, 'rejected', '', 'Finance', true));
+                    }),
+                Tables\Actions\Action::make('fin_approve')
+                    ->label('Approve')
+                    ->icon('heroicon-o-check-circle')
+                    ->requiresConfirmation()
+                    ->color('success')
+                    ->visible(fn (PettyCashReimbursment $record) => in_array($record->status->value, [
+                        PettyCashStatus::DepApproved->value,
+                        PettyCashStatus::FinApproved->value,
+                    ], true)
+                        && $record->hasPvNumbers()
+                        && Auth::user()->can('fin_hod_approve_petty::cash::reimbursment'))
+                    ->action(function (PettyCashReimbursment $record) {
+                        $record->deductFromDepartmentBudgets();
 
                         $record->update([
                             'status' => PettyCashStatus::Rembursed,
-                            'pv_number' => json_encode($data['pv_numbers']),
-                            'verified_by' => Auth::id(),
+                            'approved_by' => Auth::id(),
                         ]);
 
                         foreach ($record->pettyCashReimbursmentDetails as $detail) {
@@ -448,39 +488,9 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                                 PurchaseOrders::find($detail->po_id)->update(['is_reimbursed' => true]);
                             }
                         }
+
                         $useremail = $record->user->email;
                         Mail::to($useremail)->queue(new StatusEmail('Petty Cash Request '.$record->id, 'approved', '', 'Finance'));
-
-                    }),
-                Tables\Actions\Action::make('fin_reject')
-                    ->label('Reject')
-                    ->color('danger')
-                    ->requiresConfirmation()
-                    ->icon('heroicon-o-x-circle')
-                    ->visible(fn ($record) => $record->status->value === PettyCashStatus::DepApproved->value && Auth::user()->can('fin_hod_approve_petty::cash::reimbursment'))
-                    ->action(function (PettyCashReimbursment $record) {
-                        $record->update([
-                            'status' => PettyCashStatus::Draft,
-                        ]);
-
-                        $useremail = $record->user->email;
-
-                        Mail::to($useremail)->queue(new StatusEmail('Petty Cash Request '.$record->id, 'rejected', '', 'Finance', true));
-                    }),
-
-                Tables\Actions\Action::make('fin_approve')
-                    ->label('Approve')
-                    ->icon('heroicon-o-check-circle')
-                    ->requiresConfirmation()
-                    ->color('success')
-                    ->visible(fn ($record) => $record->status->value === PettyCashStatus::DepApproved->value && Auth::user()->can('fin_hod_approve_petty::cash::reimbursment'))
-                    ->action(function (PettyCashReimbursment $record) {
-                        $record->deductFromDepartmentBudgets();
-
-                        $record->update([
-                            'status' => PettyCashStatus::FinApproved,
-                            'approved_by' => Auth::id(),
-                        ]);
                     }),
 
                 Tables\Actions\Action::make('download_pdf')
