@@ -7,6 +7,7 @@ use App\Enums\UnitsEnum;
 use App\Filament\Admin\Resources\PurchaseRequestsResource\Pages;
 use App\Filament\Admin\Resources\PurchaseRequestsResource\RelationManagers;
 use App\Models\Departments;
+use App\Models\PurchaseOrders;
 use App\Models\PurchaseRequests;
 use App\Models\SubBudgetAccounts;
 use App\Models\User;
@@ -485,17 +486,17 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                     ->icon('heroicon-o-check-circle')
                     ->color('danger')
                     ->button()
-                    ->requiresConfirmation()
-                    ->modalDescription('Are you sure you want to close this PR? This action cannot be undone.')
+                    ->modalHeading('Close Purchase Request')
+                    ->modalDescription(fn (PurchaseRequests $record) => $record->openPurchaseOrdersForClose()->isNotEmpty()
+                        ? 'Enter GRN numbers for related purchase orders. The PR and those purchase orders will be closed.'
+                        : 'Are you sure you want to close this PR? This action cannot be undone.')
+                    ->form(fn (PurchaseRequests $record): array => static::getCloseFormSchema($record))
+                    ->requiresConfirmation(fn (PurchaseRequests $record) => $record->openPurchaseOrdersForClose()->isEmpty())
                     ->visible(fn ($record) => $record->status == PurchaseRequestsStatus::MD_DMD_Approved &&
                         Auth::user()->can('close_purchase::requests')
                     )
-                    ->action(function (PurchaseRequests $record) {
-
-                        $record->update([
-                            'status' => PurchaseRequestsStatus::Closed,
-                            'is_closed_by' => Auth::id(),
-                        ]);
+                    ->action(function (PurchaseRequests $record, array $data) {
+                        static::closePurchaseRequest($record, $data);
 
                         Notification::make()
                             ->title('PR Closed successfully')
@@ -583,5 +584,46 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
             'view' => Pages\ViewPurchaseRequests::route('/{record}'),
             'edit' => Pages\EditPurchaseRequests::route('/{record}/edit'),
         ];
+    }
+
+    public static function getCloseFormSchema(PurchaseRequests $record): array
+    {
+        $purchaseOrders = $record->openPurchaseOrdersForClose();
+
+        if ($purchaseOrders->isEmpty()) {
+            return [];
+        }
+
+        return [
+            Forms\Components\Repeater::make('purchase_order_grns')
+                ->label('GRN Numbers for Purchase Orders')
+                ->schema([
+                    Forms\Components\Hidden::make('po_id'),
+                    Forms\Components\TextInput::make('grn_number')
+                        ->label('GRN Number')
+                        ->required()
+                        ->maxLength(255),
+                ])
+                ->default($purchaseOrders->map(fn (PurchaseOrders $purchaseOrder) => [
+                    'po_id' => $purchaseOrder->id,
+                    'grn_number' => $purchaseOrder->grn_number ?? '',
+                ])->values()->all())
+                ->itemLabel(fn (array $state): ?string => PurchaseOrders::find($state['po_id'] ?? null)?->po_no)
+                ->addable(false)
+                ->deletable(false)
+                ->reorderable(false),
+        ];
+    }
+
+    public static function closePurchaseRequest(PurchaseRequests $record, array $data): void
+    {
+        if (! empty($data['purchase_order_grns'])) {
+            $record->applyGrnNumbersForClose($data['purchase_order_grns']);
+        }
+
+        $record->update([
+            'status' => PurchaseRequestsStatus::Closed,
+            'is_closed_by' => Auth::id(),
+        ]);
     }
 }

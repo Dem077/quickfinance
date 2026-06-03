@@ -718,9 +718,22 @@ class PurchaseOrdersResource extends Resource implements HasShieldPermissions
                     ->label('Close')
                     ->icon('heroicon-o-check-circle')
                     ->color('danger')
-                    ->requiresConfirmation()
                     ->button()
-                    ->modalDescription('Are you sure you want to close this PR? This action cannot be undone.')
+                    ->modalHeading(fn (PurchaseOrders $record) => $record->payment_method === 'purchase_order'
+                        ? 'Close Purchase Order'
+                        : 'Close Procure Record')
+                    ->modalDescription(fn (PurchaseOrders $record) => $record->payment_method === 'purchase_order'
+                        ? 'Enter the GRN number to close this purchase order. This action cannot be undone.'
+                        : 'Are you sure you want to close this record? This action cannot be undone.')
+                    ->form(fn (PurchaseOrders $record): array => $record->payment_method === 'purchase_order'
+                        ? [
+                            Forms\Components\TextInput::make('grn_number')
+                                ->label('GRN Number')
+                                ->required()
+                                ->maxLength(255),
+                        ]
+                        : [])
+                    ->requiresConfirmation(fn (PurchaseOrders $record) => $record->payment_method !== 'purchase_order')
                     ->visible(fn ($record) => $record->status == PurchaseOrderStatus::Submitted
                         && Auth::user()->can('close_purchase::orders')
                         && (
@@ -728,7 +741,7 @@ class PurchaseOrdersResource extends Resource implements HasShieldPermissions
                             || ($record->payment_method === 'petty_cash' && $record->supporting_document)
                         )
                     )
-                    ->action(function (PurchaseOrders $record) {
+                    ->action(function (PurchaseOrders $record, array $data) {
                         if ($record->payment_method == 'petty_cash') {
                             $record->update([
                                 'status' => PurchaseOrderStatus::WaitingReimbursement,
@@ -738,6 +751,7 @@ class PurchaseOrdersResource extends Resource implements HasShieldPermissions
                             $record->update([
                                 'status' => PurchaseOrderStatus::Closed,
                                 'is_closed_by' => Auth::id(),
+                                'grn_number' => $data['grn_number'],
                             ]);
                         }
 

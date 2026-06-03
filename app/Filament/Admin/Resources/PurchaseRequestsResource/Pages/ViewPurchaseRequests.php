@@ -156,17 +156,17 @@ class ViewPurchaseRequests extends ViewRecord
                 ->label('Close')
                 ->icon('heroicon-o-check-circle')
                 ->color('danger')
-                ->requiresConfirmation()
-                ->modalDescription('Are you sure you want to close this PR? This action cannot be undone.')
+                ->modalHeading('Close Purchase Request')
+                ->modalDescription(fn (PurchaseRequests $record) => $record->openPurchaseOrdersForClose()->isNotEmpty()
+                    ? 'Enter GRN numbers for related purchase orders. The PR and those purchase orders will be closed.'
+                    : 'Are you sure you want to close this PR? This action cannot be undone.')
+                ->form(fn (PurchaseRequests $record): array => PurchaseRequestsResource::getCloseFormSchema($record))
+                ->requiresConfirmation(fn (PurchaseRequests $record) => $record->openPurchaseOrdersForClose()->isEmpty())
                 ->visible(fn ($record) => $record->status == PurchaseRequestsStatus::MD_DMD_Approved &&
                     Auth::user()->can('close_purchase::requests')
                 )
-                ->action(function (PurchaseRequests $record) {
-
-                    $record->update([
-                        'status' => PurchaseRequestsStatus::Closed,
-                        'is_closed_by' => Auth::id(),
-                    ]);
+                ->action(function (PurchaseRequests $record, array $data) {
+                    PurchaseRequestsResource::closePurchaseRequest($record, $data);
 
                     Notification::make()
                         ->title('PR Closed successfully')

@@ -15,6 +15,7 @@ class PurchaseOrders extends Model
         'date',
         'pr_id',
         'payment_method',
+        'grn_number',
         'is_submitted',
         'is_closed',
         'is_closed_by',

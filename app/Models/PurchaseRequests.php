@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\PurchaseOrderStatus;
 use App\Enums\PurchaseRequestsStatus;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -49,6 +50,29 @@ class PurchaseRequests extends Model
     public function purchaseOrders(): HasMany
     {
         return $this->hasMany(PurchaseOrders::class, 'pr_id');
+    }
+
+    public function openPurchaseOrdersForClose(): Collection
+    {
+        return $this->purchaseOrders()
+            ->where('payment_method', 'purchase_order')
+            ->where('status', '!=', PurchaseOrderStatus::Closed)
+            ->orderBy('po_no')
+            ->get();
+    }
+
+    public function applyGrnNumbersForClose(array $purchaseOrderGrns): void
+    {
+        foreach ($purchaseOrderGrns as $item) {
+            if (empty($item['po_id']) || empty($item['grn_number'])) {
+                continue;
+            }
+
+            $this->purchaseOrders()
+                ->where('payment_method', 'purchase_order')
+                ->where('id', $item['po_id'])
+                ->update(['grn_number' => $item['grn_number']]);
+        }
     }
 
     public function closeRelatedPurchaseOrders(?int $closedBy = null): void
