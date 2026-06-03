@@ -83,11 +83,15 @@ class PurchaseRequests extends Model
             ->where('payment_method', 'purchase_order')
             ->where('status', '!=', PurchaseOrderStatus::Closed)
             ->get()
-            ->each(fn (PurchaseOrders $purchaseOrder) => $purchaseOrder->update([
-                'status' => PurchaseOrderStatus::Closed,
-                'is_closed' => true,
-                'is_closed_by' => $closedBy,
-            ]));
+            ->each(function (PurchaseOrders $purchaseOrder) use ($closedBy) {
+                $purchaseOrder->syncAssetReceipts();
+
+                $purchaseOrder->update([
+                    'status' => PurchaseOrderStatus::Closed,
+                    'is_closed' => true,
+                    'is_closed_by' => $closedBy,
+                ]);
+            });
     }
 
     public function location(): BelongsTo

@@ -35,4 +35,9 @@ class PurchaseOrderDetails extends Model
     {
         return $this->belongsTo(SubBudgetAccounts::class, 'budget_account_id');
     }
+
+    public function assetReceipt()
+    {
+        return $this->hasOne(AssetReceipt::class, 'purchase_order_detail_id');
+    }
 }

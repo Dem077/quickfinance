@@ -68,6 +68,9 @@ class ViewPurchaseOrders extends ViewRecord
                         'status' => PurchaseOrderStatus::Submitted,
                         'is_submitted' => true,
                     ]);
+
+                    $record->syncAssetReceipts();
+
                     foreach ($record->purchaseOrderDetails as $detail) {
 
                         $itemid = Item::where('item_code', $detail->itemcode)->first()->id;
@@ -243,6 +246,8 @@ class ViewPurchaseOrders extends ViewRecord
                             'is_closed_by' => Auth::id(),
                         ]);
                     } else {
+                        $record->syncAssetReceipts();
+
                         $record->update([
                             'status' => PurchaseOrderStatus::Closed,
                             'is_closed_by' => Auth::id(),

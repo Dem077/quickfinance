@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\AssetReceiptStatus;
+use App\Enums\ItemTypeEnum;
 use App\Enums\PurchaseOrderStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -43,6 +45,46 @@ class PurchaseOrders extends Model
     public function purchaseOrderDetails(): HasMany
     {
         return $this->hasMany(PurchaseOrderDetails::class, 'po_id');
+    }
+
+    public function assetReceipts(): HasMany
+    {
+        return $this->hasMany(AssetReceipt::class, 'purchase_order_id');
+    }
+
+    public function syncAssetReceipts(): void
+    {
+        if ($this->payment_method !== 'purchase_order') {
+            return;
+        }
+
+        $this->loadMissing('purchaseOrderDetails.items');
+
+        foreach ($this->purchaseOrderDetails as $detail) {
+            $item = $detail->items ?? Item::query()
+                ->where('item_code', $detail->itemcode)
+                ->first();
+
+            if (! $item || $item->type !== ItemTypeEnum::Asset) {
+                continue;
+            }
+
+            AssetReceipt::firstOrCreate(
+                ['purchase_order_detail_id' => $detail->id],
+                [
+                    'purchase_order_id' => $this->id,
+                    'item_id' => $item->id,
+                    'status' => AssetReceiptStatus::Pending,
+                ]
+            );
+        }
+    }
+
+    public function hasPendingAssetReceipts(): bool
+    {
+        return $this->assetReceipts()
+            ->where('status', AssetReceiptStatus::Pending)
+            ->exists();
     }
 
     public function advanceForm(): BelongsTo
