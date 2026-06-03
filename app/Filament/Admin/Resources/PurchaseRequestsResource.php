@@ -2,13 +2,11 @@
 
 namespace App\Filament\Admin\Resources;
 
-use App\Enums\PurchaseOrderStatus;
 use App\Enums\PurchaseRequestsStatus;
 use App\Enums\UnitsEnum;
 use App\Filament\Admin\Resources\PurchaseRequestsResource\Pages;
 use App\Filament\Admin\Resources\PurchaseRequestsResource\RelationManagers;
 use App\Models\Departments;
-use App\Models\PurchaseOrders;
 use App\Models\PurchaseRequests;
 use App\Models\SubBudgetAccounts;
 use App\Models\User;
@@ -497,16 +495,6 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                             'status' => PurchaseRequestsStatus::Closed,
                             'is_closed_by' => Auth::id(),
                         ]);
-                        $po = PurchaseOrders::where('is_closed', false)->where('pr_id', $record->id)->get();
-                        if (! $po) {
-                            foreach ($po as $p) {
-                                $p->update([
-                                    'status' => PurchaseOrderStatus::Closed,
-                                    'is_closed' => true,
-                                    'is_closed_by' => Auth::id(),
-                                ]);
-                            }
-                        }
 
                         Notification::make()
                             ->title('PR Closed successfully')

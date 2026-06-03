@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Enums\PurchaseOrderStatus;
 use App\Enums\PurchaseRequestsStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Auth;
 
 class PurchaseRequests extends Model
 {
@@ -42,6 +44,26 @@ class PurchaseRequests extends Model
     public function purchaseRequestDetails(): HasMany
     {
         return $this->HasMany(PurchaseRequestDetails::class, 'pr_id');
+    }
+
+    public function purchaseOrders(): HasMany
+    {
+        return $this->hasMany(PurchaseOrders::class, 'pr_id');
+    }
+
+    public function closeRelatedPurchaseOrders(?int $closedBy = null): void
+    {
+        $closedBy ??= Auth::id();
+
+        $this->purchaseOrders()
+            ->where('payment_method', 'purchase_order')
+            ->where('status', '!=', PurchaseOrderStatus::Closed)
+            ->get()
+            ->each(fn (PurchaseOrders $purchaseOrder) => $purchaseOrder->update([
+                'status' => PurchaseOrderStatus::Closed,
+                'is_closed' => true,
+                'is_closed_by' => $closedBy,
+            ]));
     }
 
     public function location(): BelongsTo

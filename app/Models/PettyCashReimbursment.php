@@ -6,6 +6,7 @@ use App\Enums\PettyCashStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class PettyCashReimbursment extends Model
 {
@@ -20,10 +21,12 @@ class PettyCashReimbursment extends Model
         'pv_number',
         'verified_by',
         'approved_by',
+        'budget_deducted_at',
     ];
 
     protected $casts = [
         'status' => PettyCashStatus::class,
+        'budget_deducted_at' => 'datetime',
     ];
 
     public static function generateNextFormNo(): string
@@ -135,6 +138,111 @@ class PettyCashReimbursment extends Model
     public function pettyCashReimbursmentDetails(): HasMany
     {
         return $this->hasMany(PettyCashReimbursmentDetail::class, 'petty_cash_reimb_id');
+    }
+
+    public function hasBudgetBeenDeducted(): bool
+    {
+        return $this->budget_deducted_at !== null;
+    }
+
+    public function deductFromDepartmentBudgets(?int $by = null): void
+    {
+        if ($this->hasBudgetBeenDeducted()) {
+            return;
+        }
+
+        $by ??= Auth::id();
+        $this->loadMissing('pettyCashReimbursmentDetails', 'user');
+
+        $departmentId = $this->user?->department_id;
+        if (! $departmentId) {
+            return;
+        }
+
+        $deducted = false;
+
+        DB::transaction(function () use ($by, $departmentId, &$deducted) {
+            foreach ($this->pettyCashReimbursmentDetails as $detail) {
+                if (! $detail->sub_budget_id) {
+                    continue;
+                }
+
+                $allocation = SubBudgetDepartmentAllocation::query()
+                    ->where('sub_budget_account_id', $detail->sub_budget_id)
+                    ->where('department_id', $departmentId)
+                    ->first();
+
+                if (! $allocation) {
+                    continue;
+                }
+
+                $allocation->update([
+                    'amount' => $allocation->amount - $detail->amount,
+                ]);
+
+                BudgetTransactionHistory::createtransaction(
+                    $detail->sub_budget_id,
+                    'Petty Cash Reimbursement',
+                    $detail->amount,
+                    (float) $allocation->fresh()->amount,
+                    'Petty Cash finance approved — '.($this->form_no ?? '#'.$this->id),
+                    $by,
+                );
+
+                $deducted = true;
+            }
+
+            if ($deducted) {
+                $this->update(['budget_deducted_at' => now()]);
+            }
+        });
+    }
+
+    public function restoreDepartmentBudgets(?int $by = null): void
+    {
+        if (! $this->hasBudgetBeenDeducted()) {
+            return;
+        }
+
+        $by ??= Auth::id();
+        $this->loadMissing('pettyCashReimbursmentDetails', 'user');
+
+        $departmentId = $this->user?->department_id;
+        if (! $departmentId) {
+            return;
+        }
+
+        DB::transaction(function () use ($by, $departmentId) {
+            foreach ($this->pettyCashReimbursmentDetails as $detail) {
+                if (! $detail->sub_budget_id) {
+                    continue;
+                }
+
+                $allocation = SubBudgetDepartmentAllocation::query()
+                    ->where('sub_budget_account_id', $detail->sub_budget_id)
+                    ->where('department_id', $departmentId)
+                    ->first();
+
+                if (! $allocation) {
+                    continue;
+                }
+
+                $allocation->update([
+                    'amount' => $allocation->amount + $detail->amount,
+                ]);
+
+                BudgetTransactionHistory::createtransaction(
+                    $detail->sub_budget_id,
+                    'Petty Cash Reimbursement Reversal',
+                    $detail->amount,
+                    (float) $allocation->fresh()->amount,
+                    'Petty Cash finance approval reversed — '.($this->form_no ?? '#'.$this->id),
+                    $by,
+                );
+            }
+
+            $this->update(['budget_deducted_at' => null]);
+        });
     }
 
     public function VerifiedBy()

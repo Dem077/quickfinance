@@ -26,6 +26,10 @@ class PurchaseRequestsObserver
     public function updated(PurchaseRequests $purchaseRequests): void
     {
         if ($purchaseRequests->isDirty('status')) {
+            if ($purchaseRequests->status === PurchaseRequestsStatus::Closed) {
+                $purchaseRequests->closeRelatedPurchaseOrders($purchaseRequests->is_closed_by);
+            }
+
             $this->handleStatusChange($purchaseRequests);
         }
     }

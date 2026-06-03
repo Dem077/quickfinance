@@ -2,12 +2,10 @@
 
 namespace App\Filament\Admin\Resources\PurchaseRequestsResource\Pages;
 
-use App\Enums\PurchaseOrderStatus;
 use App\Enums\PurchaseRequestsStatus;
 use App\Filament\Admin\Resources\PurchaseRequestsResource;
 use App\Mail\NotificationEmail;
 use App\Mail\StatusEmail;
-use App\Models\PurchaseOrders;
 use App\Models\PurchaseRequests;
 use App\Models\User;
 use Filament\Actions;
@@ -169,16 +167,6 @@ class ViewPurchaseRequests extends ViewRecord
                         'status' => PurchaseRequestsStatus::Closed,
                         'is_closed_by' => Auth::id(),
                     ]);
-                    $po = PurchaseOrders::where('is_closed', false)->where('pr_id', $record->id)->get();
-                    if (! $po) {
-                        foreach ($po as $p) {
-                            $p->update([
-                                'status' => PurchaseOrderStatus::Closed,
-                                'is_closed' => true,
-                                'is_closed_by' => Auth::id(),
-                            ]);
-                        }
-                    }
 
                     Notification::make()
                         ->title('PR Closed successfully')
