@@ -10,6 +10,7 @@ use App\Filament\Admin\Resources\PurchaseOrdersResource\RelationManagers;
 use App\Enums\AdvanceFormStatus;
 use App\Models\AdvanceForm;
 use App\Models\Item;
+use App\Models\PettyCashReimbursment;
 use App\Models\PurchaseOrders;
 use App\Models\PurchaseRequestDetails;
 use App\Models\PurchaseRequests;
@@ -65,9 +66,24 @@ class PurchaseOrdersResource extends Resource implements HasShieldPermissions
             ->schema([
                 Forms\Components\TextInput::make('po_no')
                     ->label('Record ID')
-                    ->required()
+                    ->required(fn (Get $get) => $get('payment_method') !== 'petty_cash')
+                    ->visible(fn (Get $get) => $get('payment_method') !== 'petty_cash')
                     ->disabled(fn ($record) => $record && $record->status !== PurchaseOrderStatus::Draft)
                     ->maxLength(255),
+                Forms\Components\Select::make('po_no')
+                    ->label('Petty Cash Form Number')
+                    ->options(fn (?PurchaseOrders $record) => PettyCashReimbursment::draftFormNoOptions(
+                        $record?->payment_method === 'petty_cash' ? $record->po_no : null,
+                        $record?->id,
+                    ))
+                    ->default(fn (Get $get, string $operation) => $operation === 'create' && $get('payment_method') === 'petty_cash'
+                        ? PettyCashReimbursment::GENERATE_FORM_NO_OPTION
+                        : null)
+                    ->required(fn (Get $get) => $get('payment_method') === 'petty_cash')
+                    ->visible(fn (Get $get) => $get('payment_method') === 'petty_cash')
+                    ->native(false)
+                    ->searchable()
+                    ->disabled(fn ($record) => $record && $record->status !== PurchaseOrderStatus::Draft),
                 Forms\Components\Select::make('vendor_id')
                     ->relationship('vendor', 'name')
                     ->disabled(fn ($record) => $record && $record->status !== PurchaseOrderStatus::Draft)
@@ -98,6 +114,11 @@ class PurchaseOrdersResource extends Resource implements HasShieldPermissions
                         'petty_cash' => 'Petty Cash',
                     ])
                     ->default('purchase_order')
+                    ->afterStateUpdated(function (Set $set, ?string $state) {
+                        $set('po_no', $state === 'petty_cash'
+                            ? PettyCashReimbursment::GENERATE_FORM_NO_OPTION
+                            : null);
+                    })
                     ->required(),
                 Forms\Components\Radio::make('is_advance_form_required')
                     ->label('Advance Form Required')

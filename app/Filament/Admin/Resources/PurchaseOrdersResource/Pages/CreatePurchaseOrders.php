@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Resources\PurchaseOrdersResource\Pages;
 
 use App\Filament\Admin\Resources\PurchaseOrdersResource;
 use App\Models\Item;
+use App\Models\PettyCashReimbursment;
 use App\Models\PurchaseOrderDetails;
 use App\Models\PurchaseRequests;
 use Filament\Resources\Pages\CreateRecord;
@@ -11,6 +12,15 @@ use Filament\Resources\Pages\CreateRecord;
 class CreatePurchaseOrders extends CreateRecord
 {
     protected static string $resource = PurchaseOrdersResource::class;
+
+    protected function mutateFormDataBeforeCreate(array $data): array
+    {
+        if (($data['payment_method'] ?? '') === 'petty_cash' && ! empty($data['po_no'])) {
+            $data['po_no'] = PettyCashReimbursment::resolveFormNoForProcure($data['po_no']);
+        }
+
+        return $data;
+    }
 
     protected function afterCreate(): void
     {

@@ -85,8 +85,10 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                     ->required(),
                 Forms\Components\TextInput::make('form_no')
                     ->label('Form Number')
-                    ->disabled(fn ($record) => $record && $record && $record->status !== PettyCashStatus::Draft->value)
-                    ->required(),
+                    ->default(fn () => PettyCashReimbursment::generateNextFormNo())
+                    ->disabled()
+                    ->dehydrated(false)
+                    ->maxLength(255),
                 Forms\Components\Hidden::make('user_id')
                     ->default(Auth::id())
                     ->required(),

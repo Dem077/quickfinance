@@ -3,12 +3,20 @@
 namespace App\Filament\Admin\Resources\PettyCashReimbursmentResource\Pages;
 
 use App\Filament\Admin\Resources\PettyCashReimbursmentResource;
+use App\Models\PettyCashReimbursment;
 use App\Models\PettyCashReimbursmentDetail;
 use Filament\Resources\Pages\CreateRecord;
 
 class CreatePettyCashReimbursment extends CreateRecord
 {
     protected static string $resource = PettyCashReimbursmentResource::class;
+
+    protected function mutateFormDataBeforeCreate(array $data): array
+    {
+        $data['form_no'] = PettyCashReimbursment::generateNextFormNo();
+
+        return $data;
+    }
 
     protected function afterCreate(): void
     {

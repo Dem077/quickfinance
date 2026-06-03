@@ -4,12 +4,26 @@ namespace App\Filament\Admin\Resources\PurchaseOrdersResource\Pages;
 
 use App\Enums\PurchaseOrderStatus;
 use App\Filament\Admin\Resources\PurchaseOrdersResource;
+use App\Models\PettyCashReimbursment;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 
 class EditPurchaseOrders extends EditRecord
 {
     protected static string $resource = PurchaseOrdersResource::class;
+
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        if (($data['payment_method'] ?? '') === 'petty_cash' && ! empty($data['po_no'])) {
+            $selected = $data['po_no'];
+
+            if ($selected === PettyCashReimbursment::GENERATE_FORM_NO_OPTION) {
+                $data['po_no'] = PettyCashReimbursment::resolveFormNoForProcure($selected);
+            }
+        }
+
+        return $data;
+    }
 
     protected function getHeaderActions(): array
     {
