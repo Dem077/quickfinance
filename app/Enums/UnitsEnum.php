@@ -18,6 +18,25 @@ enum UnitsEnum: string implements HasColor, HasLabel
     case Meter = 'Meter';
     case NONE = '-';
 
+    public static function resolve(?string $value): ?self
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if ($enum = self::tryFrom($value)) {
+            return $enum;
+        }
+
+        foreach (self::cases() as $case) {
+            if (strcasecmp($case->name, $value) === 0 || strcasecmp($case->value, $value) === 0) {
+                return $case;
+            }
+        }
+
+        return self::NONE;
+    }
+
     public function getLabel(): ?string
     {
         return match ($this) {

@@ -29,9 +29,7 @@ Route::get('pr/{record}/preview', function (PurchaseRequests $record) {
     if (! $record->status == PurchaseRequestsStatus::Approved->value) {
         abort(403, 'Access denied. Document is not approved.');
     }
-    if (! $record->uploaded_document == null) {
-        abort(403, 'Access denied. Document is already signed and uploaded.');
-    }
+
 
     $record->load(['project', 'locations', 'location', 'user', 'approvedby', 'hodapprovedby', 'mdDmdApprovedBy']);
 

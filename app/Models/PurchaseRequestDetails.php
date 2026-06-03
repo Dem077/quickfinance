@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\UnitsEnum;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -18,9 +19,23 @@ class PurchaseRequestDetails extends Model
         'est_cost',
     ];
 
-    protected $casts = [
-        'unit' => UnitsEnum::class,
-    ];
+    protected function unit(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value) => UnitsEnum::resolve($value),
+            set: function (UnitsEnum|string|null $value) {
+                if ($value instanceof UnitsEnum) {
+                    return $value->value;
+                }
+
+                if ($value === null || $value === '') {
+                    return null;
+                }
+
+                return UnitsEnum::resolve((string) $value)?->value ?? $value;
+            },
+        );
+    }
 
     public function purchaseRequest(): BelongsTo
     {

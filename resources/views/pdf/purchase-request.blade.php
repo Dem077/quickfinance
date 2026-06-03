@@ -191,7 +191,7 @@
                         <td>{{$loop->iteration}}</td>
                         <td>{{$item->items->name}}</td>
                         <td>{{$item->budgetAccount->code}}</td>
-                        <td>{{$item->unit}}</td>
+                        <td>{{ $item->unit?->getLabel() ?? '-' }}</td>
                         <td>{{$item->amount}}</td>
                         <td>{{$item->est_cost}}</td>
                    </tr>

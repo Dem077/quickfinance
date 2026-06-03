@@ -24,6 +24,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class PurchaseRequestsResource extends Resource implements HasShieldPermissions
 {
@@ -523,7 +524,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                     ->action(function (PurchaseRequests $record) {
                         $record->update([
                             'status' => PurchaseRequestsStatus::MD_DMD_Approved,
-                            'approved_canceled_by' => Auth::id(),
+                           
                             'approved_by_md_dmd' => Auth::id(),
                         ]);
 
@@ -532,11 +533,32 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                             ->success()
                             ->send();
                     }),
+                Tables\Actions\Action::make('reject_purchase_request_md_dmd')
+                    ->label('MD / DMD Reject')
+                    ->button()
+                    ->icon('heroicon-o-check-circle')
+                    ->color('danger')
+                    ->visible(fn ($record) => $record->status == PurchaseRequestsStatus::Approved &&
+                        Auth::user()->can('md_dmd_approve_purchase::requests')
+                    )
+                    ->action(function (PurchaseRequests $record) {
+                        $record->update([
+                            'status' => PurchaseRequestsStatus::MD_DMD_Rejected,
+                            
+                            'approved_by_md_dmd' => Auth::id(),
+                        ]);
+
+                        Notification::make()
+                            ->title('PR rejected by MD / DMD successfully')
+                            ->success()
+                            ->send();
+                    }),
                 Tables\Actions\Action::make('view_document')
                     ->label('View Document')
                     ->button()
                     ->icon('heroicon-o-arrow-down-on-square')
-                    ->visible(fn ($record) => $record->uploaded_document)
+                    ->visible(fn ($record) => filled($record->uploaded_document)
+                        && Storage::disk('public')->exists($record->uploaded_document))
                     ->url(fn ($record) => asset('storage/'.$record->uploaded_document))
                     ->openUrlInNewTab(),
 
