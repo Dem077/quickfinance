@@ -63,9 +63,7 @@ class PurchaseOrders extends Model
         $this->loadMissing('purchaseOrderDetails.items');
 
         foreach ($this->purchaseOrderDetails as $detail) {
-            $item = $detail->items ?? Item::query()
-                ->where('item_code', $detail->itemcode)
-                ->first();
+            $item = $detail->resolvedItem();
 
             if (! $item || ! $item->type->syncsToSnipeIt()) {
                 continue;

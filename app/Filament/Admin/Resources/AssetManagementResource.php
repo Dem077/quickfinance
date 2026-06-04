@@ -3,7 +3,6 @@
 namespace App\Filament\Admin\Resources;
 
 use App\Enums\AssetReceiptStatus;
-use App\Enums\ItemTypeEnum;
 use App\Enums\PurchaseOrderStatus;
 use App\Filament\Admin\Resources\AssetManagementResource\Pages;
 use App\Filament\Admin\Resources\AssetManagementResource\RelationManagers;
@@ -65,16 +64,12 @@ class AssetManagementResource extends Resource implements HasShieldPermissions
                 PurchaseOrderStatus::Submitted,
                 PurchaseOrderStatus::Closed,
             ])
-            ->where(function (Builder $query): void {
-                $query->whereHas('assetReceipts')
-                    ->orWhereHas('purchaseOrderDetails', function (Builder $detailQuery): void {
-                        $detailQuery->whereHas('items', fn (Builder $itemQuery): Builder => $itemQuery
-                            ->whereIn('type', [ItemTypeEnum::Asset, ItemTypeEnum::Accessory]));
-                    });
-            })
+            ->whereHas('purchaseOrderDetails', fn (Builder $detailQuery): Builder => $detailQuery
+                ->whereSnipeItItem())
             ->with([
                 'vendor',
                 'purchaseRequest',
+                'purchaseOrderDetails.items',
                 'assetReceipts.item',
                 'assetReceipts.purchaseOrderDetail',
             ]);
