@@ -278,6 +278,7 @@ class SnipeItService
             'Created from Finance asset receipt #'.$receipt->id,
             'PO: '.$poNo,
             'Finance item: '.($receipt->item?->name ?? 'N/A'),
+            $receipt->unitLabel(),
         ]));
     }
 

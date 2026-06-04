@@ -49,7 +49,9 @@ class PurchaseOrders extends Model
 
     public function assetReceipts(): HasMany
     {
-        return $this->hasMany(AssetReceipt::class, 'purchase_order_id');
+        return $this->hasMany(AssetReceipt::class, 'purchase_order_id')
+            ->orderBy('purchase_order_detail_id')
+            ->orderBy('unit_index');
     }
 
     public function syncAssetReceipts(): void
@@ -69,14 +71,27 @@ class PurchaseOrders extends Model
                 continue;
             }
 
-            AssetReceipt::firstOrCreate(
-                ['purchase_order_detail_id' => $detail->id],
-                [
-                    'purchase_order_id' => $this->id,
-                    'item_id' => $item->id,
-                    'status' => AssetReceiptStatus::Pending,
-                ]
-            );
+            $quantity = $detail->assetLineQuantity();
+
+            for ($unitIndex = 1; $unitIndex <= $quantity; $unitIndex++) {
+                AssetReceipt::firstOrCreate(
+                    [
+                        'purchase_order_detail_id' => $detail->id,
+                        'unit_index' => $unitIndex,
+                    ],
+                    [
+                        'purchase_order_id' => $this->id,
+                        'item_id' => $item->id,
+                        'status' => AssetReceiptStatus::Pending,
+                    ]
+                );
+            }
+
+            AssetReceipt::query()
+                ->where('purchase_order_detail_id', $detail->id)
+                ->where('unit_index', '>', $quantity)
+                ->where('status', AssetReceiptStatus::Pending)
+                ->delete();
         }
     }
 

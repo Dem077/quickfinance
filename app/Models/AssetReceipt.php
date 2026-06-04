@@ -11,6 +11,7 @@ class AssetReceipt extends Model
     protected $fillable = [
         'purchase_order_id',
         'purchase_order_detail_id',
+        'unit_index',
         'item_id',
         'status',
         'asset_tag',
@@ -62,5 +63,33 @@ class AssetReceipt extends Model
     public function receivedByUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'received_by');
+    }
+
+    public function unitLabel(): ?string
+    {
+        $this->loadMissing('purchaseOrderDetail');
+
+        $total = $this->purchaseOrderDetail?->assetLineQuantity() ?? 1;
+
+        if ($total <= 1) {
+            return null;
+        }
+
+        return 'Unit '.($this->unit_index ?? 1).' of '.$total;
+    }
+
+    public function defaultUnitPurchaseCost(): ?float
+    {
+        $this->loadMissing('purchaseOrderDetail');
+
+        $detail = $this->purchaseOrderDetail;
+
+        if (! $detail || $detail->amount === null) {
+            return null;
+        }
+
+        $quantity = $detail->assetLineQuantity();
+
+        return round((float) $detail->amount / $quantity, 2);
     }
 }

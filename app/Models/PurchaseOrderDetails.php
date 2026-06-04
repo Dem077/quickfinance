@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PurchaseOrderDetails extends Model
 {
@@ -36,8 +37,13 @@ class PurchaseOrderDetails extends Model
         return $this->belongsTo(SubBudgetAccounts::class, 'budget_account_id');
     }
 
-    public function assetReceipt()
+    public function assetReceipts(): HasMany
     {
-        return $this->hasOne(AssetReceipt::class, 'purchase_order_detail_id');
+        return $this->hasMany(AssetReceipt::class, 'purchase_order_detail_id');
+    }
+
+    public function assetLineQuantity(): int
+    {
+        return max(1, (int) round((float) $this->qty));
     }
 }

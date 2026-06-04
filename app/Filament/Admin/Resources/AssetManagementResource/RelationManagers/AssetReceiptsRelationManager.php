@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Resources\AssetManagementResource\RelationManagers;
 use App\Enums\AssetReceiptStatus;
 use App\Filament\Forms\SnipeItHardwareForm;
 use App\Models\AssetReceipt;
+use App\Services\AssetReceipt\AssetReceiptReceiver;
 use App\Services\SnipeIt\SnipeItException;
 use App\Services\SnipeIt\SnipeItService;
 use Filament\Forms\Form;
@@ -12,7 +13,8 @@ use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Str;
 
 class AssetReceiptsRelationManager extends RelationManager
 {
@@ -28,11 +30,24 @@ class AssetReceiptsRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
-            ->recordTitleAttribute('name')
+            ->modifyQueryUsing(fn ($query) => $query
+                ->orderBy('purchase_order_detail_id')
+                ->orderBy('unit_index'))
+            ->recordTitle(fn (AssetReceipt $record): string => collect([
+                $record->item?->name,
+                $record->unitLabel(),
+            ])->filter()->implode(' — '))
             ->columns([
                 Tables\Columns\TextColumn::make('item.name')
                     ->label('Finance Item')
                     ->searchable(),
+                Tables\Columns\TextColumn::make('unit_index')
+                    ->label('Unit')
+                    ->formatStateUsing(fn ($state, AssetReceipt $record): string => $record->unitLabel() ?? '1')
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('purchaseOrderDetail.qty')
+                    ->label('PO Qty')
+                    ->numeric(decimalPlaces: 0),
                 Tables\Columns\TextColumn::make('status')
                     ->badge(),
                 Tables\Columns\TextColumn::make('asset_tag')
@@ -78,29 +93,11 @@ class AssetReceiptsRelationManager extends RelationManager
                     ))
                     ->fillForm(fn (AssetReceipt $record): array => SnipeItHardwareForm::defaultFill($record))
                     ->action(function (AssetReceipt $record, array $data): void {
-                        $attributes = [
-                            'name' => $data['name'] ?? null,
-                            'asset_description' => $data['name'] ?? null,
-                            'serial_number' => $data['serial_number'] ?? null,
-                            'snipe_model_id' => $data['snipe_model_id'] ?? null,
-                            'snipe_status_id' => $data['snipe_status_id'] ?? null,
-                            'snipe_location_id' => $data['snipe_location_id'] ?? null,
-                            'snipe_supplier_id' => $data['snipe_supplier_id'] ?? null,
-                            'order_number' => $data['order_number'] ?? null,
-                            'invoice_number' => $data['order_number'] ?? null,
-                            'purchase_date' => $data['purchase_date'] ?? null,
-                            'purchase_cost' => $data['purchase_cost'] ?? null,
-                            'notes' => $data['notes'] ?? null,
-                            'cao_asset_code' => $data['cao_asset_code'] ?? null,
-                            'finance_old_asset_tag' => $data['finance_old_asset_tag'] ?? null,
-                            'asset_class' => $data['asset_class'] ?? null,
-                            'mac_address' => $data['mac_address'] ?? null,
-                        ];
+                        $receiver = app(AssetReceiptReceiver::class);
+                        $attributes = $receiver->attributesFromFormData($data);
 
                         try {
-                            $created = app(SnipeItService::class)->createAssetFromReceipt(
-                                $record->fill($attributes)
-                            );
+                            $created = $receiver->receive($record, $attributes);
                         } catch (SnipeItException $exception) {
                             Notification::make()
                                 ->title('Snipe-IT sync failed')
@@ -111,15 +108,6 @@ class AssetReceiptsRelationManager extends RelationManager
                             return;
                         }
 
-                        $record->update([
-                            ...$attributes,
-                            'asset_tag' => $created->assetTag,
-                            'snipe_it_hardware_id' => $created->hardwareId,
-                            'status' => AssetReceiptStatus::Received,
-                            'received_by' => Auth::id(),
-                            'received_at' => now(),
-                        ]);
-
                         Notification::make()
                             ->title('Asset item marked as received')
                             ->body('Asset created in Snipe-IT (tag: '.$created->assetTag.', ID: '.$created->hardwareId.').')
@@ -127,6 +115,109 @@ class AssetReceiptsRelationManager extends RelationManager
                             ->send();
                     }),
             ])
-            ->bulkActions([]);
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\BulkAction::make('bulk_receive')
+                        ->label('Receive selected in Snipe-IT')
+                        ->icon('heroicon-o-check-badge')
+                        ->color('success')
+                        ->visible(fn (): bool => app(SnipeItService::class)->isEnabled())
+                        ->before(function (Tables\Actions\BulkAction $action, Collection $records): void {
+                            if ($records->contains(fn (AssetReceipt $record): bool => $record->status === AssetReceiptStatus::Pending)) {
+                                return;
+                            }
+
+                            Notification::make()
+                                ->title('No pending units selected')
+                                ->body('Select at least one pending asset unit to receive in bulk.')
+                                ->warning()
+                                ->send();
+
+                            $action->halt();
+                        })
+                        ->form(SnipeItHardwareForm::bulkReceiveSchema())
+                        ->fillForm(fn (Collection $records): array => SnipeItHardwareForm::bulkDefaultFill(
+                            $records
+                                ->filter(fn (AssetReceipt $record): bool => $record->status === AssetReceiptStatus::Pending)
+                                ->load(['item', 'purchaseOrder', 'purchaseOrderDetail'])
+                        ))
+                        ->action(function (Collection $records, array $data): void {
+                            $pending = $records->filter(
+                                fn (AssetReceipt $record): bool => $record->status === AssetReceiptStatus::Pending
+                            );
+
+                            if ($pending->isEmpty()) {
+                                Notification::make()
+                                    ->title('No pending units selected')
+                                    ->body('Only pending asset units can be received in bulk.')
+                                    ->warning()
+                                    ->send();
+
+                                return;
+                            }
+
+                            if ($pending->count() !== $records->count()) {
+                                Notification::make()
+                                    ->title('Some units were skipped')
+                                    ->body('Already received units were ignored. Processing '.$pending->count().' pending unit(s).')
+                                    ->warning()
+                                    ->send();
+                            }
+
+                            $receiver = app(AssetReceiptReceiver::class);
+                            $shared = collect($data)->except('assets')->all();
+                            $succeeded = 0;
+                            $failures = [];
+
+                            foreach ($data['assets'] ?? [] as $row) {
+                                $receiptId = (int) ($row['asset_receipt_id'] ?? 0);
+                                $receipt = $pending->firstWhere('id', $receiptId);
+
+                                if (! $receipt) {
+                                    continue;
+                                }
+
+                                try {
+                                    $receiver->receive(
+                                        $receipt,
+                                        $receiver->attributesFromFormData($shared, $row)
+                                    );
+                                    $succeeded++;
+                                } catch (SnipeItException $exception) {
+                                    $label = $row['unit_label'] ?? 'Unit #'.$receiptId;
+                                    $failures[] = $label.': '.$exception->getMessage();
+                                }
+                            }
+
+                            if ($succeeded > 0 && $failures === []) {
+                                Notification::make()
+                                    ->title('Bulk receive completed')
+                                    ->body($succeeded.' asset(s) created in Snipe-IT.')
+                                    ->success()
+                                    ->send();
+
+                                return;
+                            }
+
+                            if ($succeeded > 0) {
+                                Notification::make()
+                                    ->title('Bulk receive partially completed')
+                                    ->body($succeeded.' succeeded. '.count($failures).' failed: '.Str::limit(implode(' | ', $failures), 500))
+                                    ->warning()
+                                    ->send();
+
+                                return;
+                            }
+
+                            Notification::make()
+                                ->title('Bulk receive failed')
+                                ->body(Str::limit(implode(' | ', $failures), 500))
+                                ->danger()
+                                ->send();
+                        })
+                        ->deselectRecordsAfterCompletion()
+                        ->closeModalByClickingAway(false),
+                ]),
+            ]);
     }
 }
