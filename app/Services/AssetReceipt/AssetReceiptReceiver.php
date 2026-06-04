@@ -3,8 +3,9 @@
 namespace App\Services\AssetReceipt;
 
 use App\Enums\AssetReceiptStatus;
+use App\Enums\ItemTypeEnum;
 use App\Models\AssetReceipt;
-use App\Services\SnipeIt\SnipeItCreatedAsset;
+use App\Services\SnipeIt\SnipeItCreatedRecord;
 use App\Services\SnipeIt\SnipeItException;
 use App\Services\SnipeIt\SnipeItService;
 use Illuminate\Support\Facades\Auth;
@@ -18,9 +19,27 @@ class AssetReceiptReceiver
     /**
      * @return array<string, mixed>
      */
-    public function attributesFromFormData(array $data, ?array $perAsset = null): array
+    public function attributesFromFormData(array $data, ?array $perAsset = null, ?ItemTypeEnum $type = null): array
     {
         $perAsset ??= [];
+        $type ??= ItemTypeEnum::Asset;
+
+        if ($type === ItemTypeEnum::Accessory) {
+            return [
+                'name' => $perAsset['name'] ?? $data['name'] ?? null,
+                'asset_description' => $perAsset['name'] ?? $data['name'] ?? null,
+                'snipe_category_id' => $data['snipe_category_id'] ?? null,
+                'snipe_quantity' => $perAsset['snipe_quantity'] ?? $data['snipe_quantity'] ?? null,
+                'snipe_location_id' => $data['snipe_location_id'] ?? null,
+                'snipe_supplier_id' => $data['snipe_supplier_id'] ?? null,
+                'order_number' => $data['order_number'] ?? null,
+                'invoice_number' => $data['order_number'] ?? null,
+                'purchase_date' => $data['purchase_date'] ?? null,
+                'purchase_cost' => $perAsset['purchase_cost'] ?? $data['purchase_cost'] ?? null,
+                'model_number' => $data['model_number'] ?? null,
+                'notes' => $data['notes'] ?? null,
+            ];
+        }
 
         return [
             'name' => $perAsset['name'] ?? $data['name'] ?? null,
@@ -45,24 +64,34 @@ class AssetReceiptReceiver
     /**
      * @throws SnipeItException
      */
-    public function receive(AssetReceipt $receipt, array $attributes): SnipeItCreatedAsset
+    public function receive(AssetReceipt $receipt, array $attributes): SnipeItCreatedRecord
     {
         if ($receipt->status !== AssetReceiptStatus::Pending) {
-            throw new SnipeItException('This asset unit has already been received.');
+            throw new SnipeItException('This item has already been received.');
         }
 
-        $created = $this->snipeIt->createAssetFromReceipt(
+        $receipt->loadMissing('item');
+        $type = $receipt->item?->type ?? ItemTypeEnum::Asset;
+
+        $created = $this->snipeIt->createFromReceipt(
             $receipt->fill($attributes)
         );
 
-        $receipt->update([
+        $update = [
             ...$attributes,
-            'asset_tag' => $created->assetTag,
-            'snipe_it_hardware_id' => $created->hardwareId,
             'status' => AssetReceiptStatus::Received,
             'received_by' => Auth::id(),
             'received_at' => now(),
-        ]);
+        ];
+
+        if ($created->isHardware()) {
+            $update['asset_tag'] = $created->assetTag;
+            $update['snipe_it_hardware_id'] = $created->id;
+        } else {
+            $update['snipe_it_accessory_id'] = $created->id;
+        }
+
+        $receipt->update($update);
 
         return $created;
     }

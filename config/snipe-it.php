@@ -24,6 +24,8 @@ return [
 
     'default_manufacturer_id' => (int) env('SNIPE_IT_DEFAULT_MANUFACTURER_ID', 1),
 
+    'default_accessory_category_id' => (int) env('SNIPE_IT_DEFAULT_ACCESSORY_CATEGORY_ID', 10),
+
     /*
     |--------------------------------------------------------------------------
     | Snipe-IT custom field DB column names (Settings > Custom Fields)

@@ -67,7 +67,30 @@ class PurchaseOrders extends Model
                 ->where('item_code', $detail->itemcode)
                 ->first();
 
-            if (! $item || $item->type !== ItemTypeEnum::Asset) {
+            if (! $item || ! $item->type->syncsToSnipeIt()) {
+                continue;
+            }
+
+            if ($item->type === ItemTypeEnum::Accessory) {
+                AssetReceipt::firstOrCreate(
+                    [
+                        'purchase_order_detail_id' => $detail->id,
+                        'unit_index' => 1,
+                    ],
+                    [
+                        'purchase_order_id' => $this->id,
+                        'item_id' => $item->id,
+                        'status' => AssetReceiptStatus::Pending,
+                        'snipe_quantity' => $detail->assetLineQuantity(),
+                    ]
+                );
+
+                AssetReceipt::query()
+                    ->where('purchase_order_detail_id', $detail->id)
+                    ->where('unit_index', '>', 1)
+                    ->where('status', AssetReceiptStatus::Pending)
+                    ->delete();
+
                 continue;
             }
 

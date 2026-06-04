@@ -69,7 +69,7 @@ class AssetManagementResource extends Resource implements HasShieldPermissions
                 $query->whereHas('assetReceipts')
                     ->orWhereHas('purchaseOrderDetails', function (Builder $detailQuery): void {
                         $detailQuery->whereHas('items', fn (Builder $itemQuery): Builder => $itemQuery
-                            ->where('type', ItemTypeEnum::Asset));
+                            ->whereIn('type', [ItemTypeEnum::Asset, ItemTypeEnum::Accessory]));
                     });
             })
             ->with([

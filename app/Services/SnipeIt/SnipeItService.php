@@ -2,6 +2,7 @@
 
 namespace App\Services\SnipeIt;
 
+use App\Enums\ItemTypeEnum;
 use App\Models\AssetReceipt;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Cache;
@@ -22,6 +23,17 @@ class SnipeItService
     /**
      * @return array<int, string>
      */
+    public function categoryOptions(): array
+    {
+        return $this->cachedOptions('categories.accessory', '/api/v1/categories', function (array $row): ?string {
+            if (strcasecmp((string) data_get($row, 'category_type'), 'accessory') !== 0) {
+                return null;
+            }
+
+            return data_get($row, 'name');
+        }, ['category_type' => 'accessory']);
+    }
+
     public function modelOptions(): array
     {
         return $this->cachedOptions('models', '/api/v1/models', function (array $row): ?string {
@@ -152,7 +164,20 @@ class SnipeItService
     /**
      * @throws SnipeItException
      */
-    public function createAssetFromReceipt(AssetReceipt $receipt): SnipeItCreatedAsset
+    public function createFromReceipt(AssetReceipt $receipt): SnipeItCreatedRecord
+    {
+        $receipt->loadMissing('item');
+
+        return match ($receipt->item?->type) {
+            ItemTypeEnum::Accessory => $this->createAccessoryFromReceipt($receipt),
+            default => $this->createAssetFromReceipt($receipt),
+        };
+    }
+
+    /**
+     * @throws SnipeItException
+     */
+    public function createAssetFromReceipt(AssetReceipt $receipt): SnipeItCreatedRecord
     {
         if (! $this->isEnabled()) {
             throw new SnipeItException('Snipe-IT is not configured. Set SNIPE_IT_URL and SNIPE_IT_API_TOKEN in your .env file.');
@@ -198,7 +223,7 @@ class SnipeItService
             );
         }
 
-        $hardwareId = $this->extractHardwareIdFromResponse($json);
+        $hardwareId = $this->extractIdFromResponse($json) ?? $this->extractHardwareIdFromResponse($json);
 
         if (! $hardwareId) {
             throw new SnipeItException(
@@ -215,7 +240,84 @@ class SnipeItService
             );
         }
 
-        return new SnipeItCreatedAsset($hardwareId, $assetTag);
+        return new SnipeItCreatedRecord('hardware', $hardwareId, $assetTag);
+    }
+
+    /**
+     * @throws SnipeItException
+     */
+    public function createAccessoryFromReceipt(AssetReceipt $receipt): SnipeItCreatedRecord
+    {
+        if (! $this->isEnabled()) {
+            throw new SnipeItException('Snipe-IT is not configured. Set SNIPE_IT_URL and SNIPE_IT_API_TOKEN in your .env file.');
+        }
+
+        $receipt->loadMissing(['purchaseOrder', 'item', 'purchaseOrderDetail']);
+
+        if (! $receipt->snipe_category_id) {
+            throw new SnipeItException('Category is required (select a Snipe-IT accessory category).');
+        }
+
+        $quantity = (int) ($receipt->snipe_quantity ?: $receipt->purchaseOrderDetail?->assetLineQuantity() ?: 1);
+
+        if ($quantity < 1) {
+            throw new SnipeItException('Quantity must be at least 1.');
+        }
+
+        $payload = array_filter([
+            'name' => $receipt->name ?: $receipt->asset_description ?: $receipt->item?->name,
+            'category_id' => (int) $receipt->snipe_category_id,
+            'qty' => $quantity,
+            'order_number' => $receipt->order_number ?: $receipt->invoice_number,
+            'location_id' => $receipt->snipe_location_id,
+            'supplier_id' => $receipt->snipe_supplier_id,
+            'purchase_date' => $receipt->purchase_date?->format('Y-m-d'),
+            'purchase_cost' => $receipt->purchase_cost,
+            'model_number' => $receipt->model_number,
+            'notes' => $receipt->notes ?: $this->buildNotes($receipt),
+        ], fn ($value) => $value !== null && $value !== '');
+
+        $response = $this->client()->post('/api/v1/accessories', $payload);
+
+        if (! $response->successful()) {
+            throw new SnipeItException(
+                'Snipe-IT could not create the accessory: '.$this->formatErrorMessage($response->json(), $response->body())
+            );
+        }
+
+        $json = $response->json() ?? [];
+
+        if (data_get($json, 'status') !== 'success') {
+            throw new SnipeItException(
+                'Snipe-IT could not create the accessory: '.$this->formatErrorMessage($json, $response->body())
+            );
+        }
+
+        $accessoryId = $this->extractIdFromResponse($json);
+
+        if (! $accessoryId) {
+            throw new SnipeItException('Snipe-IT reported success but did not return an accessory ID.');
+        }
+
+        $name = (string) (data_get($json, 'payload.name') ?: $payload['name'] ?? 'Accessory');
+
+        return new SnipeItCreatedRecord('accessory', $accessoryId, name: $name);
+    }
+
+    protected function extractIdFromResponse(array $json): ?int
+    {
+        foreach ([
+            'payload.id',
+            'id',
+        ] as $path) {
+            $id = data_get($json, $path);
+
+            if ($id !== null && $id !== '') {
+                return (int) $id;
+            }
+        }
+
+        return null;
     }
 
     protected function extractHardwareIdFromResponse(array $json): ?int
@@ -312,7 +414,10 @@ class SnipeItService
     /**
      * @return array<int, string>
      */
-    protected function cachedOptions(string $cacheKey, string $path, callable $labelResolver): array
+    /**
+     * @param  array<string, mixed>  $query
+     */
+    protected function cachedOptions(string $cacheKey, string $path, callable $labelResolver, array $query = []): array
     {
         if (! $this->isEnabled()) {
             return [];
@@ -321,14 +426,15 @@ class SnipeItService
         return Cache::remember(
             'snipe-it.'.$cacheKey,
             now()->addMinutes(5),
-            fn (): array => $this->fetchOptions($path, $labelResolver)
+            fn (): array => $this->fetchOptions($path, $labelResolver, $query)
         );
     }
 
     /**
+     * @param  array<string, mixed>  $query
      * @return array<int, string>
      */
-    protected function fetchOptions(string $path, callable $labelResolver): array
+    protected function fetchOptions(string $path, callable $labelResolver, array $query = []): array
     {
         $options = [];
         $offset = 0;
@@ -338,6 +444,7 @@ class SnipeItService
             $response = $this->client()->get($path, [
                 'limit' => $limit,
                 'offset' => $offset,
+                ...$query,
             ]);
 
             if (! $response->successful()) {

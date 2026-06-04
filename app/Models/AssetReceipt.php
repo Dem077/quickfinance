@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\AssetReceiptStatus;
+use App\Enums\ItemTypeEnum;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -22,6 +23,8 @@ class AssetReceipt extends Model
         'snipe_status_id',
         'snipe_location_id',
         'snipe_supplier_id',
+        'snipe_category_id',
+        'snipe_quantity',
         'model',
         'model_number',
         'order_number',
@@ -34,6 +37,7 @@ class AssetReceipt extends Model
         'asset_class',
         'mac_address',
         'snipe_it_hardware_id',
+        'snipe_it_accessory_id',
         'received_by',
         'received_at',
     ];
@@ -65,8 +69,21 @@ class AssetReceipt extends Model
         return $this->belongsTo(User::class, 'received_by');
     }
 
+    public function isAccessoryLine(): bool
+    {
+        $this->loadMissing('item');
+
+        return $this->item?->type === ItemTypeEnum::Accessory;
+    }
+
     public function unitLabel(): ?string
     {
+        if ($this->isAccessoryLine()) {
+            $qty = $this->snipe_quantity ?? $this->purchaseOrderDetail?->assetLineQuantity() ?? 1;
+
+            return 'Qty '.$qty;
+        }
+
         $this->loadMissing('purchaseOrderDetail');
 
         $total = $this->purchaseOrderDetail?->assetLineQuantity() ?? 1;
