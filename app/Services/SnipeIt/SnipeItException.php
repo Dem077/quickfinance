@@ -4,6 +4,4 @@ namespace App\Services\SnipeIt;
 
 use Exception;
 
-class SnipeItException extends Exception
-{
-}
+class SnipeItException extends Exception {}

@@ -2,19 +2,19 @@
 
 namespace App\Filament\Admin\Resources;
 
+use App\Enums\AdvanceFormStatus;
 use App\Enums\PurchaseOrderStatus;
 use App\Enums\PurchaseRequestsStatus;
 use App\Enums\UnitsEnum;
 use App\Filament\Admin\Resources\PurchaseOrdersResource\Pages;
 use App\Filament\Admin\Resources\PurchaseOrdersResource\RelationManagers;
-use App\Enums\AdvanceFormStatus;
 use App\Models\AdvanceForm;
 use App\Models\Item;
 use App\Models\PettyCashReimbursment;
 use App\Models\PurchaseOrders;
 use App\Models\PurchaseRequestDetails;
 use App\Models\PurchaseRequests;
-use Filament\Tables\Actions\ActionGroup;
+use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
 use Filament\Forms;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Form;
@@ -23,12 +23,12 @@ use Filament\Forms\Set;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Actions\ActionGroup;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
-use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
 
 class PurchaseOrdersResource extends Resource implements HasShieldPermissions
 {
@@ -71,7 +71,7 @@ class PurchaseOrdersResource extends Resource implements HasShieldPermissions
                     ->visible(fn (Get $get) => $get('payment_method') !== 'petty_cash')
                     ->disabled(fn ($record) => $record && $record->status !== PurchaseOrderStatus::Draft)
                     ->maxLength(255),
-                Forms\Components\Select::make('po_no')
+                Select::make('po_no')
                     ->label('Petty Cash Form Number')
                     ->options(fn (?PurchaseOrders $record) => PettyCashReimbursment::draftFormNoOptions(
                         $record?->payment_method === 'petty_cash' ? $record->po_no : null,
@@ -85,7 +85,7 @@ class PurchaseOrdersResource extends Resource implements HasShieldPermissions
                     ->native(false)
                     ->searchable()
                     ->disabled(fn ($record) => $record && $record->status !== PurchaseOrderStatus::Draft),
-                Forms\Components\Select::make('vendor_id')
+                Select::make('vendor_id')
                     ->relationship('vendor', 'name')
                     ->disabled(fn ($record) => $record && $record->status !== PurchaseOrderStatus::Draft)
                     ->required(),
@@ -94,7 +94,7 @@ class PurchaseOrdersResource extends Resource implements HasShieldPermissions
                     ->disabled(fn ($record) => $record && $record->status !== PurchaseOrderStatus::Draft)
                     ->closeOnDateSelection()
                     ->required(),
-                Forms\Components\Select::make('pr_id')
+                Select::make('pr_id')
                     ->relationship('purchaseRequest', 'pr_no', function ($query) {
                         return $query->where('status', PurchaseRequestsStatus::MD_DMD_Approved)->wherenot('status', PurchaseRequestsStatus::Closed);
                     })
@@ -175,7 +175,7 @@ class PurchaseOrdersResource extends Resource implements HasShieldPermissions
                                             ->disabled()
                                             ->live()
                                             ->dehydrated(false),
-                                        Forms\Components\Select::make('desc')
+                                        Select::make('desc')
                                             ->label('Description')
                                             ->options(function (Get $get, $state, $record) {
                                                 $prId = $get('../../pr_id');
@@ -224,7 +224,7 @@ class PurchaseOrdersResource extends Resource implements HasShieldPermissions
                                             ->disabled(fn (Get $get) => ! $get('../../pr_id'))
                                             ->required()
                                             ->columnSpan(2),
-                                        Forms\Components\Select::make('unit_measure')
+                                        Select::make('unit_measure')
                                             ->label('U/M')
                                             ->native(false)
                                             ->options(UnitsEnum::class)
@@ -438,7 +438,6 @@ class PurchaseOrdersResource extends Resource implements HasShieldPermissions
                     ->button()
                     ->visible(fn ($record) => $record->status === PurchaseOrderStatus::Draft && Auth::user()->can('create_purchase::orders')),
 
-                
                 Tables\Actions\Action::make('purchase_order_submit')
                     ->label('Submit')
                     ->button()
@@ -470,7 +469,7 @@ class PurchaseOrdersResource extends Resource implements HasShieldPermissions
                         ->label('Submit Form')
                         ->icon('heroicon-o-paper-airplane')
                         ->color('success')
-                        //->button()
+                        // ->button()
                         ->requiresConfirmation()
                         ->modalHeading('Advance Form Details')
                         ->modalSubheading('Please fill in the required fields')
@@ -497,7 +496,7 @@ class PurchaseOrdersResource extends Resource implements HasShieldPermissions
                         ->label('HOD Approve Form')
                         ->icon('heroicon-o-check-circle')
                         ->color('success')
-                        //->button()
+                        // ->button()
                         ->requiresConfirmation()
                         ->visible(fn ($record) => $record->advance_form_id
                             && $record->is_advance_form_required
@@ -516,15 +515,14 @@ class PurchaseOrdersResource extends Resource implements HasShieldPermissions
                                 ->success()
                                 ->send();
                         }),
-                        
+
                     Tables\Actions\Action::make('hod_reject_advance_form')
                         ->label('HOD Reject Form')
                         ->icon('heroicon-o-x-circle')
                         ->color('danger')
-                        //->button()
+                        // ->button()
                         ->requiresConfirmation()
-                        ->visible(fn ($record) => 
-                            $record->advance_form_id
+                        ->visible(fn ($record) => $record->advance_form_id
                             && $record->is_advance_form_required
                             && $record->payment_method == 'purchase_order'
                             && $record->advanceForm?->status === AdvanceFormStatus::Submitted
@@ -537,7 +535,7 @@ class PurchaseOrdersResource extends Resource implements HasShieldPermissions
 
                             Notification::make()
                                 ->title('Advance form HOD rejected successfully')
-                                
+
                                 ->danger()
                                 ->send();
                         }),
@@ -580,7 +578,7 @@ class PurchaseOrdersResource extends Resource implements HasShieldPermissions
                         ->label('Regenerate Form')
                         ->icon('heroicon-o-document')
                         ->color('warning')
-                        //->button()
+                        // ->button()
                         ->requiresConfirmation()
                         ->modalHeading('Advance Form Details')
                         ->modalSubheading('Please fill in the required fields')
@@ -623,7 +621,7 @@ class PurchaseOrdersResource extends Resource implements HasShieldPermissions
                     Tables\Actions\Action::make('generate_advance_form')
                         ->label('Generate Form')
                         ->icon('heroicon-o-document')
-                        //->button()
+                        // ->button()
                         ->color('info')
                         ->modalHeading('Advance Form Details')
                         ->visible(fn ($record) => ! $record->advance_form_id && $record->is_advance_form_required && $record->status == PurchaseOrderStatus::Submitted && $record->payment_method == 'purchase_order' && Auth::user()->can('generate_advance_form_purchase::orders')
@@ -675,7 +673,7 @@ class PurchaseOrdersResource extends Resource implements HasShieldPermissions
                                 ->success()
                                 ->send();
                             // Redirect to the route that generates the PDF with the advance form data
-                           // return redirect()->route('purchase-orders.advance-form.download', $record);
+                            // return redirect()->route('purchase-orders.advance-form.download', $record);
 
                         }),
                     Tables\Actions\Action::make('view_advance_form')
@@ -685,10 +683,9 @@ class PurchaseOrdersResource extends Resource implements HasShieldPermissions
                         ->visible(fn ($record): bool => ! empty($record->advance_form_id))
                         ->url(fn ($record): string => route('purchase-orders.advance-form.download', $record))
                         ->openUrlInNewTab(),
-                ])  
-                ->button()
-                ->label('Manage Advance Form'),
-                
+                ])
+                    ->button()
+                    ->label('Manage Advance Form'),
 
                 Tables\Actions\Action::make('upload_supporting_document')
                     ->label('Upload Reciept')

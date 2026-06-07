@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Resources\PurchaseOrdersResource\Pages;
 use App\Enums\PurchaseOrderStatus;
 use App\Filament\Admin\Resources\PurchaseOrdersResource;
 use App\Models\PettyCashReimbursment;
+use App\Models\PurchaseRequests;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 
@@ -38,7 +39,7 @@ class EditPurchaseOrders extends EditRecord
 
                     foreach ($purchaseOrderDetails as $detail) {
                         $item = $detail->itemcode;
-                        $pr = \App\Models\PurchaseRequests::where('id', $prId)->first();
+                        $pr = PurchaseRequests::where('id', $prId)->first();
                         $pr->purchaseRequestDetails()
                             ->whereHas('items', function ($query) use ($item) {
                                 $query->where('item_code', $item);

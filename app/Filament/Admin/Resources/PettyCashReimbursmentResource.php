@@ -8,6 +8,7 @@ use App\Filament\Admin\Resources\PettyCashReimbursmentResource\Pages;
 use App\Filament\Admin\Resources\PettyCashReimbursmentResource\RelationManagers\PettyCashReimbursmentDetailRelationManager;
 use App\Mail\NotificationEmail;
 use App\Mail\StatusEmail;
+use App\Models\Departments;
 use App\Models\PettyCashReimbursment;
 use App\Models\PurchaseOrderDetails;
 use App\Models\PurchaseOrders;
@@ -55,7 +56,7 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
         }
 
         // Check if user is HOD of any department
-        $isHod = \App\Models\Departments::where('hod', $user->id)->exists();
+        $isHod = Departments::where('hod', $user->id)->exists();
 
         if ($isHod) {
             return parent::getEloquentQuery()
@@ -134,7 +135,7 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                                         Forms\Components\Select::make('po_id')
                                             ->label('Record ID')
                                             ->options(
-                                                \App\Models\PurchaseOrders::where('status', \App\Enums\PurchaseOrderStatus::WaitingReimbursement->value)
+                                                PurchaseOrders::where('status', PurchaseOrderStatus::WaitingReimbursement->value)
                                                     ->where('payment_method', 'petty_cash')
                                                     ->with('purchaseRequest')
                                                     ->get()
@@ -151,7 +152,7 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                                             ->searchable()
                                             ->reactive()
                                             ->live()
-                                            ->hidden(fn (Forms\Get $get) => $get('is_from_pr') == false)
+                                            ->hidden(fn (Get $get) => $get('is_from_pr') == false)
                                             ->columnSpan(1)
                                             ->nullable(),
                                         Forms\Components\Select::make('Vendor_id')
@@ -170,7 +171,7 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                                             ->columnSpan(1)
                                             ->required(),
                                         Forms\Components\TextInput::make('bill_no')
-                                            ->columnSpan(fn (Forms\Get $get) => $get('is_from_pr') == true ? 1 : 2)
+                                            ->columnSpan(fn (Get $get) => $get('is_from_pr') == true ? 1 : 2)
                                             ->required(),
                                         Forms\Components\Select::make('item_id')
                                             ->label('Description')
@@ -204,7 +205,7 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                                                     ->toArray();
                                             })
                                             ->disableOptionsWhenSelectedInSiblingRepeaterItems()
-                                            ->hidden(fn (Forms\Get $get) => $get('is_from_pr') == false)
+                                            ->hidden(fn (Get $get) => $get('is_from_pr') == false)
                                             ->live()
                                             ->afterStateUpdated(function ($state, Get $get, Set $set) {
                                                 if ($state) {
@@ -224,7 +225,7 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                                             ->columnSpan(2),
                                         Forms\Components\TextInput::make('details')
                                             ->columnSpan(2)
-                                            ->hidden(fn (Forms\Get $get) => $get('is_from_pr') == true)
+                                            ->hidden(fn (Get $get) => $get('is_from_pr') == true)
                                             ->required(),
                                         Forms\Components\Select::make('sub_budget_id')
                                             ->label('Budget Account')
@@ -249,7 +250,7 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                                             })
                                             ->searchable()
                                             ->reactive()
-                                            ->helperText(function (Forms\Get $get): string {
+                                            ->helperText(function (Get $get): string {
                                                 $budgetAccountId = $get('sub_budget_id');
                                                 $departmentId = Auth::user()?->department_id;
 

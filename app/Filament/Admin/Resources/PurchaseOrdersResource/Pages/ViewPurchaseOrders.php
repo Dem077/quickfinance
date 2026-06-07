@@ -2,9 +2,9 @@
 
 namespace App\Filament\Admin\Resources\PurchaseOrdersResource\Pages;
 
+use App\Enums\AdvanceFormStatus;
 use App\Enums\PurchaseOrderStatus;
 use App\Filament\Admin\Resources\PurchaseOrdersResource;
-use App\Enums\AdvanceFormStatus;
 use App\Models\AdvanceForm;
 use App\Models\BudgetTransactionHistory;
 use App\Models\Item;
@@ -35,7 +35,7 @@ class ViewPurchaseOrders extends ViewRecord
 
                     foreach ($purchaseOrderDetails as $detail) {
                         $item = $detail->itemcode;
-                        $pr = \App\Models\PurchaseRequests::where('id', $prId)->first();
+                        $pr = PurchaseRequests::where('id', $prId)->first();
                         $pr->purchaseRequestDetails()
                             ->whereHas('items', function ($query) use ($item) {
                                 $query->where('item_code', $item);

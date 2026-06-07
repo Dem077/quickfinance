@@ -7,6 +7,7 @@ use App\Enums\PurchaseOrderStatus;
 use App\Filament\Admin\Resources\AssetManagementResource\Pages;
 use App\Filament\Admin\Resources\AssetManagementResource\RelationManagers;
 use App\Models\PurchaseOrders;
+use App\Policies\AssetManagementPolicy;
 use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -17,7 +18,7 @@ class AssetManagementResource extends Resource implements HasShieldPermissions
 {
     protected static ?string $model = PurchaseOrders::class;
 
-    protected static ?string $policy = \App\Policies\AssetManagementPolicy::class;
+    protected static ?string $policy = AssetManagementPolicy::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-archive-box';
 

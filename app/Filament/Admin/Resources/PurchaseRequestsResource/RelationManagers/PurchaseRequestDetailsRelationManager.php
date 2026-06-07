@@ -52,7 +52,7 @@ class PurchaseRequestDetailsRelationManager extends RelationManager
                             ->options(function () {
                                 $departmentId = Auth::user()?->department_id;
 
-                                return \App\Models\SubBudgetAccounts::with(['allocations' => function ($query) use ($departmentId) {
+                                return SubBudgetAccounts::with(['allocations' => function ($query) use ($departmentId) {
                                     if ($departmentId) {
                                         $query->where('department_id', $departmentId);
                                     }

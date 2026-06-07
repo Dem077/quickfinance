@@ -7,6 +7,7 @@ use App\Services\SnipeIt\SnipeItException;
 use App\Services\SnipeIt\SnipeItService;
 use Filament\Forms;
 use Filament\Forms\Components\Actions\Action;
+use Filament\Forms\Components\Component;
 use Filament\Forms\Get;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Collection;
@@ -184,7 +185,7 @@ class SnipeItHardwareForm
     }
 
     /**
-     * @return array<int, \Filament\Forms\Components\Component>
+     * @return array<int, Component>
      */
     public static function bulkReceiveSchema(): array
     {
