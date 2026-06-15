@@ -405,11 +405,6 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                             'status' => PettyCashStatus::Draft,
                         ]);
 
-                        $pv_approvers = User::permission('pv_approve_petty::cash::reimbursment')->get();
-                        foreach ($pv_approvers as $approver) {
-                            Mail::to($approver->email)->queue(new StatusEmail('Petty Cash Request '.$record->id, 'rejected', '', 'Finance'));
-                        }
-
                         if ($record->user?->email) {
                             Mail::to($record->user->email)->queue(new StatusEmail('Petty Cash Request '.$record->id, 'rejected', '', 'Finance'));
                         }
