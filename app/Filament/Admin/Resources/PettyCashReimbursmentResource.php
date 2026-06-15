@@ -291,9 +291,11 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                             'status' => PettyCashStatus::Draft,
                         ]);
 
-                        $useremail = $record->user->email;
+                        $useremail = $record->user?->email;
 
-                        Mail::to($useremail)->queue(new StatusEmail('Petty Cash Request '.$record->id, 'rejected', '', 'Department HOD' , true));
+                        if ($useremail) {
+                            Mail::to($useremail)->queue(new StatusEmail('Petty Cash Request '.$record->id, 'rejected', '', 'Department HOD' , true));
+                        }
 
                         $pv_approvers = User::permission('pv_approve_petty::cash::reimbursment')->get();
                         foreach ($pv_approvers as $approver) {
@@ -363,9 +365,11 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                             'status' => PettyCashStatus::Draft,
                         ]);
 
-                        $useremail = $record->user->email;
+                        $useremail = $record->user?->email;
 
-                        Mail::to($useremail)->queue(new StatusEmail('Petty Cash Request '.$record->id, 'rejected', '', 'Finance', true));
+                        if ($useremail) {
+                            Mail::to($useremail)->queue(new StatusEmail('Petty Cash Request '.$record->id, 'rejected', '', 'Finance', true));
+                        }
                     }),
 
                 Tables\Actions\Action::make('rembursed')
@@ -400,13 +404,15 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                         $record->update([
                             'status' => PettyCashStatus::Draft,
                         ]);
-                        $verifiedby = $record->VerifiedBy->email;
 
-                        Mail::to($verifiedby)->queue(new StatusEmail('Petty Cash Request '.$record->id, 'rejected', '', 'Finance'));
+                        $pv_approvers = User::permission('pv_approve_petty::cash::reimbursment')->get();
+                        foreach ($pv_approvers as $approver) {
+                            Mail::to($approver->email)->queue(new StatusEmail('Petty Cash Request '.$record->id, 'rejected', '', 'Finance'));
+                        }
 
-                        $useremail = $record->user->email;
-
-                        Mail::to($useremail)->queue(new StatusEmail('Petty Cash Request '.$record->id, 'rejected', '', 'Finance'));
+                        if ($record->user?->email) {
+                            Mail::to($record->user->email)->queue(new StatusEmail('Petty Cash Request '.$record->id, 'rejected', '', 'Finance'));
+                        }
                     }),
 
                 Tables\Actions\EditAction::make()
