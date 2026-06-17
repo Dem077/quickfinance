@@ -3,6 +3,11 @@
 A Starter Kit For Filament with most basic necessities
 pre-configured based on personal preference/requirements.
 
+## Project Documentation
+
+- Application workflow and consolidated change log: `docs/APPLICATION_WORKFLOW_AND_CHANGELOG.md`
+- Operations SOP (non-technical step-by-step): `docs/OPERATIONS_SOP.md`
+
 ### Packages
 
 [Laravel](https://github.com/laravel/laravel)  
