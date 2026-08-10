@@ -7,6 +7,7 @@ use App\Enums\UnitsEnum;
 use App\Filament\Admin\Resources\PurchaseRequestsResource\Pages;
 use App\Filament\Admin\Resources\PurchaseRequestsResource\RelationManagers;
 use App\Models\Departments;
+use App\Models\Item;
 use App\Models\PurchaseOrders;
 use App\Models\PurchaseRequests;
 use App\Models\SubBudgetAccounts;
@@ -142,7 +143,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                                             ->label('Item / Service')
                                             ->searchable()
                                             ->options(
-                                                \App\Models\Item::all()->pluck('name', 'id')
+                                                Item::all()->pluck('name', 'id')
                                             )
                                             ->required()
                                             ->disableOptionsWhenSelectedInSiblingRepeaterItems()
@@ -158,7 +159,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                                             ->options(function () {
                                                 $departmentId = Auth::user()?->department_id;
 
-                                                return \App\Models\SubBudgetAccounts::with(['allocations' => function ($query) use ($departmentId) {
+                                                return SubBudgetAccounts::with(['allocations' => function ($query) use ($departmentId) {
                                                     if ($departmentId) {
                                                         $query->where('department_id', $departmentId);
                                                     }
@@ -514,7 +515,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                     ->action(function (PurchaseRequests $record) {
                         $record->update([
                             'status' => PurchaseRequestsStatus::MD_DMD_Approved,
-                           
+
                             'approved_by_md_dmd' => Auth::id(),
                         ]);
 
@@ -534,7 +535,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                     ->action(function (PurchaseRequests $record) {
                         $record->update([
                             'status' => PurchaseRequestsStatus::MD_DMD_Rejected,
-                            
+
                             'approved_by_md_dmd' => Auth::id(),
                         ]);
 

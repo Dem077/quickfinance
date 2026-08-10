@@ -2,10 +2,11 @@
 
 namespace Database\Factories;
 
+use App\Models\BudgetAccounts;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\BudgetAccounts>
+ * @extends Factory<BudgetAccounts>
  */
 class BudgetAccountsFactory extends Factory
 {

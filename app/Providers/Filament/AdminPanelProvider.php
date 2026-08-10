@@ -2,9 +2,15 @@
 
 namespace App\Providers\Filament;
 
-use Filament\Enums\ThemeMode;
-use App\Livewire\MyCustomProfileComponent;
+use App\Filament\Admin\Resources\UserResource;
 use App\Http\Middleware\RemindSignatureIfMissing;
+use App\Livewire\MyCustomProfileComponent;
+use Awcodes\LightSwitch\Enums\Alignment;
+use Awcodes\LightSwitch\LightSwitchPlugin;
+use Awcodes\Overlook\OverlookPlugin;
+use Awcodes\Overlook\Widgets\OverlookWidget;
+use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
+use Filament\Enums\ThemeMode;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
@@ -12,6 +18,8 @@ use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Hasnayeen\Themes\Http\Middleware\SetTheme;
+use Hasnayeen\Themes\ThemesPlugin;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
@@ -19,6 +27,9 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Jeffgreco13\FilamentBreezy\BreezyCore;
+use Njxqlus\FilamentProgressbar\FilamentProgressbarPlugin;
+use Swis\Filament\Backgrounds\FilamentBackgroundsPlugin;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -45,10 +56,10 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->discoverWidgets(in: app_path('Filament/Admin/Widgets'), for: 'App\\Filament\\Admin\\Widgets')
             ->widgets([
-                \Awcodes\Overlook\Widgets\OverlookWidget::class,
+                OverlookWidget::class,
             ])
             ->plugins([
-                \Jeffgreco13\FilamentBreezy\BreezyCore::make()
+                BreezyCore::make()
                     ->myProfile(
                         shouldRegisterUserMenu: true,
                         shouldRegisterNavigation: false,
@@ -58,7 +69,7 @@ class AdminPanelProvider extends PanelProvider
                         'personal_info' => MyCustomProfileComponent::class,
                     ]),
 
-                \BezhanSalleh\FilamentShield\FilamentShieldPlugin::make()
+                FilamentShieldPlugin::make()
                     ->gridColumns([
                         'default' => 1,
                         'sm' => 2,
@@ -71,23 +82,23 @@ class AdminPanelProvider extends PanelProvider
                         'lg' => 2,
                     ]),
 
-                \Hasnayeen\Themes\ThemesPlugin::make(),
+                ThemesPlugin::make(),
 
-                \Awcodes\LightSwitch\LightSwitchPlugin::make()
-                    ->position(\Awcodes\LightSwitch\Enums\Alignment::BottomCenter)
+                LightSwitchPlugin::make()
+                    ->position(Alignment::BottomCenter)
                     ->enabledOn([
                         'auth.login',
                         'auth.password',
                     ]),
-                \Swis\Filament\Backgrounds\FilamentBackgroundsPlugin::make()
+                FilamentBackgroundsPlugin::make()
                     ->showAttribution(false),
 
-                \Awcodes\Overlook\OverlookPlugin::make()
+                OverlookPlugin::make()
                     ->includes([
-                        \App\Filament\Admin\Resources\UserResource::class,
+                        UserResource::class,
                     ]),
 
-                \Njxqlus\FilamentProgressbar\FilamentProgressbarPlugin::make()->color('#29b'),
+                FilamentProgressbarPlugin::make()->color('#29b'),
             ])
             ->navigationGroups([
                 'Record Management',
@@ -109,7 +120,7 @@ class AdminPanelProvider extends PanelProvider
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
 
-                \Hasnayeen\Themes\Http\Middleware\SetTheme::class,
+                SetTheme::class,
             ])
             ->authMiddleware([
                 Authenticate::class,

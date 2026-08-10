@@ -8,8 +8,9 @@ use App\Models\Item;
 use App\Models\Location;
 use App\Models\Project;
 use App\Models\SubBudgetAccounts;
-use App\Models\Vendors;
+use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\Vendors;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
@@ -67,7 +68,7 @@ class DatabaseSeeder extends Seeder
             'bank' => 'BML',
         ]);
 
-        $user = \App\Models\User::factory()->create([
+        $user = User::factory()->create([
             'name' => 'Admin',
             'email' => 'it@agronational.mv',
             'email_verified_at' => now(),
@@ -80,7 +81,7 @@ class DatabaseSeeder extends Seeder
             'password' => Hash::make('12345'),
         ]);
 
-        $user1 = \App\Models\User::factory()->create([
+        $user1 = User::factory()->create([
             'name' => 'finance',
             'email' => 'finance@example.com',
         ]);

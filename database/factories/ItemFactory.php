@@ -3,10 +3,11 @@
 namespace Database\Factories;
 
 use App\Enums\ItemTypeEnum;
+use App\Models\Item;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Item>
+ * @extends Factory<Item>
  */
 class ItemFactory extends Factory
 {

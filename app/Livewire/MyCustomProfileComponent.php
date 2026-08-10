@@ -1,10 +1,11 @@
 <?php
+
 namespace App\Livewire;
 
 use Filament\Forms;
 use Filament\Notifications\Notification;
-use Saade\FilamentAutograph\Forms\Components\SignaturePad;
 use Jeffgreco13\FilamentBreezy\Livewire\PersonalInfo;
+use Saade\FilamentAutograph\Forms\Components\SignaturePad;
 
 class MyCustomProfileComponent extends PersonalInfo
 {
@@ -28,7 +29,7 @@ class MyCustomProfileComponent extends PersonalInfo
         return SignaturePad::make('signature')
             ->required();
     }
-    
+
     protected function sendNotification(): void
     {
         Notification::make()

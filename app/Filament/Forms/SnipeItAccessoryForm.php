@@ -5,6 +5,8 @@ namespace App\Filament\Forms;
 use App\Models\AssetReceipt;
 use App\Services\SnipeIt\SnipeItService;
 use Filament\Forms;
+use Filament\Forms\Components\Component;
+use Illuminate\Support\Collection;
 
 class SnipeItAccessoryForm
 {
@@ -104,7 +106,7 @@ class SnipeItAccessoryForm
     }
 
     /**
-     * @return array<int, \Filament\Forms\Components\Component>
+     * @return array<int, Component>
      */
     public static function bulkReceiveSchema(): array
     {
@@ -188,10 +190,10 @@ class SnipeItAccessoryForm
     }
 
     /**
-     * @param  \Illuminate\Support\Collection<int, AssetReceipt>  $records
+     * @param  Collection<int, AssetReceipt>  $records
      * @return array<string, mixed>
      */
-    public static function bulkDefaultFill(\Illuminate\Support\Collection $records): array
+    public static function bulkDefaultFill(Collection $records): array
     {
         $first = $records->first();
         $shared = self::defaultFill($first);

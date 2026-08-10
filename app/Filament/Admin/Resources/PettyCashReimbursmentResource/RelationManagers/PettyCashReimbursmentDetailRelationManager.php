@@ -2,6 +2,9 @@
 
 namespace App\Filament\Admin\Resources\PettyCashReimbursmentResource\RelationManagers;
 
+use App\Enums\PurchaseOrderStatus;
+use App\Models\PurchaseOrderDetails;
+use App\Models\PurchaseOrders;
 use App\Models\SubBudgetAccounts;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -39,7 +42,7 @@ class PettyCashReimbursmentDetailRelationManager extends RelationManager
                 Forms\Components\Select::make('po_id')
                     ->label('Record ID')
                     ->options(
-                        \App\Models\PurchaseOrders::where('status', \App\Enums\PurchaseOrderStatus::WaitingReimbursement->value)
+                        PurchaseOrders::where('status', PurchaseOrderStatus::WaitingReimbursement->value)
                             ->where('payment_method', 'petty_cash')
                             ->with('purchaseRequest')
                             ->get()
@@ -54,7 +57,7 @@ class PettyCashReimbursmentDetailRelationManager extends RelationManager
                     ->searchable()
                     ->reactive()
                     ->live()
-                    ->hidden(fn (Forms\Get $get) => $get('is_from_pr') == false)
+                    ->hidden(fn (Get $get) => $get('is_from_pr') == false)
                     ->columnSpan(1)
                     ->nullable(),
                 Forms\Components\Select::make('Vendor_id')
@@ -66,7 +69,7 @@ class PettyCashReimbursmentDetailRelationManager extends RelationManager
                     ->columnSpan(1)
                     ->required(),
                 Forms\Components\TextInput::make('bill_no')
-                    ->columnSpan(fn (Forms\Get $get) => $get('is_from_pr') == true ? 1 : 2)
+                    ->columnSpan(fn (Get $get) => $get('is_from_pr') == true ? 1 : 2)
                     ->disabled(fn ($record) => $record && $record->pettycashreimbursment->status->value !== 'draft')
                     ->required(),
                 Forms\Components\Select::make('item_id')
@@ -84,7 +87,7 @@ class PettyCashReimbursmentDetailRelationManager extends RelationManager
                             ->pluck('item_id')
                             ->toArray() ?? [];
 
-                        return \App\Models\PurchaseOrderDetails::where('po_id', $poId)
+                        return PurchaseOrderDetails::where('po_id', $poId)
                             ->whereNotIn('item_id', $selectedItems)
                             ->with('items')
                             ->get()
@@ -92,13 +95,13 @@ class PettyCashReimbursmentDetailRelationManager extends RelationManager
                             ->mapWithKeys(fn ($detail) => [$detail->item_id => $detail->items->name])
                             ->toArray();
                     })
-                    ->hidden(fn (Forms\Get $get) => $get('is_from_pr') == false)
+                    ->hidden(fn (Get $get) => $get('is_from_pr') == false)
                     ->live()
                     ->afterStateUpdated(function ($state, Get $get, Set $set, $record) {
                         if ($state) {
                             $poId = $get('po_id');
                             if ($poId) {
-                                $poDetail = \App\Models\PurchaseOrderDetails::where('po_id', $poId)
+                                $poDetail = PurchaseOrderDetails::where('po_id', $poId)
                                     ->where('item_id', $state)
                                     ->first();
                                 if ($poDetail) {
@@ -112,7 +115,7 @@ class PettyCashReimbursmentDetailRelationManager extends RelationManager
                     ->nullable(),
                 Forms\Components\TextInput::make('details')
                     ->columnSpan(2)
-                    ->hidden(fn (Forms\Get $get) => $get('is_from_pr') == true)
+                    ->hidden(fn (Get $get) => $get('is_from_pr') == true)
                     ->disabled(fn ($record) => $record && $record->pettycashreimbursment->status->value !== 'draft')
                     ->required(),
                 Forms\Components\Select::make('sub_budget_id')
@@ -138,7 +141,7 @@ class PettyCashReimbursmentDetailRelationManager extends RelationManager
                     })
                     ->searchable()
                     ->reactive()
-                    ->helperText(function (Forms\Get $get): string {
+                    ->helperText(function (Get $get): string {
                         $budgetAccountId = $get('sub_budget_id');
                         $departmentId = Auth::user()?->department_id;
 
