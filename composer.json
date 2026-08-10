@@ -72,7 +72,8 @@
         "post-create-project-cmd": [
             "@php artisan key:generate --ansi",
             "@php artisan project:init"
-        ]
+        ],
+        "docs:export": "python scripts/export_docs_pdf.py"
     },
     "extra": {
         "laravel": {
