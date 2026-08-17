@@ -10,9 +10,11 @@ use Inertia\Response;
 
 class ProfileController extends Controller
 {
-    public function edit(): Response
+    public function edit(Request $request): Response
     {
-        return Inertia::render('Profile/Index');
+        return Inertia::render('Profile/Index', [
+            'signature' => $request->user()->signature,
+        ]);
     }
 
     public function updateSignature(Request $request): RedirectResponse

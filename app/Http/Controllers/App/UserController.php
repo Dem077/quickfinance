@@ -20,32 +20,90 @@ class UserController extends Controller
     {
         $this->authorize('viewAny', User::class);
 
+        $authUser = $request->user();
         $search = $request->string('search')->trim()->toString();
+        $departmentId = $request->integer('department_id') ?: null;
+        $role = $request->string('role')->trim()->toString();
+        $signature = $request->string('signature')->trim()->toString();
+        $sort = $request->string('sort')->trim()->toString() ?: 'newest';
+
+        if (! in_array($signature, ['has', 'missing'], true)) {
+            $signature = '';
+        }
+
+        $sortMap = [
+            'newest' => ['id', 'desc'],
+            'oldest' => ['id', 'asc'],
+            'name_asc' => ['name', 'asc'],
+            'name_desc' => ['name', 'desc'],
+        ];
+
+        if (! array_key_exists($sort, $sortMap)) {
+            $sort = 'newest';
+        }
+
+        [$sortColumn, $sortDirection] = $sortMap[$sort];
 
         $users = User::query()
-            ->with(['roles:id,name', 'department:id,name'])
+            ->with(['roles:id,name', 'department:id,name', 'location:id,name'])
             ->when($search !== '', function ($query) use ($search): void {
                 $query->where(function ($query) use ($search): void {
                     $query->where('name', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%");
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('designation', 'like', "%{$search}%")
+                        ->orWhere('mobile', 'like', "%{$search}%");
                 });
             })
-            ->latest('id')
+            ->when($departmentId, fn ($query) => $query->where('department_id', $departmentId))
+            ->when($role !== '', fn ($query) => $query->whereHas('roles', fn ($q) => $q->where('name', $role)))
+            ->when($signature === 'has', fn ($query) => $query->whereNotNull('signature')->where('signature', '!=', ''))
+            ->when($signature === 'missing', function ($query): void {
+                $query->where(function ($query): void {
+                    $query->whereNull('signature')->orWhere('signature', '');
+                });
+            })
+            ->orderBy($sortColumn, $sortDirection)
+            ->when($sortColumn !== 'id', fn ($query) => $query->orderByDesc('id'))
             ->paginate(20)
             ->withQueryString()
             ->through(fn (User $user): array => [
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
+                'mobile' => $user->mobile,
+                'designation' => $user->designation,
                 'department' => $user->department?->name,
+                'location' => $user->location?->name,
+                'avatar_url' => $user->getFilamentAvatarUrl(),
+                'has_signature' => filled($user->signature),
                 'roles' => $user->roles->pluck('name')->all(),
+                'actions' => [
+                    'edit' => $authUser->can('update', $user),
+                    'delete' => $authUser->can('delete', $user),
+                ],
             ]);
 
         return Inertia::render('Users/Index', [
             'users' => $users,
-            'filters' => ['search' => $search],
+            'filters' => [
+                'search' => $search,
+                'department_id' => $departmentId,
+                'role' => $role,
+                'signature' => $signature,
+                'sort' => $sort,
+            ],
+            'filterOptions' => [
+                'departments' => Departments::query()->orderBy('name')->get(['id', 'name']),
+                'roles' => Role::query()->orderBy('name')->pluck('name'),
+                'sorts' => [
+                    ['value' => 'newest', 'label' => 'Newest first'],
+                    ['value' => 'oldest', 'label' => 'Oldest first'],
+                    ['value' => 'name_asc', 'label' => 'Name (A–Z)'],
+                    ['value' => 'name_desc', 'label' => 'Name (Z–A)'],
+                ],
+            ],
             'can' => [
-                'create' => $request->user()->can('create', User::class),
+                'create' => $authUser->can('create', User::class),
             ],
         ]);
     }
@@ -68,6 +126,7 @@ class UserController extends Controller
 
         $roles = $data['roles'];
         unset($data['roles'], $data['password_confirmation'], $data['pettycashassigned']);
+        $data['signature'] = filled($data['signature'] ?? null) ? $data['signature'] : null;
 
         $user = User::create($data);
         $user->syncRoles($roles);
@@ -96,6 +155,9 @@ class UserController extends Controller
                 'bank_account_name' => $user->bank_account_name,
                 'bank_account_no' => $user->bank_account_no,
                 'roles' => $user->roles->pluck('name')->all(),
+                'signature' => $user->signature,
+                'has_signature' => filled($user->signature),
+                'avatar_url' => $user->getFilamentAvatarUrl(),
                 'hod_of' => $user->hodof->map(fn (Departments $department): array => [
                     'id' => $department->id,
                     'name' => $department->name,
@@ -116,6 +178,10 @@ class UserController extends Controller
 
         if (blank($data['password'] ?? null)) {
             unset($data['password']);
+        }
+
+        if (array_key_exists('signature', $data)) {
+            $data['signature'] = filled($data['signature']) ? $data['signature'] : null;
         }
 
         $user->update($data);
@@ -206,6 +272,7 @@ class UserController extends Controller
                 'confirmed',
                 'min:8',
             ],
+            'signature' => ['nullable', 'string'],
         ]);
     }
 

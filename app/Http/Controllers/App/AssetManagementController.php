@@ -10,6 +10,7 @@ use App\Enums\PurchaseOrderStatus;
 use App\Http\Controllers\Controller;
 use App\Models\AssetReceipt;
 use App\Models\PurchaseOrders;
+use App\Models\Vendors;
 use App\Services\SnipeIt\SnipeItException;
 use App\Services\SnipeIt\SnipeItService;
 use Illuminate\Http\JsonResponse;
@@ -26,51 +27,104 @@ class AssetManagementController extends Controller
         abort_unless($request->user()->can('view_any_asset::management'), 403);
 
         $search = $request->string('search')->trim()->toString();
-        $assetStatus = $request->string('asset_status')->trim()->toString();
+        $tab = $request->string('tab')->trim()->toString() ?: 'all';
+        $vendorId = $request->integer('vendor_id') ?: null;
+        $dateFrom = $request->string('date_from')->trim()->toString() ?: null;
+        $dateTo = $request->string('date_to')->trim()->toString() ?: null;
 
-        $orders = $this->scopedQuery()
-            ->with([
-                'vendor',
-                'purchaseRequest',
-                'assetReceipts',
-            ])
+        if (! in_array($tab, ['all', 'pending', 'completed'], true)) {
+            $tab = 'all';
+        }
+
+        $baseQuery = fn () => $this->scopedQuery()
             ->when($search !== '', function ($query) use ($search): void {
                 $query->where(function ($query) use ($search): void {
                     $query->where('po_no', 'like', "%{$search}%")
-                        ->orWhereHas('purchaseRequest', fn ($q) => $q->where('pr_no', 'like', "%{$search}%"))
+                        ->orWhereHas('purchaseRequest', function ($q) use ($search): void {
+                            $q->where('pr_no', 'like', "%{$search}%")
+                                ->orWhere('purpose', 'like', "%{$search}%");
+                        })
                         ->orWhereHas('vendor', fn ($q) => $q->where('name', 'like', "%{$search}%"));
                 });
             })
-            ->when($assetStatus === 'pending', fn ($q) => $q->whereHas(
-                'assetReceipts',
-                fn ($r) => $r->where('status', AssetReceiptStatus::Pending)
-            ))
-            ->when($assetStatus === 'completed', fn ($q) => $q->whereDoesntHave(
-                'assetReceipts',
-                fn ($r) => $r->where('status', AssetReceiptStatus::Pending)
-            ))
+            ->when($vendorId, fn ($query) => $query->where('vendor_id', $vendorId))
+            ->when($dateFrom, fn ($query) => $query->whereDate('date', '>=', $dateFrom))
+            ->when($dateTo, fn ($query) => $query->whereDate('date', '<=', $dateTo));
+
+        $pendingConstraint = fn ($query) => $query->whereHas(
+            'assetReceipts',
+            fn ($receipts) => $receipts->where('status', AssetReceiptStatus::Pending)
+        );
+        $completedConstraint = fn ($query) => $query->whereDoesntHave(
+            'assetReceipts',
+            fn ($receipts) => $receipts->where('status', AssetReceiptStatus::Pending)
+        );
+
+        $tabs = [
+            [
+                'key' => 'all',
+                'label' => 'All',
+                'badge' => $baseQuery()->count(),
+                'tone' => 'neutral',
+            ],
+            [
+                'key' => 'pending',
+                'label' => 'Pending',
+                'badge' => $baseQuery()->tap($pendingConstraint)->count(),
+                'tone' => 'warn',
+            ],
+            [
+                'key' => 'completed',
+                'label' => 'Completed',
+                'badge' => $baseQuery()->tap($completedConstraint)->count(),
+                'tone' => 'success',
+            ],
+        ];
+
+        $orders = $baseQuery()
+            ->with(['vendor', 'purchaseRequest', 'assetReceipts.item'])
+            ->when($tab === 'pending', $pendingConstraint)
+            ->when($tab === 'completed', $completedConstraint)
             ->latest('date')
+            ->latest('id')
             ->paginate(20)
             ->withQueryString()
-            ->through(fn (PurchaseOrders $order): array => [
-                'id' => $order->id,
-                'po_no' => $order->po_no,
-                'pr_no' => $order->purchaseRequest?->pr_no,
-                'vendor' => $order->vendor?->name,
-                'date' => $order->date,
-                'status' => $order->status?->value,
-                'status_label' => $order->status?->getLabel(),
-                'asset_status' => $order->hasPendingAssetReceipts() ? 'Pending' : 'Completed',
-                'pending_count' => $order->assetReceipts
-                    ->where('status', AssetReceiptStatus::Pending)
-                    ->count(),
-            ]);
+            ->through(function (PurchaseOrders $order): array {
+                $receipts = $order->assetReceipts;
+                $pending = $receipts->where('status', AssetReceiptStatus::Pending)->count();
+                $received = $receipts->where('status', AssetReceiptStatus::Received)->count();
+                $total = $receipts->count();
+
+                return [
+                    'id' => $order->id,
+                    'po_no' => $order->po_no,
+                    'pr_no' => $order->purchaseRequest?->pr_no,
+                    'purpose' => $order->purchaseRequest?->purpose,
+                    'vendor' => $order->vendor?->name,
+                    'date' => $order->date,
+                    'status' => $order->status?->value,
+                    'status_label' => $order->status?->getLabel(),
+                    'asset_status' => $pending > 0 ? 'pending' : 'completed',
+                    'asset_status_label' => $pending > 0 ? 'Pending' : 'Completed',
+                    'pending_count' => $pending,
+                    'received_count' => $received,
+                    'total_count' => $total,
+                    'progress' => $total > 0 ? (int) round(($received / $total) * 100) : 0,
+                ];
+            });
 
         return Inertia::render('AssetManagement/Index', [
             'orders' => $orders,
             'filters' => [
                 'search' => $search,
-                'asset_status' => $assetStatus,
+                'tab' => $tab,
+                'vendor_id' => $vendorId,
+                'date_from' => $dateFrom,
+                'date_to' => $dateTo,
+            ],
+            'tabs' => $tabs,
+            'filterOptions' => [
+                'vendors' => Vendors::query()->orderBy('name')->get(['id', 'name']),
             ],
         ]);
     }
@@ -88,17 +142,25 @@ class AssetManagementController extends Controller
             'assetReceipts.item',
             'assetReceipts.purchaseOrderDetail',
             'assetReceipts.purchaseOrder',
+            'assetReceipts.receivedByUser',
         ]);
 
         return Inertia::render('AssetManagement/Show', [
             'order' => [
                 'id' => $purchaseOrder->id,
                 'po_no' => $purchaseOrder->po_no,
+                'pr_id' => $purchaseOrder->purchaseRequest?->id,
                 'pr_no' => $purchaseOrder->purchaseRequest?->pr_no,
+                'purpose' => $purchaseOrder->purchaseRequest?->purpose,
                 'vendor' => $purchaseOrder->vendor?->name,
                 'date' => $purchaseOrder->date,
+                'status' => $purchaseOrder->status?->value,
                 'status_label' => $purchaseOrder->status?->getLabel(),
-                'asset_status' => $purchaseOrder->hasPendingAssetReceipts() ? 'Pending' : 'Completed',
+                'asset_status' => $purchaseOrder->hasPendingAssetReceipts() ? 'pending' : 'completed',
+                'asset_status_label' => $purchaseOrder->hasPendingAssetReceipts() ? 'Pending' : 'Completed',
+                'pending_count' => $purchaseOrder->assetReceipts->where('status', AssetReceiptStatus::Pending)->count(),
+                'received_count' => $purchaseOrder->assetReceipts->where('status', AssetReceiptStatus::Received)->count(),
+                'total_count' => $purchaseOrder->assetReceipts->count(),
             ],
             'receipts' => $purchaseOrder->assetReceipts->map(fn (AssetReceipt $receipt): array => $this->receiptPayload($receipt))->values(),
             'snipe' => [
@@ -322,7 +384,9 @@ class AssetManagementController extends Controller
             'snipe_category_id' => $receipt->snipe_category_id,
             'snipe_it_hardware_id' => $receipt->snipe_it_hardware_id,
             'snipe_it_accessory_id' => $receipt->snipe_it_accessory_id,
-            'received_at' => optional($receipt->received_at)?->toDateTimeString(),
+            'received_at' => optional($receipt->received_at)?->toIso8601String(),
+            'received_at_label' => optional($receipt->received_at)?->format('d/m/Y h:i A'),
+            'received_by' => $receipt->receivedByUser?->name,
             'is_pending' => $receipt->status === AssetReceiptStatus::Pending,
             'defaults' => $receipt->isAccessoryLine()
                 ? [

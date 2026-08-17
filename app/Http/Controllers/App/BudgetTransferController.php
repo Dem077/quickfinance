@@ -6,6 +6,7 @@ use App\Actions\Budgets\CreateBudgetTransfer;
 use App\Http\Controllers\Controller;
 use App\Models\BudgetTransfer;
 use App\Models\SubBudgetAccounts;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -18,32 +19,61 @@ class BudgetTransferController extends Controller
         $this->authorize('viewAny', BudgetTransfer::class);
 
         $search = $request->string('search')->trim()->toString();
+        $userId = $request->integer('user_id') ?: null;
+        $dateFrom = $request->string('date_from')->trim()->toString() ?: null;
+        $dateTo = $request->string('date_to')->trim()->toString() ?: null;
 
         $transfers = BudgetTransfer::query()
             ->with(['fromBudget', 'toBudget', 'user'])
             ->when($search !== '', function ($query) use ($search): void {
                 $query->where(function ($query) use ($search): void {
-                    $query->whereHas('fromBudget', fn ($q) => $q->where('name', 'like', "%{$search}%")->orWhere('code', 'like', "%{$search}%"))
+                    $query->where('description', 'like', "%{$search}%")
+                        ->orWhereHas('fromBudget', fn ($q) => $q->where('name', 'like', "%{$search}%")->orWhere('code', 'like', "%{$search}%"))
                         ->orWhereHas('toBudget', fn ($q) => $q->where('name', 'like', "%{$search}%")->orWhere('code', 'like', "%{$search}%"))
                         ->orWhereHas('user', fn ($q) => $q->where('name', 'like', "%{$search}%"));
                 });
             })
+            ->when($userId, fn ($query) => $query->where('user_id', $userId))
+            ->when($dateFrom, fn ($query) => $query->whereDate('created_at', '>=', $dateFrom))
+            ->when($dateTo, fn ($query) => $query->whereDate('created_at', '<=', $dateTo))
             ->latest('id')
             ->paginate(20)
             ->withQueryString()
             ->through(fn (BudgetTransfer $transfer): array => [
                 'id' => $transfer->id,
                 'from_budget' => $transfer->fromBudget?->getSelectLabel(),
+                'from_code' => $transfer->fromBudget?->code,
                 'to_budget' => $transfer->toBudget?->getSelectLabel(),
+                'to_code' => $transfer->toBudget?->code,
                 'user' => $transfer->user?->name,
-                'amount' => $transfer->amount,
+                'amount' => (float) $transfer->amount,
                 'description' => $transfer->description,
-                'created_at' => optional($transfer->created_at)?->toDateTimeString(),
+                'created_at' => optional($transfer->created_at)?->toIso8601String(),
+                'created_at_label' => optional($transfer->created_at)?->format('d/m/Y h:i A'),
+                'day' => optional($transfer->created_at)?->toDateString(),
             ]);
+
+        $userIds = BudgetTransfer::query()
+            ->whereNotNull('user_id')
+            ->distinct()
+            ->orderBy('user_id')
+            ->limit(300)
+            ->pluck('user_id');
 
         return Inertia::render('BudgetTransfers/Index', [
             'transfers' => $transfers,
-            'filters' => ['search' => $search],
+            'filters' => [
+                'search' => $search,
+                'user_id' => $userId,
+                'date_from' => $dateFrom,
+                'date_to' => $dateTo,
+            ],
+            'filterOptions' => [
+                'users' => User::query()
+                    ->whereIn('id', $userIds)
+                    ->orderBy('name')
+                    ->get(['id', 'name']),
+            ],
             'can' => [
                 'create' => $request->user()->can('create', BudgetTransfer::class),
                 'deleteAny' => $request->user()->can('deleteAny', BudgetTransfer::class),
@@ -61,8 +91,10 @@ class BudgetTransferController extends Controller
             ->get()
             ->map(fn (SubBudgetAccounts $budget): array => [
                 'id' => $budget->id,
-                'label' => $budget->getSelectLabel().' — MVR '.number_format($budget->total_amount, 2),
-                'total_amount' => $budget->total_amount,
+                'code' => $budget->code,
+                'name' => $budget->name,
+                'label' => $budget->getSelectLabel(),
+                'total_amount' => (float) $budget->total_amount,
             ]);
 
         return Inertia::render('BudgetTransfers/Create', [

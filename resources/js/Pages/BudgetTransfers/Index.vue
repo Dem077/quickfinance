@@ -1,118 +1,317 @@
 <script setup>
 import AppLayout from '../../Layouts/AppLayout.vue';
+import UiDateRangePicker from '../../Components/UiDateRangePicker.vue';
 import { Link, router, useForm } from '@inertiajs/vue3';
-import { computed, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
 const props = defineProps({
     transfers: { type: Object, required: true },
     filters: { type: Object, required: true },
+    filterOptions: { type: Object, required: true },
     can: { type: Object, required: true },
 });
 
 const search = ref(props.filters.search ?? '');
+const userId = ref(props.filters.user_id ? String(props.filters.user_id) : '');
+const dateFrom = ref(props.filters.date_from ?? '');
+const dateTo = ref(props.filters.date_to ?? '');
+const filtersOpen = ref(false);
+const filterPanel = ref(null);
 const selected = ref([]);
+let searchTimer = null;
 
-watch(search, (value) => {
-    router.get(route('app.budget-transfers.index'), { search: value || undefined }, {
-        preserveState: true,
-        replace: true,
+const hasRows = computed(() => (props.transfers.data?.length || 0) > 0);
+const hasSearch = computed(() => Boolean((search.value || '').trim()));
+const activeFilterCount = computed(() =>
+    [userId.value, dateFrom.value, dateTo.value].filter(Boolean).length,
+);
+const hasExtraFilters = computed(() => activeFilterCount.value > 0);
+const hasActiveFilters = computed(() => hasSearch.value || hasExtraFilters.value);
+const rangeLabel = computed(() => {
+    const from = props.transfers.from;
+    const to = props.transfers.to;
+    const total = props.transfers.total;
+    if (! total) return null;
+    return `${from}–${to} of ${total}`;
+});
+const pageTotal = computed(() =>
+    (props.transfers.data || []).reduce((sum, row) => sum + Number(row.amount || 0), 0),
+);
+
+const grouped = computed(() => {
+    const groups = [];
+    const map = new Map();
+    (props.transfers.data || []).forEach((row) => {
+        const key = row.day || 'unknown';
+        if (! map.has(key)) {
+            const group = { key, label: formatDay(row.created_at, row.day), items: [] };
+            map.set(key, group);
+            groups.push(group);
+        }
+        map.get(key).items.push(row);
     });
+    return groups;
 });
 
 const allSelected = computed({
-    get: () => props.transfers.data.length > 0 && selected.value.length === props.transfers.data.length,
+    get: () => hasRows.value && selected.value.length === props.transfers.data.length,
     set: (value) => {
         selected.value = value ? props.transfers.data.map((row) => row.id) : [];
     },
 });
 
-const bulkForm = useForm({ ids: [] });
+const applyFilters = (overrides = {}) => {
+    router.get(route('app.budget-transfers.index'), {
+        search: (overrides.search !== undefined ? overrides.search : search.value) || undefined,
+        user_id: (overrides.user_id !== undefined ? overrides.user_id : userId.value) || undefined,
+        date_from: (overrides.date_from !== undefined ? overrides.date_from : dateFrom.value) || undefined,
+        date_to: (overrides.date_to !== undefined ? overrides.date_to : dateTo.value) || undefined,
+    }, { preserveState: true, replace: true, preserveScroll: true });
+};
 
+watch(search, (value) => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => {
+        const next = value || '';
+        const current = props.filters.search || '';
+        if (next === current) return;
+        applyFilters({ search: value });
+    }, 280);
+});
+
+watch([userId, dateFrom, dateTo], () => applyFilters());
+
+watch(() => props.transfers.data, () => {
+    selected.value = [];
+});
+
+const clearSearch = () => {
+    clearTimeout(searchTimer);
+    search.value = '';
+    if (props.filters.search) applyFilters({ search: '' });
+};
+
+const clearExtraFilters = () => {
+    userId.value = '';
+    dateFrom.value = '';
+    dateTo.value = '';
+};
+
+const toggleFilters = () => {
+    filtersOpen.value = ! filtersOpen.value;
+};
+
+const onDocumentClick = (event) => {
+    if (! filtersOpen.value || ! filterPanel.value) return;
+    const target = event.target;
+    if (target?.closest?.('.daterangepicker') || target?.closest?.('.flatpickr-calendar')) return;
+    if (! filterPanel.value.contains(target)) filtersOpen.value = false;
+};
+
+const onDocumentKeydown = (event) => {
+    if (event.key === 'Escape') filtersOpen.value = false;
+};
+
+onMounted(() => {
+    document.addEventListener('click', onDocumentClick);
+    document.addEventListener('keydown', onDocumentKeydown);
+});
+
+onBeforeUnmount(() => {
+    document.removeEventListener('click', onDocumentClick);
+    document.removeEventListener('keydown', onDocumentKeydown);
+});
+
+const bulkForm = useForm({ ids: [] });
 const deleteSelected = () => {
-    if (! selected.value.length || ! confirm(`Delete ${selected.value.length} transfer(s)?`)) {
-        return;
-    }
+    if (! selected.value.length || ! confirm(`Delete ${selected.value.length} transfer${selected.value.length === 1 ? '' : 's'}?`)) return;
     bulkForm.ids = selected.value;
     bulkForm.delete(route('app.budget-transfers.destroy-many'), {
+        preserveScroll: true,
         onSuccess: () => { selected.value = []; },
     });
 };
 
 const formatMoney = (value) =>
     Number(value ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+const formatDay = (iso, day) => {
+    const date = iso ? new Date(iso) : (day ? new Date(`${day}T00:00:00`) : null);
+    if (! date || Number.isNaN(date.getTime())) return 'Unknown date';
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(today.getDate() - 1);
+    const sameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+    if (sameDay(date, today)) return 'Today';
+    if (sameDay(date, yesterday)) return 'Yesterday';
+    return date.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+};
 </script>
 
 <template>
-    <AppLayout>
+    <AppLayout description="Move funds between sub-budget accounts.">
         <template #header>Budget Transfers</template>
 
-        <div class="space-y-4">
+        <div class="space-y-5">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <input
-                    v-model="search"
-                    type="search"
-                    placeholder="Search…"
-                    class="w-full max-w-sm rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:w-72"
-                />
-                <div class="flex gap-2">
-                    <button
-                        v-if="can.deleteAny && selected.length"
-                        type="button"
-                        class="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700"
-                        @click="deleteSelected"
-                    >
-                        Delete selected ({{ selected.length }})
+                <div class="flex w-full max-w-xl items-center gap-2">
+                    <div class="relative min-w-0 flex-1">
+                        <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M21 21l-4.35-4.35M11 18a7 7 0 100-14 7 7 0 000 14z" />
+                        </svg>
+                        <input
+                            v-model="search"
+                            type="search"
+                            placeholder="Search budgets, user, or reason…"
+                            class="ui-input pl-9 pr-9"
+                            aria-label="Search transfers"
+                        />
+                        <button
+                            v-if="hasSearch"
+                            type="button"
+                            class="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg px-2 py-1 text-xs font-medium text-slate-500 hover:bg-surface-muted"
+                            @click="clearSearch"
+                        >
+                            Clear
+                        </button>
+                    </div>
+                    <div ref="filterPanel" class="relative shrink-0">
+                        <button
+                            type="button"
+                            class="relative inline-flex h-[42px] w-[42px] items-center justify-center rounded-lg border border-slate-200 bg-surface text-slate-600 transition hover:border-slate-300 hover:bg-surface-muted dark:border-slate-700 dark:text-slate-300"
+                            :class="filtersOpen || hasExtraFilters ? 'border-brand-300 text-brand-700 dark:border-brand-700 dark:text-brand-300' : ''"
+                            aria-label="Open filters"
+                            @click.stop="toggleFilters"
+                        >
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 5h18M6 12h12M10 19h4" />
+                            </svg>
+                            <span
+                                v-if="activeFilterCount"
+                                class="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-600 px-1 text-[10px] font-semibold text-white"
+                            >
+                                {{ activeFilterCount }}
+                            </span>
+                        </button>
+                        <div
+                            v-if="filtersOpen"
+                            class="absolute right-0 z-30 mt-2 w-[min(22rem,calc(100vw-2rem))] rounded-xl border border-slate-200 bg-white p-4 shadow-lg dark:border-slate-700 dark:bg-surface-elevated"
+                            @click.stop
+                        >
+                            <div class="mb-3 flex items-center justify-between">
+                                <p class="text-sm font-semibold text-slate-900 dark:text-white">Filters</p>
+                                <button v-if="hasExtraFilters" type="button" class="text-xs font-medium text-brand-700" @click="clearExtraFilters">Clear</button>
+                            </div>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="ui-label">Transferred by</label>
+                                    <select v-model="userId" class="ui-input">
+                                        <option value="">Anyone</option>
+                                        <option v-for="person in filterOptions.users" :key="person.id" :value="String(person.id)">{{ person.name }}</option>
+                                    </select>
+                                </div>
+                                <UiDateRangePicker id="transfer-dates" v-model:from="dateFrom" v-model:to="dateTo" label="Date range" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <label v-if="can.deleteAny && hasRows" class="inline-flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                        <input v-model="allSelected" type="checkbox" class="rounded border-slate-300 text-brand-600" />
+                        Select page
+                    </label>
+                    <button v-if="can.deleteAny && selected.length" type="button" class="ui-btn-danger" @click="deleteSelected">
+                        Delete {{ selected.length }}
                     </button>
-                    <Link
-                        v-if="can.create"
-                        :href="route('app.budget-transfers.create')"
-                        class="rounded-md bg-brand-600 px-3 py-2 text-sm font-semibold text-white hover:bg-brand-700"
-                    >
-                        Create transfer
+                    <Link v-if="can.create" :href="route('app.budget-transfers.create')" class="ui-btn-primary">
+                        New transfer
                     </Link>
                 </div>
             </div>
 
-            <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-                <table class="min-w-full divide-y divide-slate-200 text-sm">
-                    <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                        <tr>
-                            <th v-if="can.deleteAny" class="px-4 py-3">
-                                <input v-model="allSelected" type="checkbox" class="rounded border-slate-300 text-brand-600" />
-                            </th>
-                            <th class="px-4 py-3">From</th>
-                            <th class="px-4 py-3">To</th>
-                            <th class="px-4 py-3">User</th>
-                            <th class="px-4 py-3 text-right">Amount (MVR)</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-100">
-                        <tr v-for="row in transfers.data" :key="row.id" class="hover:bg-slate-50">
-                            <td v-if="can.deleteAny" class="px-4 py-3">
-                                <input v-model="selected" type="checkbox" :value="row.id" class="rounded border-slate-300 text-brand-600" />
-                            </td>
-                            <td class="px-4 py-3">{{ row.from_budget }}</td>
-                            <td class="px-4 py-3">{{ row.to_budget }}</td>
-                            <td class="px-4 py-3">{{ row.user }}</td>
-                            <td class="px-4 py-3 text-right tabular-nums">{{ formatMoney(row.amount) }}</td>
-                        </tr>
-                        <tr v-if="!transfers.data.length">
-                            <td :colspan="can.deleteAny ? 5 : 4" class="px-4 py-10 text-center text-slate-500">No transfers found.</td>
-                        </tr>
-                    </tbody>
-                </table>
+            <div v-if="rangeLabel || hasActiveFilters" class="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-500">
+                <p>
+                    <span v-if="rangeLabel">{{ rangeLabel }}</span>
+                    <span v-if="hasRows"> · Page total MVR {{ formatMoney(pageTotal) }}</span>
+                </p>
+                <p v-if="hasSearch" class="truncate">“{{ search.trim() }}”</p>
             </div>
 
-            <div v-if="transfers.links?.length > 3" class="flex flex-wrap gap-2">
-                <Link
-                    v-for="link in transfers.links"
-                    :key="link.label"
-                    :href="link.url || '#'"
-                    class="rounded-md border px-3 py-1 text-sm"
-                    :class="link.active ? 'border-brand-600 bg-brand-600 text-white' : 'border-slate-200 bg-white text-slate-600'"
-                    v-html="link.label"
-                    :preserve-scroll="true"
-                />
+            <div v-if="hasRows" class="space-y-8">
+                <section v-for="group in grouped" :key="group.key">
+                    <h2 class="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">{{ group.label }}</h2>
+                    <div class="space-y-3">
+                        <article v-for="row in group.items" :key="row.id" class="ui-card p-4">
+                            <div class="flex items-start gap-3">
+                                <input
+                                    v-if="can.deleteAny"
+                                    v-model="selected"
+                                    type="checkbox"
+                                    :value="row.id"
+                                    class="mt-1 rounded border-slate-300 text-brand-600"
+                                />
+                                <div class="min-w-0 flex-1">
+                                    <div class="grid gap-3 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
+                                        <div class="min-w-0 rounded-xl bg-slate-50 px-3 py-2 dark:bg-surface-muted/40">
+                                            <p class="text-[11px] uppercase tracking-wide text-slate-400">From</p>
+                                            <p class="truncate font-medium text-slate-900 dark:text-white">{{ row.from_budget }}</p>
+                                            <p v-if="row.from_code" class="truncate text-xs text-slate-500">{{ row.from_code }}</p>
+                                        </div>
+                                        <div class="hidden text-center sm:block">
+                                            <p class="text-xs font-semibold tabular-nums text-brand-700 dark:text-brand-300">MVR {{ formatMoney(row.amount) }}</p>
+                                            <p class="text-[11px] text-slate-400">transferred</p>
+                                        </div>
+                                        <div class="min-w-0 rounded-xl bg-emerald-50 px-3 py-2 dark:bg-emerald-950/30">
+                                            <p class="text-[11px] uppercase tracking-wide text-emerald-600/80">To</p>
+                                            <p class="truncate font-medium text-slate-900 dark:text-white">{{ row.to_budget }}</p>
+                                            <p v-if="row.to_code" class="truncate text-xs text-slate-500">{{ row.to_code }}</p>
+                                        </div>
+                                    </div>
+                                    <p class="mt-3 text-sm font-semibold tabular-nums text-slate-900 sm:hidden dark:text-white">
+                                        MVR {{ formatMoney(row.amount) }}
+                                    </p>
+                                    <p v-if="row.description" class="mt-2 text-sm text-slate-600 dark:text-slate-400">{{ row.description }}</p>
+                                    <p class="mt-2 text-xs text-slate-500">
+                                        {{ row.user || 'Unknown' }} · {{ row.created_at_label }}
+                                    </p>
+                                </div>
+                            </div>
+                        </article>
+                    </div>
+                </section>
+            </div>
+
+            <div
+                v-else
+                class="flex flex-col items-center rounded-xl border border-dashed border-slate-200 bg-surface px-6 py-16 text-center dark:border-slate-800"
+            >
+                <h2 class="text-base font-semibold text-slate-900 dark:text-white">
+                    {{ hasActiveFilters ? 'No matching transfers' : 'No transfers yet' }}
+                </h2>
+                <p class="mt-1 max-w-sm text-sm text-slate-500">
+                    {{ hasActiveFilters ? 'Try another search or reset the filters.' : 'Move funds between sub-budget accounts when you need to rebalance.' }}
+                </p>
+                <div class="mt-5 flex gap-2">
+                    <button v-if="hasActiveFilters" type="button" class="ui-btn-secondary" @click="() => { clearSearch(); clearExtraFilters(); }">Reset</button>
+                    <Link v-if="can.create" :href="route('app.budget-transfers.create')" class="ui-btn-primary">New transfer</Link>
+                </div>
+            </div>
+
+            <div v-if="transfers.links?.length > 3" class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p class="text-sm text-slate-500">{{ rangeLabel || ' ' }}</p>
+                <div class="flex flex-wrap gap-1.5">
+                    <template v-for="(link, index) in transfers.links" :key="`${link.label}-${index}`">
+                        <Link
+                            v-if="link.url"
+                            :href="link.url"
+                            class="inline-flex h-8 min-w-8 items-center justify-center rounded-xl border px-2.5 text-sm transition"
+                            :class="link.active ? 'border-brand-600 bg-brand-600 text-white' : 'border-slate-200 bg-surface text-slate-600 hover:border-slate-300 dark:border-slate-700'"
+                            :preserve-scroll="true"
+                            v-html="link.label"
+                        />
+                        <span v-else class="inline-flex h-8 min-w-8 items-center justify-center px-2.5 text-sm text-slate-300" v-html="link.label" />
+                    </template>
+                </div>
             </div>
         </div>
     </AppLayout>

@@ -17,6 +17,12 @@ class BudgetTransactionHistory extends Model
         'transaction_by',
     ];
 
+    protected $casts = [
+        'transaction_date' => 'date',
+        'transaction_amount' => 'float',
+        'transaction_balance' => 'float',
+    ];
+
     public function subBudget(): BelongsTo
     {
         return $this->belongsTo(SubBudgetAccounts::class, 'sub_budget_id');
