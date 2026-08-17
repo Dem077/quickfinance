@@ -26,6 +26,8 @@ Livewire::setScriptRoute(function ($handle) {
 Route::get('/', function () {
     return redirect('/admin');
 });
+
+Route::redirect('/app-entry', '/app')->name('app.entry');
 Route::get('pr/{record}/preview', function (PurchaseRequests $record) {
     // Check if document is approved
     if (! $record->status == PurchaseRequestsStatus::Approved->value) {

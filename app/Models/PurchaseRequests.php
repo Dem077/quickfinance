@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\PurchaseOrderStatus;
 use App\Enums\PurchaseRequestsStatus;
+use App\Models\Concerns\ScopesPurchaseRequests;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,6 +13,8 @@ use Illuminate\Support\Facades\Auth;
 
 class PurchaseRequests extends Model
 {
+    use ScopesPurchaseRequests;
+
     protected $fillable = [
         'pr_no',
         'date',
@@ -21,6 +24,7 @@ class PurchaseRequests extends Model
         'user_id',
         'is_submited',
         'is_approved',
+        'is_approved_by_hod',
         'is_canceled',
         'cancel_remark',
         'uploaded_document',
@@ -80,17 +84,29 @@ class PurchaseRequests extends Model
         $closedBy ??= Auth::id();
 
         $this->purchaseOrders()
-            ->where('payment_method', 'purchase_order')
-            ->where('status', '!=', PurchaseOrderStatus::Closed)
+            ->with('purchaseOrderDetails')
             ->get()
-            ->each(function (PurchaseOrders $purchaseOrder) use ($closedBy) {
-                $purchaseOrder->syncAssetReceipts();
+            ->each(function (PurchaseOrders $purchaseOrder) use ($closedBy): void {
+                // Petty cash: clear PR pending/on-hold for PO items — do not deduct allocation.
+                if ($purchaseOrder->payment_method === 'petty_cash') {
+                    $purchaseOrder->releasePurchaseRequestPendingHold();
 
-                $purchaseOrder->update([
-                    'status' => PurchaseOrderStatus::Closed,
-                    'is_closed' => true,
-                    'is_closed_by' => $closedBy,
-                ]);
+                    return;
+                }
+
+                // Normal PO: close so observer deducts each line amount from department budget.
+                if (
+                    $purchaseOrder->payment_method === 'purchase_order'
+                    && $purchaseOrder->status !== PurchaseOrderStatus::Closed
+                ) {
+                    $purchaseOrder->syncAssetReceipts();
+
+                    $purchaseOrder->update([
+                        'status' => PurchaseOrderStatus::Closed,
+                        'is_closed' => true,
+                        'is_closed_by' => $closedBy,
+                    ]);
+                }
             });
     }
 

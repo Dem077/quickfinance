@@ -1,0 +1,184 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        --canvas: 248 250 252;
+        --surface: 255 255 255;
+        --surface-elevated: 255 255 255;
+        --surface-muted: 241 245 249;
+        --sidebar: 255 255 255;
+        --sidebar-border: 226 232 240;
+        --sidebar-muted: 100 116 139;
+        --sidebar-active: 236 254 255;
+    }
+
+    html.dark {
+        --canvas: 8 12 16;
+        --surface: 15 20 24;
+        --surface-elevated: 22 28 34;
+        --surface-muted: 28 36 44;
+        --sidebar: 8 12 16;
+        --sidebar-border: 30 41 50;
+        --sidebar-muted: 100 116 139;
+        --sidebar-active: 8 51 68;
+        color-scheme: dark;
+    }
+
+    html {
+        color-scheme: light;
+    }
+
+    body {
+        @apply bg-canvas font-sans text-slate-900 antialiased dark:text-slate-100;
+    }
+
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: rgb(203 213 225 / 0.9);
+        border-radius: 9999px;
+    }
+
+    html.dark ::-webkit-scrollbar-thumb {
+        background: rgb(51 65 85 / 0.8);
+    }
+}
+
+@layer components {
+    .ui-card {
+        @apply overflow-hidden rounded-xl border border-slate-200/90 bg-surface dark:border-slate-800;
+    }
+
+    .ui-card-hover {
+        @apply transition hover:border-slate-300 dark:hover:border-slate-700;
+    }
+
+    .ui-panel {
+        @apply overflow-hidden rounded-xl border border-slate-200/90 bg-surface dark:border-slate-800;
+    }
+
+    .ui-btn-primary {
+        @apply inline-flex items-center justify-center rounded-lg border border-transparent bg-brand-600 px-3.5 py-2 text-sm font-medium text-white transition hover:bg-brand-500 disabled:cursor-not-allowed disabled:opacity-50;
+    }
+
+    .ui-btn-accent {
+        @apply inline-flex items-center justify-center rounded-lg border border-transparent bg-brand-600 px-3.5 py-2 text-sm font-medium text-white transition hover:bg-brand-500 disabled:cursor-not-allowed disabled:opacity-50;
+    }
+
+    .ui-btn-secondary {
+        @apply inline-flex items-center justify-center rounded-lg border border-slate-200 bg-surface-elevated px-3.5 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:text-slate-200 dark:hover:border-slate-600;
+    }
+
+    .ui-btn-danger {
+        @apply inline-flex items-center justify-center rounded-lg border border-red-200 bg-red-50 px-3.5 py-2 text-sm font-medium text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300 dark:hover:bg-red-950/60;
+    }
+
+    .ui-btn-ghost {
+        @apply inline-flex items-center justify-center rounded-lg border border-transparent bg-transparent px-3.5 py-2 text-sm font-medium text-slate-600 transition hover:bg-surface-muted hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50 dark:text-slate-400 dark:hover:text-slate-100;
+    }
+
+    .ui-input {
+        @apply w-full rounded-lg border-slate-200 bg-white text-sm text-slate-900 shadow-none placeholder:text-slate-400 focus:border-brand-500 focus:ring-brand-500/25 dark:border-slate-700 dark:bg-surface-elevated dark:text-slate-100;
+    }
+
+    .ui-select {
+        @apply w-full rounded-lg border-slate-200 bg-white text-sm text-slate-900 shadow-none focus:border-brand-500 focus:ring-brand-500/25 dark:border-slate-700 dark:bg-surface-elevated dark:text-slate-100;
+    }
+
+    .ui-label {
+        @apply mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300;
+    }
+
+    .ui-table-wrap {
+        @apply overflow-x-auto rounded-xl border border-slate-200/90 bg-surface dark:border-slate-800;
+    }
+
+    .ui-table {
+        @apply min-w-full text-sm;
+    }
+
+    .ui-table thead {
+        @apply border-b border-slate-100 bg-slate-50/60 text-left text-slate-500 dark:border-slate-800 dark:bg-surface-elevated dark:text-slate-400;
+    }
+
+    .ui-table th {
+        @apply px-4 py-3 text-xs font-semibold uppercase tracking-wide;
+    }
+
+    .ui-table tbody {
+        @apply divide-y divide-slate-100 dark:divide-slate-800;
+    }
+
+    .ui-table td {
+        @apply px-4 py-3.5 text-slate-600 dark:text-slate-400;
+    }
+
+    .ui-badge-neutral {
+        @apply inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300;
+    }
+
+    .ui-badge-brand {
+        @apply inline-flex items-center rounded-md bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700 dark:bg-brand-950/50 dark:text-brand-300;
+    }
+
+    .ui-badge-success {
+        @apply inline-flex items-center rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300;
+    }
+
+    .ui-badge-warn {
+        @apply inline-flex items-center rounded-md bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-950/40 dark:text-amber-300;
+    }
+
+    .ui-badge-danger {
+        @apply inline-flex items-center rounded-md bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700 dark:bg-red-950/40 dark:text-red-300;
+    }
+
+    .ui-link {
+        @apply font-medium text-brand-700 transition hover:text-brand-600 dark:text-brand-400;
+    }
+
+    .ui-link-danger {
+        @apply font-medium text-red-600 transition hover:text-red-500 dark:text-red-400;
+    }
+
+    .ui-nav-link {
+        @apply flex items-center rounded-lg text-sm font-medium transition;
+    }
+}
+
+/* Filament daterangepicker (malzariey) */
+.daterangepicker {
+    z-index: 80 !important;
+    font-family: inherit;
+}
+
+.daterangepicker .ranges li.active,
+.daterangepicker td.active,
+.daterangepicker td.active:hover {
+    background-color: #0891b2 !important;
+}
+
+.daterangepicker td.in-range {
+    background-color: #ecfeff !important;
+    color: #164e63;
+}
+
+html.dark .daterangepicker {
+    background-color: rgb(22 28 34);
+    border-color: rgb(51 65 85);
+    color: rgb(226 232 240);
+}
+
+html.dark .daterangepicker td.in-range {
+    background-color: rgb(8 51 68) !important;
+    color: rgb(207 250 254);
+}

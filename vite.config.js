@@ -1,37 +1,29 @@
-import { defineConfig } from "vite";
-import laravel from "laravel-vite-plugin";
-import compression from "vite-plugin-compression2";
+import { defineConfig } from 'vite';
+import laravel from 'laravel-vite-plugin';
+import vue from '@vitejs/plugin-vue';
+
 export default defineConfig({
     plugins: [
         laravel({
             input: [
-                "resources/css/app.css",
-                "resources/js/app.js",
-                `resources/css/filament/admin/theme.css`,
+                'resources/css/app.css',
+                'resources/js/app.js',
+                'resources/css/filament/admin/theme.css',
             ],
             refresh: true,
         }),
-        // compression({
-        //     // deleteOriginalAssets: true,
-        // }),
+        vue({
+            template: {
+                transformAssetUrls: {
+                    base: null,
+                    includeAbsolute: false,
+                },
+            },
+        }),
     ],
-
-    // build: {
-    //     chunkSizeWarningLimit: 500,
-    //     cssCodeSplit: true,
-    //     reportCompressedSize: false,
-    //     rollupOptions: {
-    //         output: {
-    //             manualChunks(id) {
-    //                 if (id.includes("node_modules")) {
-    //                     return id
-    //                         .toString()
-    //                         .split("node_modules/")[1]
-    //                         .split("/")[0]
-    //                         .toString();
-    //                 }
-    //             },
-    //         },
-    //     },
-    // },
+    resolve: {
+        alias: {
+            '@': '/resources/js',
+        },
+    },
 });

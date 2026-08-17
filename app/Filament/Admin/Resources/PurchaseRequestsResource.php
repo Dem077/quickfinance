@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources;
 
+use App\Actions\PurchaseRequests\SubmitPurchaseRequestForApproval;
 use App\Enums\PurchaseRequestsStatus;
 use App\Enums\UnitsEnum;
 use App\Filament\Admin\Resources\PurchaseRequestsResource\Pages;
@@ -12,6 +13,7 @@ use App\Models\PurchaseOrders;
 use App\Models\PurchaseRequests;
 use App\Models\SubBudgetAccounts;
 use App\Models\User;
+use App\Support\PurchaseRequestBudget;
 use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
 use Closure;
 use Filament\Forms;
@@ -25,6 +27,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 
 class PurchaseRequestsResource extends Resource implements HasShieldPermissions
 {
@@ -230,8 +233,16 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                                                             return;
                                                         }
 
-                                                        if ($value > $departmentAllocation->amount) {
-                                                            $fail("You don't have enough funds for this budget code.");
+                                                        $available = PurchaseRequestBudget::availableForDepartment(
+                                                            (int) $budgetAccountId,
+                                                            (int) $departmentId,
+                                                        );
+
+                                                        if ($value > $available) {
+                                                            $fail(sprintf(
+                                                                "You don't have enough available funds for this budget code (available MVR %s).",
+                                                                number_format($available, 2),
+                                                            ));
                                                         }
                                                     }
                                                 },
@@ -341,16 +352,20 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                     ->visible(fn ($record) => $record->status == PurchaseRequestsStatus::Draft &&
                         Auth::user()->can('send_approval_purchase::requests')
                     )
-                    ->action(function (PurchaseRequests $record, User $user) {
-                        $record->update([
-                            'status' => PurchaseRequestsStatus::Submitted->value,
-                            // 'is_submited' => true,
-                        ]);
+                    ->action(function (PurchaseRequests $record) {
+                        try {
+                            SubmitPurchaseRequestForApproval::run($record);
 
-                        Notification::make()
-                            ->title('Submitted for approval successfully')
-                            ->success()
-                            ->send();
+                            Notification::make()
+                                ->title('Submitted for approval successfully')
+                                ->success()
+                                ->send();
+                        } catch (ValidationException $e) {
+                            Notification::make()
+                                ->title(collect($e->errors())->flatten()->first() ?: 'Unable to submit purchase request.')
+                                ->danger()
+                                ->send();
+                        }
                     }),
                 Tables\Actions\Action::make('approve_purchase_request_hod')
                     ->label('Approve')

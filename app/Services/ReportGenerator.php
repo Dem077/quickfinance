@@ -34,8 +34,14 @@ class ReportGenerator
         $csv = Writer::createFromFileObject(new SplTempFileObject);
 
         $csv->insertOne(
-            $selectedFields
-                ->map(fn (string $field) => $fieldCatalog[$field]['label'] ?? $field)
+            $fieldConfigs
+                ->map(function (array $config) use ($fieldCatalog): string {
+                    $field = $config['field'] ?? '';
+
+                    return filled($config['heading'] ?? null)
+                        ? (string) $config['heading']
+                        : ($fieldCatalog[$field]['label'] ?? $field);
+                })
                 ->all()
         );
 

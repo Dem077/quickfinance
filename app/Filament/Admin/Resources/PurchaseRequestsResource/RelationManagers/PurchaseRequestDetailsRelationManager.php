@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Resources\PurchaseRequestsResource\RelationManagers
 
 use App\Enums\UnitsEnum;
 use App\Models\SubBudgetAccounts;
+use App\Support\PurchaseRequestBudget;
 use Closure;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -131,8 +132,16 @@ class PurchaseRequestDetailsRelationManager extends RelationManager
                                             return;
                                         }
 
-                                        if ($value > $departmentAllocation->amount) {
-                                            $fail("You don't have enough funds for this budget code.");
+                                        $available = PurchaseRequestBudget::availableForDepartment(
+                                            (int) $budgetAccountId,
+                                            (int) $departmentId,
+                                        );
+
+                                        if ($value > $available) {
+                                            $fail(sprintf(
+                                                "You don't have enough available funds for this budget code (available MVR %s).",
+                                                number_format($available, 2),
+                                            ));
                                         }
                                     }
                                 },

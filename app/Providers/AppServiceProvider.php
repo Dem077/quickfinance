@@ -12,11 +12,13 @@ use App\Observers\PurchaseRequestDetailsObserver;
 use App\Observers\PurchaseRequestsObserver;
 use App\Policies\ActivityPolicy;
 use App\Policies\PurchaseRequestsPolicy;
+use App\Policies\RolePolicy;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Spatie\Activitylog\Models\Activity;
+use Spatie\Permission\Models\Role;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -35,6 +37,7 @@ class AppServiceProvider extends ServiceProvider
     {
         Gate::policy(PurchaseRequests::class, PurchaseRequestsPolicy::class);
         Gate::policy(Activity::class, ActivityPolicy::class);
+        Gate::policy(Role::class, RolePolicy::class);
         PurchaseRequestDetails::observe(PurchaseRequestDetailsObserver::class);
         PurchaseRequests::observe(PurchaseRequestsObserver::class);
         PurchaseOrders::observe(PurchaseOrdersObserver::class);

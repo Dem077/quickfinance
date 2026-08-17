@@ -13,7 +13,8 @@ class PurchaseOrdersPolicy
 
     public function generate_advance_form(User $user): bool
     {
-        return $user->can('generate_advance_form_purchase::orders');
+        return $user->can('generate_advance_form_purchase::orders')
+            || $user->can('create_purchase::orders');
     }
 
     public function md_dmd_approve_advance_form(User $user): bool

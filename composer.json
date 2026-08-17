@@ -17,6 +17,7 @@
         "bezhansalleh/filament-shield": "^3.2",
         "filament/filament": "3.3.11",
         "hasnayeen/themes": "^3.0",
+        "inertiajs/inertia-laravel": "^3.3",
         "jeffgreco13/filament-breezy": "^2.3",
         "joshembling/image-optimizer": "^1.4",
         "laravel/framework": "^11.0",
@@ -28,6 +29,7 @@
         "plesk/ext-laravel-integration": "*",
         "saade/filament-autograph": "*",
         "swisnl/filament-backgrounds": "^1.1",
+        "tightenco/ziggy": "^2.6",
         "ysfkaya/filament-phone-input": "^3.1",
         "z3d0x/filament-logger": "^0.7.0"
     },
