@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\AssetReceiptStatus;
 use App\Enums\ItemTypeEnum;
 use App\Enums\PurchaseOrderStatus;
+use App\Models\Concerns\LogsModelActivity;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -12,6 +13,8 @@ use Illuminate\Support\Facades\Auth;
 
 class PurchaseOrders extends Model
 {
+    use LogsModelActivity;
+
     protected $fillable = [
         'vendor_id',
         'po_no',

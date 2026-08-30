@@ -1,5 +1,6 @@
 <script setup>
 import AppLayout from '../../Layouts/AppLayout.vue';
+import UiAuditLink from '../../Components/UiAuditLink.vue';
 import { Link, router, useForm } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 
@@ -350,6 +351,10 @@ watch(() => editLineForm.gst, () => {
                     <div class="flex flex-wrap items-center gap-2">
                         <span :class="badgeClass">{{ order.status_label }}</span>
                         <span class="ui-badge-neutral">{{ order.payment_method_label }}</span>
+                        <UiAuditLink
+                            v-if="can.audit"
+                            :href="route('app.purchase-orders.audit', order.id)"
+                        />
                         <span class="text-sm text-slate-500">
                             {{ lineCount }} item{{ lineCount === 1 ? '' : 's' }} · MVR {{ formatMoney(order.total_amount) }}
                         </span>

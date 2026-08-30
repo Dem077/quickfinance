@@ -58,6 +58,7 @@ class PurchaseOrdersResource extends Resource implements HasShieldPermissions
             'generate_advance_form',
             'md_dmd_approve_advance_form',
             'close',
+            'audit',
         ];
     }
 

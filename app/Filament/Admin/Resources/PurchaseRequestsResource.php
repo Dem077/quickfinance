@@ -51,6 +51,7 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
             'md_dmd_approve',
             'cancel',
             'close',
+            'audit',
         ];
     }
 

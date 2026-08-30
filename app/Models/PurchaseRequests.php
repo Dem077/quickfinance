@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\PurchaseOrderStatus;
 use App\Enums\PurchaseRequestsStatus;
+use App\Models\Concerns\LogsModelActivity;
 use App\Models\Concerns\ScopesPurchaseRequests;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -13,6 +14,7 @@ use Illuminate\Support\Facades\Auth;
 
 class PurchaseRequests extends Model
 {
+    use LogsModelActivity;
     use ScopesPurchaseRequests;
 
     protected $fillable = [

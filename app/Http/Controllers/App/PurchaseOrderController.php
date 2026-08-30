@@ -28,6 +28,7 @@ use App\Models\PurchaseRequestDetails;
 use App\Models\PurchaseRequests;
 use App\Models\User;
 use App\Models\Vendors;
+use App\Support\RecordAudit;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -150,6 +151,7 @@ class PurchaseOrderController extends Controller
             'tabs' => $tabs,
             'can' => [
                 'create' => $user->can('create', PurchaseOrders::class),
+                'audit' => $user->can('audit', PurchaseOrders::class),
             ],
         ]);
     }
@@ -225,7 +227,26 @@ class PurchaseOrderController extends Controller
                 ...$advanceActions,
                 'manage_details' => $purchaseOrder->status === PurchaseOrderStatus::Draft
                     && $user->can('update', $purchaseOrder),
+                'audit' => $user->can('audit', PurchaseOrders::class),
             ],
+        ]);
+    }
+
+    public function audit(Request $request, PurchaseOrders $purchaseOrder): Response
+    {
+        $this->authorize('view', $purchaseOrder);
+        $this->authorize('audit', PurchaseOrders::class);
+
+        return Inertia::render('Audit/Show', [
+            'title' => $purchaseOrder->po_no,
+            'description' => 'Changes to this purchase order, line items, and advance form.',
+            'backUrl' => route('app.purchase-orders.show', $purchaseOrder),
+            'backLabel' => 'Back to PO',
+            'activities' => RecordAudit::paginate(
+                RecordAudit::purchaseOrderQuery($purchaseOrder),
+                $request->user(),
+                fn ($activity) => RecordAudit::purchaseOrderSubjectLabel($purchaseOrder, $activity),
+            ),
         ]);
     }
 

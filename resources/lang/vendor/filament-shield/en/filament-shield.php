@@ -88,5 +88,6 @@ return [
         'md_dmd_approve_advance_form' => 'MD / DMD Approve Advance Form',
         'close' => 'Close',
         'cancel' => 'Cancel',
+        'audit' => 'View Audit Trail',
     ],
 ];

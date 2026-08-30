@@ -1,5 +1,6 @@
 <script setup>
 import AppLayout from '../../Layouts/AppLayout.vue';
+import UiAuditLink from '../../Components/UiAuditLink.vue';
 import { Link, router, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
@@ -231,6 +232,10 @@ const openPurchaseOrder = (order) => {
                 <div class="min-w-0 space-y-2">
                     <div class="flex flex-wrap items-center gap-2">
                         <span :class="badgeClass">{{ record.status_label }}</span>
+                        <UiAuditLink
+                            v-if="actions.audit"
+                            :href="route('app.purchase-requests.audit', record.id)"
+                        />
                         <span class="text-sm text-slate-500">
                             {{ lineCount }} item{{ lineCount === 1 ? '' : 's' }} · {{ formatMoney(totalEstCost) }}
                         </span>

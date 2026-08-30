@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\ItemTypeEnum;
+use App\Models\Concerns\LogsModelActivity;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -10,6 +11,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PurchaseOrderDetails extends Model
 {
+    use LogsModelActivity;
+
     protected $fillable = [
         'po_id',
         'item_id',

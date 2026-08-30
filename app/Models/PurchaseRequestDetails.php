@@ -3,12 +3,15 @@
 namespace App\Models;
 
 use App\Enums\UnitsEnum;
+use App\Models\Concerns\LogsModelActivity;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PurchaseRequestDetails extends Model
 {
+    use LogsModelActivity;
+
     protected $fillable = [
         'item_id',
         'unit',

@@ -43,6 +43,11 @@ class PurchaseRequestsPolicy
         return $user->can('close_purchase::requests');
     }
 
+    public function audit(User $user): bool
+    {
+        return $user->can('audit_purchase::requests');
+    }
+
     /**
      * Determine whether the user can view any models.
      */

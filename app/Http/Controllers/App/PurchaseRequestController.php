@@ -29,6 +29,7 @@ use App\Models\SubBudgetAccounts;
 use App\Models\User;
 use App\Support\PurchaseRequestBudget;
 use App\Support\PurchaseRequestStatusTabs;
+use App\Support\RecordAudit;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -120,6 +121,7 @@ class PurchaseRequestController extends Controller
             'tabs' => $tabs,
             'can' => [
                 'create' => $user->can('create', PurchaseRequests::class),
+                'audit' => $user->can('audit', PurchaseRequests::class),
             ],
         ]);
     }
@@ -219,11 +221,31 @@ class PurchaseRequestController extends Controller
                 'viewDocument' => filled($purchaseRequest->uploaded_document)
                     && Storage::disk('public')->exists($purchaseRequest->uploaded_document),
                 'manageLines' => $status === PurchaseRequestsStatus::Draft && $user->can('send_approval_purchase::requests'),
+                'audit' => $user->can('audit', PurchaseRequests::class),
             ],
             'pdfUrl' => route('purchase-requests.download', $purchaseRequest),
             'documentUrl' => $purchaseRequest->uploaded_document
                 ? asset('storage/'.$purchaseRequest->uploaded_document)
                 : null,
+        ]);
+    }
+
+    public function audit(Request $request, PurchaseRequests $purchaseRequest): Response
+    {
+        $this->authorize('view', $purchaseRequest);
+        abort_unless($this->visibleToUser($request, $purchaseRequest), 403);
+        $this->authorize('audit', PurchaseRequests::class);
+
+        return Inertia::render('Audit/Show', [
+            'title' => $purchaseRequest->pr_no,
+            'description' => 'Changes to this purchase request and its line items.',
+            'backUrl' => route('app.purchase-requests.show', $purchaseRequest),
+            'backLabel' => 'Back to PR',
+            'activities' => RecordAudit::paginate(
+                RecordAudit::purchaseRequestQuery($purchaseRequest),
+                $request->user(),
+                fn ($activity) => RecordAudit::purchaseRequestSubjectLabel($purchaseRequest, $activity),
+            ),
         ]);
     }
 

@@ -3,12 +3,15 @@
 namespace App\Models;
 
 use App\Enums\AdvanceFormStatus;
+use App\Models\Concerns\LogsModelActivity;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class AdvanceForm extends Model
 {
+    use LogsModelActivity;
+
     protected $fillable = [
         'qoation_no',
         'expected_delivery',

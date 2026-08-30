@@ -1,5 +1,6 @@
 <script setup>
 import AppLayout from '../../Layouts/AppLayout.vue';
+import UiAuditLink from '../../Components/UiAuditLink.vue';
 import UiDateRangePicker from '../../Components/UiDateRangePicker.vue';
 import { Link, router, useForm } from '@inertiajs/vue3';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
@@ -468,7 +469,13 @@ const submitRemark = () => {
                         <h2 class="truncate text-base font-semibold tracking-tight text-slate-900 group-hover:text-brand-700 dark:text-white dark:group-hover:text-brand-300">
                             {{ row.pr_no }}
                         </h2>
-                        <span :class="statusBadgeClass(row.status)" class="shrink-0">{{ row.status_label }}</span>
+                        <div class="flex shrink-0 items-center gap-1" @click.stop @keydown.stop>
+                            <span :class="statusBadgeClass(row.status)">{{ row.status_label }}</span>
+                            <UiAuditLink
+                                v-if="can.audit"
+                                :href="route('app.purchase-requests.audit', row.id)"
+                            />
+                        </div>
                     </div>
 
                     <p class="mt-2 line-clamp-2 min-h-[2.5rem] text-sm leading-relaxed text-slate-600 dark:text-slate-400">

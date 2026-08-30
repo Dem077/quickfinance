@@ -37,6 +37,7 @@ class PermissionCatalog
         'md_dmd_approve' => 'MD / DMD approve',
         'cancel' => 'Cancel',
         'close' => 'Close',
+        'audit' => 'View audit trail',
         'generate_advance_form' => 'Generate advance form',
         'md_dmd_approve_advance_form' => 'MD / DMD approve advance form',
         'pv_approve' => 'Approve and add PV',
@@ -58,6 +59,7 @@ class PermissionCatalog
                 'md_dmd_approve',
                 'cancel',
                 'close',
+                'audit',
             ],
         ],
         'purchase::orders' => [
@@ -67,6 +69,7 @@ class PermissionCatalog
                 'generate_advance_form',
                 'md_dmd_approve_advance_form',
                 'close',
+                'audit',
             ],
         ],
         'petty::cash::reimbursment' => [
