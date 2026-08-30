@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\App;
 
 use App\Http\Controllers\Controller;
+use App\Support\PermissionCatalog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
-use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
 class RoleController extends Controller
@@ -20,8 +20,9 @@ class RoleController extends Controller
         $search = $request->string('search')->trim()->toString();
 
         $roles = Role::query()
-            ->withCount('permissions')
+            ->withCount(['permissions', 'users'])
             ->when($search !== '', fn ($q) => $q->where('name', 'like', "%{$search}%"))
+            ->orderByRaw("name = 'super_admin' desc")
             ->orderBy('name')
             ->paginate(20)
             ->withQueryString()
@@ -30,6 +31,7 @@ class RoleController extends Controller
                 'name' => $role->name,
                 'guard_name' => $role->guard_name,
                 'permissions_count' => $role->permissions_count,
+                'users_count' => $role->users_count,
                 'updated_at' => optional($role->updated_at)?->toDateTimeString(),
                 'is_super_admin' => $role->name === 'super_admin',
             ]);
@@ -156,36 +158,10 @@ class RoleController extends Controller
     }
 
     /**
-     * @return array<int, array{label: string, permissions: array<int, array{name: string, label: string}>}>
+     * @return array<int, array{key: string, label: string, permissions: array<int, array{name: string, label: string}>}>
      */
     private function permissionGroups(): array
     {
-        return Permission::query()
-            ->where('guard_name', 'web')
-            ->orderBy('name')
-            ->get()
-            ->groupBy(function (Permission $permission): string {
-                $name = $permission->name;
-
-                if (str_contains($name, '_')) {
-                    $parts = explode('_', $name, 2);
-
-                    return $parts[1] ?? $name;
-                }
-
-                return $name;
-            })
-            ->map(function ($permissions, $group) {
-                return [
-                    'label' => str($group)->replace('::', ' / ')->replace('_', ' ')->title()->toString(),
-                    'permissions' => $permissions->map(fn (Permission $p) => [
-                        'name' => $p->name,
-                        'label' => str($p->name)->replace('::', ' · ')->replace('_', ' ')->title()->toString(),
-                    ])->values()->all(),
-                ];
-            })
-            ->sortBy('label')
-            ->values()
-            ->all();
+        return PermissionCatalog::groups();
     }
 }

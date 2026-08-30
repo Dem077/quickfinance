@@ -87,5 +87,6 @@ return [
         'generate_advance_form' => 'Generate Advance Form',
         'md_dmd_approve_advance_form' => 'MD / DMD Approve Advance Form',
         'close' => 'Close',
+        'cancel' => 'Cancel',
     ],
 ];
