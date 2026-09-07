@@ -616,6 +616,7 @@ class PettyCashReimbursmentController extends Controller
                         ? "{$prNo} ({$po->po_no})"
                         : "{$prNo} (Pending PTC)",
                     'vendor_id' => $po->vendor_id,
+                    'receipt_url' => $this->publicUrl($po->supporting_document),
                     'items' => $po->purchaseOrderDetails
                         ->filter(fn ($d) => $d->items !== null)
                         ->map(fn (PurchaseOrderDetails $d): array => [
@@ -687,9 +688,7 @@ class PettyCashReimbursmentController extends Controller
             'verified_by' => $record->VerifiedBy?->name,
             'approved_by' => $record->ApprovedBy?->name,
             'supporting_documents' => $record->supporting_documents,
-            'supporting_documents_url' => $record->supporting_documents
-                ? Storage::disk('public')->url($record->supporting_documents)
-                : null,
+            'supporting_documents_url' => $this->publicUrl($record->supporting_documents),
             'total_amount' => $record->pettyCashReimbursmentDetails->sum('amount'),
             'pdf_url' => $record->status === PettyCashStatus::Rembursed
                 ? route('petty-cash.preview', $record)
@@ -713,6 +712,7 @@ class PettyCashReimbursmentController extends Controller
                     'description' => $detail->items?->name ?? $detail->details,
                     'po_id' => $detail->po_id,
                     'po_label' => $po ? "{$poNo} ({$prNo})" : null,
+                    'receipt_url' => $this->publicUrl($po?->supporting_document),
                     'amount' => $detail->amount,
                     'is_from_pr' => $detail->po_id !== null,
                 ];
@@ -764,6 +764,11 @@ class PettyCashReimbursmentController extends Controller
         }
 
         return implode(', ', $decoded);
+    }
+
+    private function publicUrl(?string $path): ?string
+    {
+        return filled($path) ? Storage::disk('public')->url($path) : null;
     }
 
     private function assertDraft(PettyCashReimbursment $reimbursment): void

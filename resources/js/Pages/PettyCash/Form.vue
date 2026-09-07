@@ -87,6 +87,11 @@ const availableItems = computed(() =>
 const poById = (poId) =>
     (props.options.purchaseOrders || []).find((po) => Number(po.id) === Number(poId));
 
+const poReceiptUrl = (line) => {
+    if (! line?.is_from_pr || ! line.po_id) return null;
+    return poById(line.po_id)?.receipt_url || null;
+};
+
 const poOptionsForLine = (line) => {
     const availablePoIds = new Set(availableItems.value.map((item) => Number(item.po_id)));
     if (line.po_id) {
@@ -475,17 +480,26 @@ const submit = () => {
                                         required
                                         :error="lineError(index, 'date')"
                                     />
-                                    <UiSearchableSelect
-                                        v-if="line.is_from_pr"
-                                        :id="`pc-line-po-${index}`"
-                                        v-model="line.po_id"
-                                        label="Purchase order"
-                                        :options="poOptionsForLine(line)"
-                                        placeholder="Select PO…"
-                                        required
-                                        :error="lineError(index, 'po_id')"
-                                        @update:model-value="applyPoToLine(line, $event)"
-                                    />
+                                    <div v-if="line.is_from_pr">
+                                        <UiSearchableSelect
+                                            :id="`pc-line-po-${index}`"
+                                            v-model="line.po_id"
+                                            label="Purchase order"
+                                            :options="poOptionsForLine(line)"
+                                            placeholder="Select PO…"
+                                            required
+                                            :error="lineError(index, 'po_id')"
+                                            @update:model-value="applyPoToLine(line, $event)"
+                                        />
+                                        <a
+                                            v-if="poReceiptUrl(line)"
+                                            :href="poReceiptUrl(line)"
+                                            target="_blank"
+                                            class="mt-1.5 inline-block text-xs font-medium text-brand-700 dark:text-brand-300"
+                                        >
+                                            View attached receipt
+                                        </a>
+                                    </div>
                                     <UiSearchableSelect
                                         v-if="line.is_from_pr"
                                         :id="`pc-line-item-${index}`"

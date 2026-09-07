@@ -151,6 +151,11 @@ const badgeClass = computed(() => ({
 
 const lineCount = computed(() => props.reimbursment.details?.length || 0);
 
+const selectedPoReceipt = computed(() => {
+    if (! detailForm.po_id) return null;
+    return poById(detailForm.po_id);
+});
+
 const detailFields = computed(() => [
     { label: 'Form number', value: props.reimbursment.form_no },
     { label: 'Date', value: formatDate(props.reimbursment.date) },
@@ -510,7 +515,17 @@ const destroyRecord = () => {
                                 <td class="text-slate-600 dark:text-slate-300">{{ detail.description }}</td>
                                 <td class="text-slate-600 dark:text-slate-300">{{ detail.bill_no }}</td>
                                 <td class="text-slate-600 dark:text-slate-300">{{ detail.sub_budget_label || detail.sub_budget_code || '—' }}</td>
-                                <td class="text-slate-600 dark:text-slate-300">{{ detail.po_label || '—' }}</td>
+                                <td class="text-slate-600 dark:text-slate-300">
+                                    <div>{{ detail.po_label || '—' }}</div>
+                                    <a
+                                        v-if="detail.receipt_url"
+                                        :href="detail.receipt_url"
+                                        target="_blank"
+                                        class="mt-0.5 inline-block text-xs font-medium text-brand-700 dark:text-brand-300"
+                                    >
+                                        View receipt
+                                    </a>
+                                </td>
                                 <td class="text-right tabular-nums font-medium text-slate-900 dark:text-white">{{ formatMoney(detail.amount) }}</td>
                                 <td v-if="can.manage_details" class="space-x-3 text-right">
                                     <button type="button" class="font-medium text-brand-600" @click="openEditDetail(detail)">Edit</button>
@@ -579,17 +594,26 @@ const destroyRecord = () => {
                                 required
                                 :error="detailForm.errors.date"
                             />
-                            <UiSearchableSelect
-                                v-if="detailForm.is_from_pr"
-                                id="pc-line-po"
-                                v-model="detailForm.po_id"
-                                label="Purchase order"
-                                :options="poOptions"
-                                placeholder="Select PO…"
-                                required
-                                :error="detailForm.errors.po_id"
-                                @update:model-value="applyPo"
-                            />
+                            <div v-if="detailForm.is_from_pr">
+                                <UiSearchableSelect
+                                    id="pc-line-po"
+                                    v-model="detailForm.po_id"
+                                    label="Purchase order"
+                                    :options="poOptions"
+                                    placeholder="Select PO…"
+                                    required
+                                    :error="detailForm.errors.po_id"
+                                    @update:model-value="applyPo"
+                                />
+                                <a
+                                    v-if="selectedPoReceipt?.receipt_url"
+                                    :href="selectedPoReceipt.receipt_url"
+                                    target="_blank"
+                                    class="mt-1.5 inline-block text-xs font-medium text-brand-700 dark:text-brand-300"
+                                >
+                                    View attached receipt
+                                </a>
+                            </div>
                             <UiSearchableSelect
                                 v-if="detailForm.is_from_pr"
                                 id="pc-line-item"
