@@ -9,7 +9,6 @@ const props = defineProps({
     order: { type: Object, default: null },
     vendors: { type: Array, required: true },
     purchaseRequests: { type: Array, required: true },
-    pettyCashFormOptions: { type: Array, required: true },
     units: { type: Array, required: true },
 });
 
@@ -50,13 +49,6 @@ const prOptions = computed(() =>
         label: pr.purpose
             ? `${pr.pr_no} — ${pr.purpose}`
             : pr.pr_no,
-    })),
-);
-
-const pettyCashOptions = computed(() =>
-    props.pettyCashFormOptions.map((opt) => ({
-        value: opt.value,
-        label: opt.label,
     })),
 );
 
@@ -103,9 +95,7 @@ watch(() => form.payment_method, (method) => {
     if (method === 'petty_cash') {
         form.is_advance_form_required = 0;
         if (! isEdit) {
-            form.po_no = props.pettyCashFormOptions.find((o) => o.value === '__generate_new__')?.value
-                ?? props.pettyCashFormOptions[0]?.value
-                ?? '';
+            form.po_no = '';
         }
     } else if (! isEdit) {
         form.po_no = '';
@@ -343,15 +333,13 @@ const setPaymentMethod = (method) => {
                     </div>
 
                     <div v-else class="lg:col-span-4">
-                        <UiSearchableSelect
-                            id="po-petty-form"
-                            v-model="form.po_no"
-                            label="Petty cash form number"
-                            :options="pettyCashOptions"
-                            placeholder="Select form…"
-                            required
-                            :error="fieldError('po_no')"
-                        />
+                        <label class="ui-label">Record number</label>
+                        <div class="ui-input flex items-center bg-surface-muted text-sm text-slate-600 dark:text-slate-300">
+                            {{ order?.po_no || 'Assigned when petty cash request is submitted' }}
+                        </div>
+                        <p class="mt-1 text-xs text-slate-500">
+                            Uses the petty cash request number after you select this PO’s items and submit the request.
+                        </p>
                     </div>
 
                     <div

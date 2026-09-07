@@ -4,7 +4,6 @@ namespace App\Actions\PurchaseOrders;
 
 use App\Actions\Action;
 use App\Enums\PurchaseOrderStatus;
-use App\Models\PettyCashReimbursment;
 use App\Models\PurchaseOrders;
 use Illuminate\Validation\ValidationException;
 
@@ -28,21 +27,20 @@ class UpdatePurchaseOrder extends Action
             ]);
         }
 
-        $poNo = $data['po_no'] ?? $purchaseOrder->po_no;
+        $paymentMethod = $data['payment_method'] ?? $purchaseOrder->payment_method;
 
-        if (($data['payment_method'] ?? '') === 'petty_cash' && ! empty($poNo)) {
-            if ($poNo === PettyCashReimbursment::GENERATE_FORM_NO_OPTION) {
-                $poNo = PettyCashReimbursment::resolveFormNoForProcure($poNo);
-            }
-        }
+        // Petty cash record numbers are assigned when the linked PTC request is submitted.
+        $poNo = $paymentMethod === 'petty_cash'
+            ? $purchaseOrder->po_no
+            : ($data['po_no'] ?? $purchaseOrder->po_no);
 
         $purchaseOrder->update([
             'vendor_id' => $data['vendor_id'],
             'po_no' => $poNo,
             'date' => $data['date'],
             'pr_id' => $data['pr_id'],
-            'payment_method' => $data['payment_method'],
-            'is_advance_form_required' => ($data['payment_method'] ?? '') === 'purchase_order'
+            'payment_method' => $paymentMethod,
+            'is_advance_form_required' => $paymentMethod === 'purchase_order'
                 ? (bool) ($data['is_advance_form_required'] ?? false)
                 : false,
         ]);

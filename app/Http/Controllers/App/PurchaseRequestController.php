@@ -189,9 +189,9 @@ class PurchaseRequestController extends Controller
         $status = $purchaseRequest->status;
         $actions = $this->workflowActions($purchaseRequest, $user);
 
-        $openPos = $purchaseRequest->openPurchaseOrdersForClose()->map(fn ($po) => [
+        $openPos = $purchaseRequest->openPurchaseOrdersForClose()            ->map(fn ($po) => [
             'po_id' => $po->id,
-            'po_no' => $po->po_no,
+            'po_no' => $po->displayNumber(),
             'grn_number' => $po->grn_number,
         ])->values();
 
@@ -202,7 +202,7 @@ class PurchaseRequestController extends Controller
             ->get()
             ->map(fn (PurchaseOrders $po): array => [
                 'id' => $po->id,
-                'po_no' => $po->po_no,
+                'po_no' => $po->displayNumber(),
                 'date' => $po->date,
                 'status' => $po->status?->value,
                 'status_label' => $po->status?->getLabel(),

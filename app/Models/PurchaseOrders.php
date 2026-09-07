@@ -49,6 +49,19 @@ class PurchaseOrders extends Model
         return $this->belongsTo(PurchaseRequests::class, 'pr_id');
     }
 
+    public function displayNumber(): string
+    {
+        if (filled($this->po_no)) {
+            return (string) $this->po_no;
+        }
+
+        if ($this->payment_method === 'petty_cash') {
+            return 'Pending PTC';
+        }
+
+        return '—';
+    }
+
     public function purchaseOrderDetails(): HasMany
     {
         return $this->hasMany(PurchaseOrderDetails::class, 'po_id');

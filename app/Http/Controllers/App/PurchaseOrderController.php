@@ -21,7 +21,6 @@ use App\Enums\PurchaseRequestsStatus;
 use App\Enums\UnitsEnum;
 use App\Http\Controllers\Controller;
 use App\Models\Item;
-use App\Models\PettyCashReimbursment;
 use App\Models\PurchaseOrderDetails;
 use App\Models\PurchaseOrders;
 use App\Models\PurchaseRequestDetails;
@@ -169,7 +168,6 @@ class PurchaseOrderController extends Controller
             'order' => null,
             'vendors' => Vendors::query()->orderBy('name')->get(['id', 'name']),
             'purchaseRequests' => $this->approvedPurchaseRequests(),
-            'pettyCashFormOptions' => $this->pettyCashFormOptions(),
             'units' => collect(UnitsEnum::cases())->map(fn (UnitsEnum $u) => [
                 'value' => $u->value,
                 'label' => $u->getLabel(),
@@ -243,7 +241,7 @@ class PurchaseOrderController extends Controller
         $this->authorize('audit', PurchaseOrders::class);
 
         return Inertia::render('Audit/Show', [
-            'title' => $purchaseOrder->po_no,
+            'title' => $purchaseOrder->displayNumber(),
             'description' => 'Changes to this purchase order, line items, and advance form.',
             'backUrl' => route('app.purchase-orders.show', $purchaseOrder),
             'backLabel' => 'Back to PO',
@@ -284,7 +282,6 @@ class PurchaseOrderController extends Controller
             ],
             'vendors' => Vendors::query()->orderBy('name')->get(['id', 'name']),
             'purchaseRequests' => $this->approvedPurchaseRequests($purchaseOrder->pr_id),
-            'pettyCashFormOptions' => $this->pettyCashFormOptions($purchaseOrder->po_no, $purchaseOrder->id),
             'units' => collect(UnitsEnum::cases())->map(fn (UnitsEnum $u) => [
                 'value' => $u->value,
                 'label' => $u->getLabel(),
@@ -485,8 +482,7 @@ class PurchaseOrderController extends Controller
             'payment_method' => ['required', Rule::in(['purchase_order', 'petty_cash'])],
             'is_advance_form_required' => ['nullable', 'boolean'],
             'po_no' => [
-                Rule::requiredIf(fn () => $request->input('payment_method') === 'purchase_order'
-                    || $request->input('payment_method') === 'petty_cash'),
+                Rule::requiredIf(fn () => $request->input('payment_method') === 'purchase_order'),
                 'nullable',
                 'string',
                 'max:255',
@@ -600,7 +596,7 @@ class PurchaseOrderController extends Controller
 
         return [
             'id' => $order->id,
-            'po_no' => $order->po_no,
+            'po_no' => $order->displayNumber(),
             'date' => $order->date,
             'status' => $order->status?->value,
             'status_label' => $order->status?->getLabel(),
@@ -642,7 +638,7 @@ class PurchaseOrderController extends Controller
     {
         return [
             'id' => $order->id,
-            'po_no' => $order->po_no,
+            'po_no' => $order->displayNumber(),
             'date' => $order->date,
             'grn_number' => $order->grn_number,
             'status' => $order->status?->value,
@@ -751,17 +747,6 @@ class PurchaseOrderController extends Controller
                 'budget_code' => $d->budgetAccount?->code,
             ])
             ->filter(fn (array $d) => $d['itemcode'])
-            ->values()
-            ->all();
-    }
-
-    private function pettyCashFormOptions(?string $includeFormNo = null, ?int $excludePoId = null): array
-    {
-        return collect(PettyCashReimbursment::draftFormNoOptions($includeFormNo, $excludePoId))
-            ->map(fn (string $label, string $value) => [
-                'value' => $value,
-                'label' => $label,
-            ])
             ->values()
             ->all();
     }

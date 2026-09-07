@@ -612,7 +612,9 @@ class PettyCashReimbursmentController extends Controller
 
                 return [
                     'id' => $po->id,
-                    'label' => "{$prNo} ({$po->po_no})",
+                    'label' => filled($po->po_no)
+                        ? "{$prNo} ({$po->po_no})"
+                        : "{$prNo} (Pending PTC)",
                     'vendor_id' => $po->vendor_id,
                     'items' => $po->purchaseOrderDetails
                         ->filter(fn ($d) => $d->items !== null)
@@ -695,7 +697,7 @@ class PettyCashReimbursmentController extends Controller
             'details' => $record->pettyCashReimbursmentDetails->map(function (PettyCashReimbursmentDetail $detail): array {
                 $po = $detail->purchaseOrder;
                 $prNo = $po?->purchaseRequest?->pr_no ?? 'N/A';
-                $poNo = $po?->po_no ?? 'N/A';
+                $poNo = $po?->displayNumber() ?? 'N/A';
 
                 return [
                     'id' => $detail->id,
