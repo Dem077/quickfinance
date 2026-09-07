@@ -4,9 +4,7 @@ namespace App\Actions\PurchaseRequests;
 
 use App\Actions\Action;
 use App\Enums\PurchaseRequestsStatus;
-use App\Mail\StatusEmail;
 use App\Models\PurchaseRequests;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
 class ApprovePurchaseRequestByFinance extends Action
@@ -21,10 +19,6 @@ class ApprovePurchaseRequestByFinance extends Action
             'status' => PurchaseRequestsStatus::Approved,
             'approved_canceled_by' => $userId,
         ]);
-
-        if ($pr->user?->email) {
-            Mail::to($pr->user->email)->queue(new StatusEmail('Purchase Request '.$pr->pr_no, 'approved', '', 'Finance'));
-        }
 
         return $pr->fresh();
     }

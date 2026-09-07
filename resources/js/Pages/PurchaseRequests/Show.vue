@@ -161,7 +161,7 @@ const primaryActions = computed(() => {
     if (props.actions.hodReject) list.push({ key: 'hod-reject', label: 'HOD reject', tone: 'danger', run: () => { showRemark.value = 'hod-reject'; } });
     if (props.actions.financeApprove) list.push({ key: 'finance-approve', label: 'Finance approve', tone: 'success', run: () => postAction('finance-approve') });
     if (props.actions.financeReject) list.push({ key: 'finance-reject', label: 'Finance reject', tone: 'danger', run: () => { showRemark.value = 'finance-reject'; } });
-    if (props.actions.sendBack) list.push({ key: 'send-back', label: 'Send back to draft', tone: 'warn', run: () => postAction('send-back') });
+    if (props.actions.sendBack) list.push({ key: 'send-back', label: 'Send back to draft', tone: 'warn', run: () => { showRemark.value = 'send-back'; } });
     if (props.actions.cancel) list.push({ key: 'cancel', label: 'Cancel PR', tone: 'danger', run: () => { showRemark.value = 'cancel'; } });
     if (props.actions.mdDmdApprove) list.push({ key: 'md-approve', label: 'MD/DMD approve', tone: 'success', run: () => postAction('md-dmd-approve') });
     if (props.actions.mdDmdReject) list.push({ key: 'md-reject', label: 'MD/DMD reject', tone: 'danger', run: () => { showRemark.value = 'md-dmd-reject'; } });
@@ -807,10 +807,20 @@ const openPurchaseOrder = (order) => {
                 <form class="relative w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-surface-elevated" @submit.prevent="submitRemark">
                     <div class="border-b border-slate-100 px-6 py-4 dark:border-slate-800">
                         <h3 class="text-lg font-semibold text-slate-900 dark:text-white">
-                            {{ showRemark === 'cancel' ? 'Cancel purchase request' : 'Reject purchase request' }}
+                            {{
+                                showRemark === 'cancel'
+                                    ? 'Cancel purchase request'
+                                    : showRemark === 'send-back'
+                                        ? 'Send back to draft'
+                                        : 'Reject purchase request'
+                            }}
                         </h3>
                         <p class="mt-1 text-sm text-slate-500">
-                            Provide a clear reason. It will be saved and emailed to the requester.
+                            {{
+                                showRemark === 'send-back'
+                                    ? 'Provide a clear reason. It will be emailed to the requester.'
+                                    : 'Provide a clear reason. It will be saved and emailed to the requester.'
+                            }}
                         </p>
                     </div>
                     <div class="space-y-4 px-6 py-5">

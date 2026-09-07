@@ -55,8 +55,7 @@ class PurchaseRequestsObserver
             $query->where('name', 'md_dmd_approve_purchase::requests');
         })->pluck('email')->filter()->all();
         $procurement = User::query()->whereHas('roles.permissions', function ($query) {
-            $query->where('name', 'view_any_purchase::orders')
-                ->orWhere('name', 'view_purchase::orders');
+            $query->where('name', 'receive_procurement_notification_purchase::orders');
         })->pluck('email')->filter()->all();
 
         // Reject / cancel emails (with reason) are sent from Actions.

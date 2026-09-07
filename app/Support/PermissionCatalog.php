@@ -42,6 +42,7 @@ class PermissionCatalog
         'md_dmd_approve_advance_form' => 'MD / DMD approve advance form',
         'pv_approve' => 'Approve and add PV',
         'fin_hod_approve' => 'Finance HOD approval',
+        'receive_procurement_notification' => 'Receive procurement notification',
     ];
 
     /**
@@ -70,6 +71,7 @@ class PermissionCatalog
                 'md_dmd_approve_advance_form',
                 'close',
                 'audit',
+                'receive_procurement_notification',
             ],
         ],
         'petty::cash::reimbursment' => [
@@ -111,6 +113,10 @@ class PermissionCatalog
         'activity' => [
             'label' => 'Activity log',
             'prefixes' => self::CRUD_PREFIXES,
+        ],
+        'email::log' => [
+            'label' => 'Email status',
+            'prefixes' => ['view_any'],
         ],
         'item' => [
             'label' => 'Items',

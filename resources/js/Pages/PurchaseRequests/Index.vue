@@ -209,7 +209,7 @@ const cardActions = (row) => {
         list.push({ key: 'finance-reject', label: 'Reject', tone: 'danger', type: 'remark', route: 'finance-reject' });
     }
     if (actions.sendBack) {
-        list.push({ key: 'send-back', label: 'Send back', tone: 'warn', type: 'post', route: 'send-back' });
+        list.push({ key: 'send-back', label: 'Send back', tone: 'warn', type: 'remark', route: 'send-back' });
     }
     if (actions.cancel) {
         list.push({ key: 'cancel', label: 'Cancel', tone: 'danger', type: 'remark', route: 'cancel' });
@@ -632,10 +632,20 @@ const submitRemark = () => {
                 >
                     <div class="border-b border-slate-100 px-6 py-4 dark:border-slate-800">
                         <h3 class="text-lg font-semibold text-slate-900 dark:text-white">
-                            {{ remarkAction === 'cancel' ? 'Cancel purchase request' : 'Reject purchase request' }}
+                            {{
+                                remarkAction === 'cancel'
+                                    ? 'Cancel purchase request'
+                                    : remarkAction === 'send-back'
+                                        ? 'Send back to draft'
+                                        : 'Reject purchase request'
+                            }}
                         </h3>
                         <p class="mt-1 text-sm text-slate-500">
-                            Provide a clear reason. It will be saved and emailed to the requester.
+                            {{
+                                remarkAction === 'send-back'
+                                    ? 'Provide a clear reason. It will be emailed to the requester.'
+                                    : 'Provide a clear reason. It will be saved and emailed to the requester.'
+                            }}
                         </p>
                     </div>
                     <div class="space-y-4 px-6 py-5">

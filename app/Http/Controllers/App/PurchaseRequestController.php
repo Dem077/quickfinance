@@ -397,7 +397,13 @@ class PurchaseRequestController extends Controller
 
         abort_unless($canFinanceSendBack || $canHodSendBack, 403);
 
-        SendPurchaseRequestBackToDraft::run($purchaseRequest);
+        $data = $request->validate(['cancel_remark' => ['required', 'string', 'max:255']]);
+
+        SendPurchaseRequestBackToDraft::run(
+            $purchaseRequest,
+            $data['cancel_remark'],
+            $canHodSendBack ? 'HOD' : 'Finance',
+        );
 
         return back()->with('success', 'PR sent back to draft');
     }

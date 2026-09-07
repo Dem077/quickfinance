@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\App\ActivityController;
+use App\Http\Controllers\App\EmailLogController;
 use App\Http\Controllers\App\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\App\AssetManagementController;
 use App\Http\Controllers\App\BudgetAccountController;
@@ -189,6 +190,8 @@ Route::prefix('app')->name('app.')->group(function () {
         Route::get('activity', [ActivityController::class, 'index'])->name('activity.index');
         Route::delete('activity/{activity}', [ActivityController::class, 'destroy'])->name('activity.destroy');
         Route::delete('activity-bulk', [ActivityController::class, 'destroyMany'])->name('activity.destroy-many');
+
+        Route::get('emails', [EmailLogController::class, 'index'])->name('emails.index');
 
         Route::get('modules/{module}', ComingSoonController::class)->name('coming-soon');
     });

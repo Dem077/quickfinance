@@ -4,10 +4,8 @@ namespace App\Actions\PurchaseRequests;
 
 use App\Actions\Action;
 use App\Enums\PurchaseRequestsStatus;
-use App\Mail\NotificationEmail;
 use App\Models\PurchaseRequests;
 use App\Support\PurchaseRequestBudget;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
 class SubmitPurchaseRequestForApproval extends Action
@@ -21,11 +19,6 @@ class SubmitPurchaseRequestForApproval extends Action
         PurchaseRequestBudget::assertCanSubmit($pr);
 
         $pr->update(['status' => PurchaseRequestsStatus::Submitted]);
-
-        $hodEmail = $pr->user?->department?->user?->email;
-        if ($hodEmail) {
-            Mail::to($hodEmail)->queue(new NotificationEmail('Purchase Request '.$pr->pr_no));
-        }
 
         return $pr->fresh();
     }

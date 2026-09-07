@@ -4,9 +4,7 @@ namespace App\Actions\PurchaseRequests;
 
 use App\Actions\Action;
 use App\Enums\PurchaseRequestsStatus;
-use App\Mail\StatusEmail;
 use App\Models\PurchaseRequests;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
 class ApprovePurchaseRequestByHod extends Action
@@ -26,10 +24,6 @@ class ApprovePurchaseRequestByHod extends Action
             'approved_by_hod' => $hodUserId,
             'status' => PurchaseRequestsStatus::HODApproved,
         ]);
-
-        if ($pr->user?->email) {
-            Mail::to($pr->user->email)->queue(new StatusEmail('Purchase Request '.$pr->pr_no, 'approved', '', 'HOD'));
-        }
 
         return $pr->fresh();
     }
