@@ -63,7 +63,7 @@ class ReportController extends Controller
 
         return Inertia::render('Reports/Form', [
             'report' => null,
-            'catalog' => $this->catalogPayload(),
+                        'catalog' => ReportFieldCatalog::inertiaCatalog(),
         ]);
     }
 
@@ -95,7 +95,7 @@ class ReportController extends Controller
                 'from_date' => optional($report->from_date)?->format('Y-m-d'),
                 'to_date' => optional($report->to_date)?->format('Y-m-d'),
             ],
-            'catalog' => $this->catalogPayload(),
+                        'catalog' => ReportFieldCatalog::inertiaCatalog(),
         ]);
     }
 
@@ -149,7 +149,7 @@ class ReportController extends Controller
         $modelType = $request->string('model_type')->toString();
 
         return response()->json([
-            'fields' => $this->fieldsForModel($modelType),
+            'fields' => ReportFieldCatalog::inertiaFields($modelType),
         ]);
     }
 
@@ -169,53 +169,5 @@ class ReportController extends Controller
             'from_date' => ['nullable', 'date'],
             'to_date' => ['nullable', 'date', 'after_or_equal:from_date'],
         ]);
-    }
-
-    private function catalogPayload(): array
-    {
-        $models = [];
-
-        foreach (ReportFieldCatalog::MODELS as $value => $label) {
-            $models[] = [
-                'value' => $value,
-                'label' => $label,
-                'fields' => $this->fieldsForModel($value),
-            ];
-        }
-
-        return [
-            'models' => $models,
-            'filter_types' => [
-                ['value' => 'equals', 'label' => 'Equals'],
-                ['value' => 'contains', 'label' => 'Contains'],
-                ['value' => 'starts_with', 'label' => 'Starts with'],
-                ['value' => 'ends_with', 'label' => 'Ends with'],
-                ['value' => 'greater_than', 'label' => 'Greater than'],
-                ['value' => 'less_than', 'label' => 'Less than'],
-                ['value' => 'between', 'label' => 'Between'],
-                ['value' => 'in', 'label' => 'In list'],
-            ],
-        ];
-    }
-
-    private function fieldsForModel(string $modelType): array
-    {
-        return collect(ReportFieldCatalog::fieldsFor($modelType))
-            ->map(fn (array $config, string $field) => [
-                'value' => $field,
-                'label' => $config['label'],
-                'input' => $config['input'],
-                'options' => collect($config['options'] ?? [])
-                    ->map(fn ($label, $value) => ['value' => (string) $value, 'label' => $label])
-                    ->values()
-                    ->all(),
-                'filter_types' => collect(ReportFieldCatalog::filterTypesForField($modelType, $field))
-                    ->map(fn ($label, $value) => ['value' => $value, 'label' => $label])
-                    ->values()
-                    ->all(),
-                'is_relation' => str_contains($field, '.'),
-            ])
-            ->values()
-            ->all();
     }
 }

@@ -28,8 +28,18 @@ const form = useForm({
     project_id: props.record?.project_id ?? '',
     locations: props.record?.locations ? [...props.record.locations].map(Number) : [],
     supporting_document: null,
-    details: [emptyLine()],
+    details: props.record?.details?.length
+        ? props.record.details.map((line) => ({
+            id: line.id ?? null,
+            item_id: line.item_id ?? '',
+            unit: line.unit ?? 'Pcs',
+            budget_account_id: line.budget_account_id ?? '',
+            amount: line.amount ?? '',
+            est_cost: line.est_cost ?? '',
+        }))
+        : [emptyLine()],
 });
+
 
 const locationOptions = computed(() =>
     props.options.locations.map((location) => ({
@@ -48,7 +58,10 @@ const itemOptions = computed(() =>
 const budgetOptions = computed(() =>
     props.options.budgets.map((budget) => ({
         value: budget.id,
-        label: budget.label,
+        label: `${budget.label} (MVR ${Number(budget.available).toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        })} available)`,
     })),
 );
 
@@ -66,15 +79,20 @@ const duplicateLine = (index) => {
     form.details.splice(index + 1, 0, { ...source });
 };
 
+const budgetById = (budgetId) =>
+    props.options.budgets.find((item) => item.id === Number(budgetId));
+
 const allocatedFor = (budgetId) => {
-    const budget = props.options.budgets.find((item) => item.id === Number(budgetId));
+    const budget = budgetById(budgetId);
     return budget ? budget.allocated : null;
 };
 
-const budgetLabel = (budgetId) => {
-    const budget = props.options.budgets.find((item) => item.id === Number(budgetId));
-    return budget?.label || '';
+const availableFor = (budgetId) => {
+    const budget = budgetById(budgetId);
+    return budget ? Number(budget.available) : null;
 };
+
+const budgetLabel = (budgetId) => budgetById(budgetId)?.label || '';
 
 const itemById = (itemId) => props.options.items.find((item) => item.id === Number(itemId));
 
@@ -90,10 +108,25 @@ const completedLines = computed(() =>
     form.details.filter((line) => line.item_id && line.budget_account_id && line.amount && line.est_cost).length,
 );
 
+const reservedOnBudget = (budgetId, exceptIndex = null) =>
+    form.details.reduce((sum, line, index) => {
+        if (exceptIndex !== null && index === exceptIndex) return sum;
+        if (Number(line.budget_account_id) !== Number(budgetId)) return sum;
+        return sum + (Number(line.est_cost) || 0);
+    }, 0);
+
+const remainingFor = (line, index = null) => {
+    const available = availableFor(line.budget_account_id);
+    if (available === null) return null;
+    const lineIndex = index ?? form.details.indexOf(line);
+    const otherLines = reservedOnBudget(line.budget_account_id, lineIndex);
+    return available - otherLines - (Number(line.est_cost) || 0);
+};
+
 const overBudgetLines = computed(() =>
-    form.details.filter((line) => {
-        const allocated = allocatedFor(line.budget_account_id);
-        return allocated !== null && Number(line.est_cost) > Number(allocated);
+    form.details.filter((line, index) => {
+        const remaining = remainingFor(line, index);
+        return remaining !== null && remaining < 0;
     }).length,
 );
 
@@ -117,23 +150,19 @@ const unitCost = (line) => {
     return cost / qty;
 };
 
-const remainingFor = (line) => {
-    const allocated = allocatedFor(line.budget_account_id);
-    if (allocated === null) return null;
-    return allocated - (Number(line.est_cost) || 0);
+const usagePercent = (line, index = null) => {
+    const available = availableFor(line.budget_account_id);
+    if (! available) return 0;
+    const lineIndex = index ?? form.details.indexOf(line);
+    const used = reservedOnBudget(line.budget_account_id, lineIndex) + (Number(line.est_cost) || 0);
+    return Math.min(100, Math.round((used / available) * 100));
 };
 
-const usagePercent = (line) => {
-    const allocated = allocatedFor(line.budget_account_id);
-    if (! allocated) return 0;
-    return Math.min(100, Math.round(((Number(line.est_cost) || 0) / allocated) * 100));
-};
-
-const lineStatus = (line) => {
+const lineStatus = (line, index = null) => {
     if (! line.item_id || ! line.budget_account_id || ! line.amount || ! line.est_cost) {
         return { key: 'draft', label: 'Incomplete', class: 'ui-badge-neutral' };
     }
-    const remaining = remainingFor(line);
+    const remaining = remainingFor(line, index);
     if (remaining !== null && remaining < 0) {
         return { key: 'over', label: 'Over budget', class: 'ui-badge-warn' };
     }
@@ -269,6 +298,67 @@ const cancelHref = isEdit
                 </div>
             </section>
 
+            <!-- Existing line items (edit: read-only) -->
+            <section v-if="isEdit" class="ui-panel overflow-hidden">
+                <div class="border-b border-slate-100 px-5 py-4 dark:border-slate-800">
+                    <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                        <div>
+                            <h2 class="text-base font-semibold text-slate-900 dark:text-white">Line items</h2>
+                            <p class="mt-0.5 text-sm text-slate-500">
+                                {{ form.details.length }} item{{ form.details.length === 1 ? '' : 's' }} · Estimated total MVR {{ formatMoney(estimatedTotal) }}
+                            </p>
+                        </div>
+                        <Link
+                            :href="route('app.purchase-requests.show', record.id)"
+                            class="ui-link text-sm"
+                        >
+                            Manage lines on PR page
+                        </Link>
+                    </div>
+                </div>
+
+                <div v-if="form.details.length" class="overflow-x-auto">
+                    <table class="ui-table">
+                        <thead>
+                            <tr>
+                                <th class="w-10">#</th>
+                                <th>Item</th>
+                                <th>Unit</th>
+                                <th>Budget account</th>
+                                <th class="text-right">Qty</th>
+                                <th class="text-right">Est. cost</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="(line, index) in form.details" :key="line.id || index">
+                                <td class="tabular-nums text-slate-400">{{ index + 1 }}</td>
+                                <td>
+                                    <div class="font-medium text-slate-900 dark:text-white">
+                                        {{ itemById(line.item_id)?.name || '—' }}
+                                    </div>
+                                    <div class="mt-0.5 font-mono text-xs text-slate-500">
+                                        {{ itemById(line.item_id)?.item_code || '' }}
+                                    </div>
+                                </td>
+                                <td>{{ line.unit || '—' }}</td>
+                                <td class="max-w-[16rem]">
+                                    <span class="line-clamp-2" :title="budgetLabel(line.budget_account_id)">
+                                        {{ budgetLabel(line.budget_account_id) || '—' }}
+                                    </span>
+                                </td>
+                                <td class="text-right tabular-nums">{{ line.amount }}</td>
+                                <td class="text-right font-medium tabular-nums text-slate-900 dark:text-white">
+                                    {{ formatMoney(line.est_cost) }}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p v-else class="px-5 py-10 text-center text-sm text-slate-500">
+                    No line items on this purchase request.
+                </p>
+            </section>
+
             <!-- Line items (primary focus) -->
             <section v-if="!isEdit" class="ui-panel overflow-hidden">
                 <div class="border-b border-slate-100 bg-gradient-to-r from-brand-50/80 to-transparent px-5 py-4 dark:border-slate-800 dark:from-brand-950/30">
@@ -317,7 +407,7 @@ const cancelHref = isEdit
                                 </div>
                             </div>
                             <div class="flex items-center gap-2">
-                                <span :class="lineStatus(line).class">{{ lineStatus(line).label }}</span>
+                                <span :class="lineStatus(line, index).class">{{ lineStatus(line, index).label }}</span>
                                 <button
                                     type="button"
                                     class="rounded-lg px-2 py-1 text-xs font-medium text-slate-500 hover:bg-white hover:text-slate-800 dark:hover:bg-surface-elevated dark:hover:text-slate-200"
@@ -405,20 +495,20 @@ const cancelHref = isEdit
                                     <div v-if="line.budget_account_id" class="mt-4 space-y-3">
                                         <div class="flex items-end justify-between gap-3 text-xs">
                                             <div>
-                                                <p class="text-slate-500 dark:text-slate-400">Allocated</p>
+                                                <p class="text-slate-500 dark:text-slate-400">Available</p>
                                                 <p class="mt-0.5 text-sm font-semibold text-slate-900 dark:text-white">
-                                                    MVR {{ formatMoney(allocatedFor(line.budget_account_id)) }}
+                                                    MVR {{ formatMoney(availableFor(line.budget_account_id)) }}
                                                 </p>
                                             </div>
                                             <div class="text-right">
-                                                <p class="text-slate-500 dark:text-slate-400">Remaining</p>
+                                                <p class="text-slate-500 dark:text-slate-400">After this line</p>
                                                 <p
                                                     class="mt-0.5 text-sm font-semibold"
-                                                    :class="remainingFor(line) < 0
+                                                    :class="remainingFor(line, index) < 0
                                                         ? 'text-amber-700 dark:text-amber-300'
                                                         : 'text-emerald-700 dark:text-emerald-300'"
                                                 >
-                                                    MVR {{ formatMoney(remainingFor(line)) }}
+                                                    MVR {{ formatMoney(remainingFor(line, index)) }}
                                                 </p>
                                             </div>
                                         </div>
@@ -426,19 +516,22 @@ const cancelHref = isEdit
                                         <div>
                                             <div class="mb-1 flex justify-between text-[11px] text-slate-500">
                                                 <span>Budget usage</span>
-                                                <span>{{ usagePercent(line) }}%</span>
+                                                <span>{{ usagePercent(line, index) }}%</span>
                                             </div>
                                             <div class="h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
                                                 <div
                                                     class="h-full rounded-full transition-all"
-                                                    :class="usagePercent(line) > 100
+                                                    :class="usagePercent(line, index) > 100
                                                         ? 'bg-amber-500'
-                                                        : usagePercent(line) > 80
+                                                        : usagePercent(line, index) > 80
                                                             ? 'bg-brand-500'
                                                             : 'bg-emerald-500'"
-                                                    :style="{ width: `${Math.min(usagePercent(line), 100)}%` }"
+                                                    :style="{ width: `${Math.min(usagePercent(line, index), 100)}%` }"
                                                 />
                                             </div>
+                                            <p class="mt-1 text-[11px] text-slate-500">
+                                                Allocated MVR {{ formatMoney(allocatedFor(line.budget_account_id)) }}
+                                            </p>
                                         </div>
 
                                         <div class="grid grid-cols-2 gap-2 rounded-lg bg-white/80 p-3 text-xs dark:bg-surface-elevated/70">
@@ -458,7 +551,7 @@ const cancelHref = isEdit
                                     </div>
 
                                     <p v-else class="mt-4 text-xs text-slate-500 dark:text-slate-400">
-                                        Choose a budget to see allocation, remaining balance, and usage.
+                                        Choose a budget to see available balance and usage.
                                     </p>
                                 </div>
                             </div>

@@ -11,8 +11,10 @@ use Illuminate\Validation\ValidationException;
 
 class RejectPurchaseRequestByHod extends Action
 {
-    public function handle(PurchaseRequests $pr, int $hodUserId): PurchaseRequests
+    public function handle(PurchaseRequests $pr, int $hodUserId, string $cancelRemark): PurchaseRequests
     {
+        $pr->loadMissing('user.department.user');
+
         $hodId = $pr->user?->department?->user?->id;
         if ((int) $hodId !== $hodUserId) {
             throw ValidationException::withMessages(['status' => 'Only the department HOD can perform this action.']);
@@ -25,11 +27,17 @@ class RejectPurchaseRequestByHod extends Action
         $pr->update([
             'is_approved_by_hod' => true,
             'approved_by_hod' => $hodUserId,
+            'cancel_remark' => $cancelRemark,
             'status' => PurchaseRequestsStatus::HODRejected,
         ]);
 
         if ($pr->user?->email) {
-            Mail::to($pr->user->email)->queue(new StatusEmail('Purchase Request '.$pr->pr_no, 'rejected', '', 'HOD'));
+            Mail::to($pr->user->email)->queue(new StatusEmail(
+                'Purchase Request '.$pr->pr_no,
+                'rejected',
+                $cancelRemark,
+                'HOD',
+            ));
         }
 
         return $pr->fresh();

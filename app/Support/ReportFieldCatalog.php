@@ -188,6 +188,95 @@ class ReportFieldCatalog
             ->all();
     }
 
+    /**
+     * @return array{models: list<array{value: string, label: string, fields: list<array<string, mixed>>}>, filter_types: list<array{value: string, label: string}>}
+     */
+    public static function inertiaCatalog(): array
+    {
+        $models = [];
+
+        foreach (self::MODELS as $value => $label) {
+            $models[] = [
+                'value' => $value,
+                'label' => $label,
+                'fields' => self::inertiaFields($value),
+            ];
+        }
+
+        return [
+            'models' => $models,
+            'filter_types' => [
+                ['value' => 'equals', 'label' => 'Equals'],
+                ['value' => 'contains', 'label' => 'Contains'],
+                ['value' => 'starts_with', 'label' => 'Starts with'],
+                ['value' => 'ends_with', 'label' => 'Ends with'],
+                ['value' => 'greater_than', 'label' => 'Greater than'],
+                ['value' => 'less_than', 'label' => 'Less than'],
+                ['value' => 'between', 'label' => 'Between'],
+                ['value' => 'in', 'label' => 'In list'],
+            ],
+        ];
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public static function inertiaFields(string $modelType): array
+    {
+        return collect(self::fieldsFor($modelType))
+            ->map(fn (array $config, string $field) => [
+                'value' => $field,
+                'label' => $config['label'],
+                'input' => $config['input'],
+                'options' => collect($config['options'] ?? [])
+                    ->map(fn ($label, $value) => ['value' => (string) $value, 'label' => $label])
+                    ->values()
+                    ->all(),
+                'filter_types' => collect(self::filterTypesForField($modelType, $field))
+                    ->map(fn ($label, $value) => ['value' => $value, 'label' => $label])
+                    ->values()
+                    ->all(),
+                'is_relation' => str_contains($field, '.'),
+                'kind' => self::fieldKind($field, $config),
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  array{input?: string}  $config
+     */
+    public static function fieldKind(string $field, array $config): string
+    {
+        if (($config['input'] ?? 'text') === 'status') {
+            return 'category';
+        }
+
+        if (str_contains($field, '.')) {
+            return 'related';
+        }
+
+        $name = strtolower($field);
+
+        if (
+            str_ends_with($name, '_at')
+            || str_ends_with($name, '_date')
+            || $name === 'date'
+        ) {
+            return 'date';
+        }
+
+        if (preg_match('/(amount|total|qty|quantity|price|cost|budget|balance|paid)/', $name)) {
+            return 'number';
+        }
+
+        if ($name === 'id' || str_ends_with($name, '_id')) {
+            return 'id';
+        }
+
+        return 'text';
+    }
+
     public static function modelClass(string $modelType): ?string
     {
         $class = "App\\Models\\{$modelType}";

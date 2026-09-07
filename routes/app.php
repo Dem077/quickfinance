@@ -6,6 +6,7 @@ use App\Http\Controllers\App\AssetManagementController;
 use App\Http\Controllers\App\BudgetAccountController;
 use App\Http\Controllers\App\BudgetTransactionHistoryController;
 use App\Http\Controllers\App\BudgetTransferController;
+use App\Http\Controllers\App\ChartController;
 use App\Http\Controllers\App\ComingSoonController;
 use App\Http\Controllers\App\DashboardController;
 use App\Http\Controllers\App\DepartmentController;
@@ -167,6 +168,15 @@ Route::prefix('app')->name('app.')->group(function () {
         Route::delete('reports/{report}', [ReportController::class, 'destroy'])->name('reports.destroy');
         Route::delete('reports-bulk', [ReportController::class, 'destroyMany'])->name('reports.destroy-many');
         Route::get('reports/{report}/download', [ReportController::class, 'download'])->name('reports.download');
+
+        Route::get('charts', [ChartController::class, 'index'])->name('charts.index');
+        Route::get('charts/create', [ChartController::class, 'create'])->name('charts.create');
+        Route::post('charts/preview', [ChartController::class, 'preview'])->name('charts.preview');
+        Route::post('charts', [ChartController::class, 'store'])->name('charts.store');
+        Route::get('charts/{chart}/edit', [ChartController::class, 'edit'])->name('charts.edit');
+        Route::put('charts/{chart}', [ChartController::class, 'update'])->name('charts.update');
+        Route::delete('charts/{chart}', [ChartController::class, 'destroy'])->name('charts.destroy');
+        Route::delete('charts-bulk', [ChartController::class, 'destroyMany'])->name('charts.destroy-many');
 
         Route::get('roles', [RoleController::class, 'index'])->name('roles.index');
         Route::get('roles/create', [RoleController::class, 'create'])->name('roles.create');

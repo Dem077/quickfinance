@@ -1,5 +1,6 @@
 <script setup>
 import AppLayout from '../Layouts/AppLayout.vue';
+import { Link } from '@inertiajs/vue3';
 
 defineProps({
     module: {
@@ -17,19 +18,16 @@ defineProps({
     <AppLayout>
         <template #header>{{ title }}</template>
 
-        <div class="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center shadow-sm">
+        <div class="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center shadow-sm dark:border-slate-700 dark:bg-surface">
             <p class="text-sm font-medium uppercase tracking-wide text-slate-400">Coming soon</p>
-            <h2 class="mt-2 text-xl font-semibold text-slate-900">{{ title }}</h2>
-            <p class="mx-auto mt-3 max-w-lg text-sm text-slate-600">
-                This module (<code class="rounded bg-slate-100 px-1.5 py-0.5 text-xs">{{ module }}</code>)
-                will be migrated with full Filament action and workflow parity. Use Filament Admin for now.
+            <h2 class="mt-2 text-xl font-semibold text-slate-900 dark:text-white">{{ title }}</h2>
+            <p class="mx-auto mt-3 max-w-lg text-sm text-slate-600 dark:text-slate-400">
+                This module (<code class="rounded bg-slate-100 px-1.5 py-0.5 text-xs dark:bg-slate-800">{{ module }}</code>)
+                is not available in the app yet.
             </p>
-            <a
-                href="/admin"
-                class="mt-6 inline-flex rounded-md bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
-            >
-                Open Filament
-            </a>
+            <Link :href="route('app.dashboard')" class="ui-btn-primary mt-6 inline-flex">
+                Back to dashboard
+            </Link>
         </div>
     </AppLayout>
 </template>

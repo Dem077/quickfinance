@@ -1,8 +1,10 @@
 <script setup>
 import AppLayout from '../../Layouts/AppLayout.vue';
 import UiAuditLink from '../../Components/UiAuditLink.vue';
+import UiDateInput from '../../Components/UiDateInput.vue';
+import UiSearchableMultiSelect from '../../Components/UiSearchableMultiSelect.vue';
 import { Link, router, useForm } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 const props = defineProps({
     record: { type: Object, required: true },
@@ -34,8 +36,79 @@ const lineForm = useForm({
 });
 const showLine = ref(false);
 const editingLineId = ref(null);
+const budgetOnlyEdit = ref(false);
 const detailsOpen = ref(false);
+const editingHeader = ref(false);
 const budgetOpen = ref(false);
+const headerFileInput = ref(null);
+
+const headerForm = useForm({
+    date: props.record.date ?? '',
+    purpose: props.record.purpose ?? '',
+    project_id: props.record.project_id ?? '',
+    locations: [...(props.record.location_ids || [])].map(Number),
+    supporting_document: null,
+});
+
+watch(
+    () => props.record,
+    (record) => {
+        if (editingHeader.value) return;
+        headerForm.date = record.date ?? '';
+        headerForm.purpose = record.purpose ?? '';
+        headerForm.project_id = record.project_id ?? '';
+        headerForm.locations = [...(record.location_ids || [])].map(Number);
+        headerForm.supporting_document = null;
+        if (headerFileInput.value) headerFileInput.value.value = '';
+        headerForm.clearErrors();
+    },
+    { deep: true },
+);
+
+const locationOptions = computed(() =>
+    (props.options.locations || []).map((location) => ({
+        value: location.id,
+        label: location.name,
+    })),
+);
+
+const startEditHeader = () => {
+    editingHeader.value = true;
+    detailsOpen.value = true;
+    headerForm.date = props.record.date ?? '';
+    headerForm.purpose = props.record.purpose ?? '';
+    headerForm.project_id = props.record.project_id ?? '';
+    headerForm.locations = [...(props.record.location_ids || [])].map(Number);
+    headerForm.supporting_document = null;
+    if (headerFileInput.value) headerFileInput.value.value = '';
+    headerForm.clearErrors();
+};
+
+const cancelEditHeader = () => {
+    editingHeader.value = false;
+    headerForm.supporting_document = null;
+    if (headerFileInput.value) headerFileInput.value.value = '';
+    headerForm.clearErrors();
+};
+
+const saveHeader = () => {
+    headerForm.transform((data) => {
+        const payload = { ...data, _method: 'put' };
+        return payload;
+    }).post(route('app.purchase-requests.update', props.record.id), {
+        forceFormData: true,
+        preserveScroll: true,
+        onSuccess: () => {
+            editingHeader.value = false;
+            headerForm.supporting_document = null;
+            if (headerFileInput.value) headerFileInput.value.value = '';
+        },
+    });
+};
+
+const onHeaderFileChange = (event) => {
+    headerForm.supporting_document = event.target.files?.[0] ?? null;
+};
 
 const statusTone = computed(() => {
     const map = {
@@ -85,13 +158,13 @@ const primaryActions = computed(() => {
     const list = [];
     if (props.actions.submit) list.push({ key: 'submit', label: 'Submit for approval', tone: 'primary', run: () => postAction('submit') });
     if (props.actions.hodApprove) list.push({ key: 'hod-approve', label: 'HOD approve', tone: 'success', run: () => postAction('hod-approve') });
-    if (props.actions.hodReject) list.push({ key: 'hod-reject', label: 'HOD reject', tone: 'danger', run: () => postAction('hod-reject') });
+    if (props.actions.hodReject) list.push({ key: 'hod-reject', label: 'HOD reject', tone: 'danger', run: () => { showRemark.value = 'hod-reject'; } });
     if (props.actions.financeApprove) list.push({ key: 'finance-approve', label: 'Finance approve', tone: 'success', run: () => postAction('finance-approve') });
     if (props.actions.financeReject) list.push({ key: 'finance-reject', label: 'Finance reject', tone: 'danger', run: () => { showRemark.value = 'finance-reject'; } });
     if (props.actions.sendBack) list.push({ key: 'send-back', label: 'Send back to draft', tone: 'warn', run: () => postAction('send-back') });
     if (props.actions.cancel) list.push({ key: 'cancel', label: 'Cancel PR', tone: 'danger', run: () => { showRemark.value = 'cancel'; } });
     if (props.actions.mdDmdApprove) list.push({ key: 'md-approve', label: 'MD/DMD approve', tone: 'success', run: () => postAction('md-dmd-approve') });
-    if (props.actions.mdDmdReject) list.push({ key: 'md-reject', label: 'MD/DMD reject', tone: 'danger', run: () => postAction('md-dmd-reject') });
+    if (props.actions.mdDmdReject) list.push({ key: 'md-reject', label: 'MD/DMD reject', tone: 'danger', run: () => { showRemark.value = 'md-dmd-reject'; } });
     if (props.actions.close) list.push({ key: 'close', label: 'Close PR', tone: 'primary', run: () => { showClose.value = true; } });
     return list;
 });
@@ -127,9 +200,11 @@ const detailsSummary = computed(() => {
 const budgetSummaryCollapsed = computed(() => {
     const rows = props.budgetSummary || [];
     if (! rows.length) return '';
-    const totalAvailable = rows.reduce((sum, row) => sum + Number(row.available || 0), 0);
     const count = rows.length;
-    return `${count} account${count === 1 ? '' : 's'} · Available MVR ${formatMoney(totalAvailable)}`;
+    if (count === 1) {
+        return `Available MVR ${formatMoney(rows[0].available)}`;
+    }
+    return `${count} accounts · show details for available balances`;
 });
 
 const actionClass = (tone) => ({
@@ -160,8 +235,11 @@ const submitClose = () => {
     });
 };
 
-const openEditLine = (line) => {
+const canEditLines = computed(() => Boolean(props.actions.manageLines || props.actions.editLineBudget));
+
+const openEditLine = (line, budgetOnly = false) => {
     editingLineId.value = line.id;
+    budgetOnlyEdit.value = budgetOnly || Boolean(props.actions.editLineBudget && ! props.actions.manageLines);
     lineForm.item_id = line.item_id;
     lineForm.unit = line.unit;
     lineForm.budget_account_id = line.budget_account_id;
@@ -172,6 +250,7 @@ const openEditLine = (line) => {
 
 const openAddLine = () => {
     editingLineId.value = null;
+    budgetOnlyEdit.value = false;
     lineForm.reset();
     lineForm.unit = 'Pcs';
     showLine.value = true;
@@ -183,9 +262,18 @@ const saveLine = () => {
         onSuccess: () => {
             showLine.value = false;
             editingLineId.value = null;
+            budgetOnlyEdit.value = false;
         },
     };
     if (editingLineId.value) {
+        if (budgetOnlyEdit.value) {
+            router.put(
+                route('app.purchase-requests.details.update', [props.record.id, editingLineId.value]),
+                { budget_account_id: lineForm.budget_account_id },
+                opts,
+            );
+            return;
+        }
         lineForm.put(route('app.purchase-requests.details.update', [props.record.id, editingLineId.value]), opts);
         return;
     }
@@ -260,7 +348,14 @@ const openPurchaseOrder = (order) => {
                             {{ purchaseOrders.length }}
                         </span>
                     </button>
-                    <Link v-if="actions.edit" :href="route('app.purchase-requests.edit', record.id)" class="ui-btn-secondary">Edit</Link>
+                    <button
+                        v-if="actions.editHeader && !editingHeader"
+                        type="button"
+                        class="ui-btn-secondary"
+                        @click="startEditHeader"
+                    >
+                        Edit details
+                    </button>
                     <a v-if="actions.downloadPdf" :href="pdfUrl" target="_blank" class="ui-btn-secondary">PDF</a>
                     <a v-if="actions.viewDocument" :href="documentUrl" target="_blank" class="ui-btn-secondary">Document</a>
                     <button v-if="actions.delete" type="button" class="ui-btn-danger" @click="deletePr">Delete</button>
@@ -317,7 +412,76 @@ const openPurchaseOrder = (order) => {
                     v-show="detailsOpen"
                     class="border-t border-slate-100 dark:border-slate-800"
                 >
-                    <dl class="grid gap-0 sm:grid-cols-2">
+                    <form
+                        v-if="editingHeader && actions.editHeader"
+                        class="space-y-4 px-4 py-4 sm:px-5"
+                        @submit.prevent="saveHeader"
+                    >
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            <UiDateInput
+                                id="pr-show-date"
+                                v-model="headerForm.date"
+                                label="Date"
+                                required
+                                :error="headerForm.errors.date"
+                            />
+                            <div>
+                                <label for="pr-show-project" class="ui-label">Project</label>
+                                <select id="pr-show-project" v-model="headerForm.project_id" class="ui-select">
+                                    <option value="">No project</option>
+                                    <option v-for="project in options.projects" :key="project.id" :value="project.id">
+                                        {{ project.name }}
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label for="pr-show-purpose" class="ui-label">Purpose</label>
+                                <input
+                                    id="pr-show-purpose"
+                                    v-model="headerForm.purpose"
+                                    type="text"
+                                    required
+                                    maxlength="255"
+                                    class="ui-input"
+                                />
+                                <p v-if="headerForm.errors.purpose" class="mt-1 text-xs text-red-600">{{ headerForm.errors.purpose }}</p>
+                            </div>
+                            <div class="sm:col-span-2">
+                                <UiSearchableMultiSelect
+                                    id="pr-show-locations"
+                                    v-model="headerForm.locations"
+                                    label="Locations"
+                                    :options="locationOptions"
+                                    placeholder="Search locations…"
+                                    :error="headerForm.errors.locations"
+                                />
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label for="pr-show-document" class="ui-label">Supporting document</label>
+                                <input
+                                    id="pr-show-document"
+                                    ref="headerFileInput"
+                                    type="file"
+                                    class="ui-input"
+                                    @change="onHeaderFileChange"
+                                />
+                                <p v-if="record.supporting_document" class="mt-1 text-xs text-slate-500">
+                                    Current file kept unless you choose a new one.
+                                </p>
+                                <p v-if="headerForm.errors.supporting_document" class="mt-1 text-xs text-red-600">
+                                    {{ headerForm.errors.supporting_document }}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap justify-end gap-2 border-t border-slate-100 pt-4 dark:border-slate-800">
+                            <button type="button" class="ui-btn-ghost" @click="cancelEditHeader">Cancel</button>
+                            <button type="submit" class="ui-btn-primary" :disabled="headerForm.processing">
+                                {{ headerForm.processing ? 'Saving…' : 'Save details' }}
+                            </button>
+                        </div>
+                    </form>
+
+                    <dl v-else class="grid gap-0 sm:grid-cols-2">
                         <div
                             v-for="field in detailFields"
                             :key="field.label"
@@ -405,7 +569,7 @@ const openPurchaseOrder = (order) => {
                             <div class="mb-1 flex items-center justify-between gap-3 text-[11px] text-slate-500 dark:text-slate-400">
                                 <span>Usage {{ budget.usage_percent }}%</span>
                                 <span class="tabular-nums">
-                                    Allocated MVR {{ formatMoney(budget.allocated) }}
+                                    This PR MVR {{ formatMoney(budget.this_pr) }}
                                 </span>
                             </div>
                             <div class="h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
@@ -419,9 +583,6 @@ const openPurchaseOrder = (order) => {
                                     :style="{ width: `${Math.min(budget.usage_percent, 100)}%` }"
                                 />
                             </div>
-                            <p class="mt-1.5 text-[11px] text-slate-400">
-                                This PR MVR {{ formatMoney(budget.this_pr) }}
-                            </p>
                         </div>
                     </li>
                 </ul>
@@ -456,7 +617,7 @@ const openPurchaseOrder = (order) => {
                                 <th>Budget account</th>
                                 <th class="text-right">Qty</th>
                                 <th class="text-right">Est. cost</th>
-                                <th v-if="actions.manageLines" class="text-right">Actions</th>
+                                <th v-if="canEditLines" class="text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -474,13 +635,35 @@ const openPurchaseOrder = (order) => {
                                 <td class="text-right font-medium tabular-nums text-slate-900 dark:text-white">
                                     {{ formatMoney(line.est_cost) }}
                                 </td>
-                                <td v-if="actions.manageLines" class="space-x-3 text-right">
-                                    <button type="button" class="ui-link" @click="openEditLine(line)">Edit</button>
-                                    <button type="button" class="ui-link-danger" @click="deleteLine(line)">Delete</button>
+                                <td v-if="canEditLines" class="space-x-3 text-right">
+                                    <button
+                                        v-if="actions.manageLines"
+                                        type="button"
+                                        class="ui-link"
+                                        @click="openEditLine(line)"
+                                    >
+                                        Edit
+                                    </button>
+                                    <button
+                                        v-else-if="actions.editLineBudget"
+                                        type="button"
+                                        class="ui-link"
+                                        @click="openEditLine(line, true)"
+                                    >
+                                        Change budget
+                                    </button>
+                                    <button
+                                        v-if="actions.manageLines"
+                                        type="button"
+                                        class="ui-link-danger"
+                                        @click="deleteLine(line)"
+                                    >
+                                        Delete
+                                    </button>
                                 </td>
                             </tr>
                             <tr v-if="!record.details.length">
-                                <td :colspan="actions.manageLines ? 7 : 6" class="!py-14 text-center">
+                                <td :colspan="canEditLines ? 7 : 6" class="!py-14 text-center">
                                     <p class="font-medium text-slate-700 dark:text-slate-300">No line items yet</p>
                                     <p class="mt-1 text-sm text-slate-500">Add items to define what this PR covers.</p>
                                     <button
@@ -496,13 +679,13 @@ const openPurchaseOrder = (order) => {
                         </tbody>
                         <tfoot v-if="record.details.length">
                             <tr class="border-t border-slate-200 bg-slate-50/70 dark:border-slate-800 dark:bg-surface-elevated/40">
-                                <td :colspan="actions.manageLines ? 5 : 4" class="px-5 py-3.5 text-sm font-medium text-slate-500">
+                                <td :colspan="canEditLines ? 5 : 4" class="px-5 py-3.5 text-sm font-medium text-slate-500">
                                     Estimated total
                                 </td>
                                 <td class="px-5 py-3.5 text-right text-sm font-semibold tabular-nums text-slate-900 dark:text-white">
                                     {{ formatMoney(totalEstCost) }}
                                 </td>
-                                <td v-if="actions.manageLines" />
+                                <td v-if="canEditLines" />
                             </tr>
                         </tfoot>
                     </table>
@@ -626,7 +809,9 @@ const openPurchaseOrder = (order) => {
                         <h3 class="text-lg font-semibold text-slate-900 dark:text-white">
                             {{ showRemark === 'cancel' ? 'Cancel purchase request' : 'Reject purchase request' }}
                         </h3>
-                        <p class="mt-1 text-sm text-slate-500">Provide a clear reason for the record.</p>
+                        <p class="mt-1 text-sm text-slate-500">
+                            Provide a clear reason. It will be saved and emailed to the requester.
+                        </p>
                     </div>
                     <div class="space-y-4 px-6 py-5">
                         <div>
@@ -687,46 +872,62 @@ const openPurchaseOrder = (order) => {
                 <form class="relative w-full max-w-lg overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-surface-elevated" @submit.prevent="saveLine">
                     <div class="border-b border-slate-100 px-6 py-4 dark:border-slate-800">
                         <h3 class="text-lg font-semibold text-slate-900 dark:text-white">
-                            {{ editingLineId ? 'Edit line item' : 'Add line item' }}
+                            {{ budgetOnlyEdit ? 'Change budget' : (editingLineId ? 'Edit line item' : 'Add line item') }}
                         </h3>
+                        <p v-if="budgetOnlyEdit" class="mt-1 text-sm text-slate-500">
+                            Only the budget account can be changed for this purchase request.
+                        </p>
                     </div>
                     <div class="space-y-4 px-6 py-5">
-                        <div>
-                            <label class="ui-label">Item</label>
-                            <select v-model="lineForm.item_id" required class="ui-select">
-                                <option value="" disabled>Select item…</option>
-                                <option v-for="item in options.items" :key="item.id" :value="item.id">
-                                    {{ item.item_code }} — {{ item.name }}
-                                </option>
-                            </select>
-                        </div>
-                        <div class="grid gap-4 sm:grid-cols-2">
+                        <template v-if="!budgetOnlyEdit">
                             <div>
-                                <label class="ui-label">Unit</label>
-                                <select v-model="lineForm.unit" required class="ui-select">
-                                    <option v-for="u in options.units" :key="u.value" :value="u.value">{{ u.label }}</option>
+                                <label class="ui-label">Item</label>
+                                <select v-model="lineForm.item_id" required class="ui-select">
+                                    <option value="" disabled>Select item…</option>
+                                    <option v-for="item in options.items" :key="item.id" :value="item.id">
+                                        {{ item.item_code }} — {{ item.name }}
+                                    </option>
                                 </select>
                             </div>
-                            <div>
-                                <label class="ui-label">Quantity</label>
-                                <input v-model="lineForm.amount" type="number" step="0.01" required class="ui-input" />
+                            <div class="grid gap-4 sm:grid-cols-2">
+                                <div>
+                                    <label class="ui-label">Unit</label>
+                                    <select v-model="lineForm.unit" required class="ui-select">
+                                        <option v-for="u in options.units" :key="u.value" :value="u.value">{{ u.label }}</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="ui-label">Quantity</label>
+                                    <input v-model="lineForm.amount" type="number" step="0.01" required class="ui-input" />
+                                </div>
                             </div>
+                        </template>
+                        <div v-else class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm dark:border-slate-700 dark:bg-surface-muted/40">
+                            <p class="font-medium text-slate-900 dark:text-white">{{ options.items.find((item) => item.id === Number(lineForm.item_id))?.name || 'Line item' }}</p>
+                            <p class="mt-1 text-slate-500">
+                                Est. cost MVR {{ Number(lineForm.est_cost || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+                            </p>
                         </div>
                         <div>
                             <label class="ui-label">Budget account</label>
                             <select v-model="lineForm.budget_account_id" required class="ui-select">
                                 <option value="" disabled>Select budget…</option>
-                                <option v-for="b in options.budgets" :key="b.id" :value="b.id">{{ b.label }}</option>
+                                <option v-for="b in options.budgets" :key="b.id" :value="b.id">
+                                    {{ b.label }}
+                                    (MVR {{ Number(b.available).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }} available)
+                                </option>
                             </select>
                         </div>
-                        <div>
+                        <div v-if="!budgetOnlyEdit">
                             <label class="ui-label">Estimated cost</label>
                             <input v-model="lineForm.est_cost" type="number" step="0.01" required class="ui-input" />
                         </div>
                     </div>
                     <div class="flex justify-end gap-2 border-t border-slate-100 px-6 py-4 dark:border-slate-800">
-                        <button type="button" class="ui-btn-secondary" @click="showLine = false">Cancel</button>
-                        <button type="submit" class="ui-btn-primary">Save line</button>
+                        <button type="button" class="ui-btn-secondary" @click="showLine = false; budgetOnlyEdit = false">Cancel</button>
+                        <button type="submit" class="ui-btn-primary">
+                            {{ budgetOnlyEdit ? 'Save budget' : 'Save line' }}
+                        </button>
                     </div>
                 </form>
             </div>

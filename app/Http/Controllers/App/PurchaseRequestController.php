@@ -136,6 +136,7 @@ class PurchaseRequestController extends Controller
         ]);
     }
 
+
     public function store(Request $request): RedirectResponse
     {
         $this->authorize('create', PurchaseRequests::class);
@@ -213,7 +214,12 @@ class PurchaseRequestController extends Controller
             'budgetSummary' => $this->budgetSummary($purchaseRequest, $user),
             'openPurchaseOrders' => $openPos,
             'purchaseOrders' => $purchaseOrders,
-            'options' => $this->formOptions($request),
+            'options' => $this->formOptions(
+                $request,
+                $purchaseRequest->purchaseRequestDetails->pluck('budget_account_id')->filter()->all(),
+                $purchaseRequest->user?->department_id,
+                $purchaseRequest->purchaseRequestDetails->pluck('id')->all(),
+            ),
             'actions' => [
                 ...$actions,
                 'downloadPdf' => in_array($status, [PurchaseRequestsStatus::Approved, PurchaseRequestsStatus::MD_DMD_Approved], true)
@@ -221,6 +227,8 @@ class PurchaseRequestController extends Controller
                 'viewDocument' => filled($purchaseRequest->uploaded_document)
                     && Storage::disk('public')->exists($purchaseRequest->uploaded_document),
                 'manageLines' => $status === PurchaseRequestsStatus::Draft && $user->can('send_approval_purchase::requests'),
+                'editLineBudget' => $status === PurchaseRequestsStatus::HODApproved
+                    && $user->can('approve_purchase::requests'),
                 'audit' => $user->can('audit', PurchaseRequests::class),
             ],
             'pdfUrl' => route('purchase-requests.download', $purchaseRequest),
@@ -253,6 +261,7 @@ class PurchaseRequestController extends Controller
     {
         $this->authorize('update', $purchaseRequest);
         abort_unless($this->visibleToUser($request, $purchaseRequest), 403);
+        abort_unless($this->canEditHeader($request->user(), $purchaseRequest), 403);
 
         $purchaseRequest->load(['locations', 'purchaseRequestDetails']);
 
@@ -265,14 +274,28 @@ class PurchaseRequestController extends Controller
                 'project_id' => $purchaseRequest->project_id,
                 'locations' => $purchaseRequest->locations->pluck('id'),
                 'supporting_document' => $purchaseRequest->supporting_document,
+                'details' => $purchaseRequest->purchaseRequestDetails->map(fn ($detail) => [
+                    'id' => $detail->id,
+                    'item_id' => $detail->item_id,
+                    'unit' => $detail->unit,
+                    'budget_account_id' => $detail->budget_account_id,
+                    'amount' => $detail->amount,
+                    'est_cost' => $detail->est_cost,
+                ])->values()->all(),
             ],
-            'options' => $this->formOptions($request),
+            'options' => $this->formOptions(
+                $request,
+                $purchaseRequest->purchaseRequestDetails->pluck('budget_account_id')->filter()->all(),
+                $purchaseRequest->user?->department_id,
+                $purchaseRequest->purchaseRequestDetails->pluck('id')->all(),
+            ),
         ]);
     }
 
     public function update(Request $request, PurchaseRequests $purchaseRequest): RedirectResponse
     {
         $this->authorize('update', $purchaseRequest);
+        abort_unless($this->canEditHeader($request->user(), $purchaseRequest), 403);
 
         $data = $this->validatedHeader($request, false);
 
@@ -327,7 +350,8 @@ class PurchaseRequestController extends Controller
 
     public function hodReject(Request $request, PurchaseRequests $purchaseRequest): RedirectResponse
     {
-        RejectPurchaseRequestByHod::run($purchaseRequest, $request->user()->id);
+        $data = $request->validate(['cancel_remark' => ['required', 'string', 'max:255']]);
+        RejectPurchaseRequestByHod::run($purchaseRequest, $request->user()->id, $data['cancel_remark']);
 
         return back()->with('success', 'PR Rejected successfully');
     }
@@ -363,7 +387,16 @@ class PurchaseRequestController extends Controller
 
     public function sendBack(Request $request, PurchaseRequests $purchaseRequest): RedirectResponse
     {
-        abort_unless($request->user()->can('approve_purchase::requests'), 403);
+        $purchaseRequest->loadMissing('user.department.user');
+
+        $user = $request->user();
+        $isHod = (int) $user->id === (int) ($purchaseRequest->user?->department?->user?->id);
+        $canFinanceSendBack = $purchaseRequest->status === PurchaseRequestsStatus::HODApproved
+            && $user->can('approve_purchase::requests');
+        $canHodSendBack = $purchaseRequest->status === PurchaseRequestsStatus::Submitted && $isHod;
+
+        abort_unless($canFinanceSendBack || $canHodSendBack, 403);
+
         SendPurchaseRequestBackToDraft::run($purchaseRequest);
 
         return back()->with('success', 'PR sent back to draft');
@@ -380,7 +413,8 @@ class PurchaseRequestController extends Controller
     public function mdDmdReject(Request $request, PurchaseRequests $purchaseRequest): RedirectResponse
     {
         abort_unless($request->user()->can('md_dmd_approve_purchase::requests'), 403);
-        RejectPurchaseRequestByMdDmd::run($purchaseRequest, $request->user()->id);
+        $data = $request->validate(['cancel_remark' => ['required', 'string', 'max:255']]);
+        RejectPurchaseRequestByMdDmd::run($purchaseRequest, $request->user()->id, $data['cancel_remark']);
 
         return back()->with('success', 'PR rejected by MD / DMD successfully');
     }
@@ -420,9 +454,31 @@ class PurchaseRequestController extends Controller
 
     public function updateDetail(Request $request, PurchaseRequests $purchaseRequest, PurchaseRequestDetails $detail): RedirectResponse
     {
-        abort_unless($purchaseRequest->status === PurchaseRequestsStatus::Draft, 403);
         abort_unless((int) $detail->pr_id === (int) $purchaseRequest->id, 404);
-        abort_unless($request->user()->can('send_approval_purchase::requests'), 403);
+
+        $user = $request->user();
+        $canManageDraft = $purchaseRequest->status === PurchaseRequestsStatus::Draft
+            && $user->can('send_approval_purchase::requests');
+        $canEditBudget = $purchaseRequest->status === PurchaseRequestsStatus::HODApproved
+            && $user->can('approve_purchase::requests');
+
+        abort_unless($canManageDraft || $canEditBudget, 403);
+
+        if ($canEditBudget && ! $canManageDraft) {
+            $data = $request->validate([
+                'budget_account_id' => ['required', 'integer', 'exists:sub_budget_accounts,id'],
+            ]);
+
+            UpsertPurchaseRequestDetail::run($purchaseRequest, [
+                'item_id' => $detail->item_id,
+                'unit' => $detail->unit,
+                'budget_account_id' => $data['budget_account_id'],
+                'amount' => $detail->amount,
+                'est_cost' => $detail->est_cost,
+            ], $detail, $purchaseRequest->user?->department_id);
+
+            return back()->with('success', 'Budget updated.');
+        }
 
         $data = $request->validate([
             'item_id' => ['required', 'integer', 'exists:items,id'],
@@ -460,20 +516,49 @@ class PurchaseRequestController extends Controller
         ]);
     }
 
-    private function formOptions(Request $request): array
-    {
-        $departmentId = $request->user()->department_id;
+    /**
+     * @param  list<int|string>|null  $alwaysIncludeBudgetIds
+     * @param  list<int|string>|null  $excludeDetailIds
+     */
+    private function formOptions(
+        Request $request,
+        ?array $alwaysIncludeBudgetIds = null,
+        ?int $departmentId = null,
+        ?array $excludeDetailIds = null,
+    ): array {
+        $departmentId ??= $request->user()->department_id;
+        $alwaysInclude = collect($alwaysIncludeBudgetIds ?? [])
+            ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->unique()
+            ->values();
 
         $budgets = SubBudgetAccounts::query()
             ->when($departmentId, fn ($q) => $q->whereHas('allocations', fn ($a) => $a->where('department_id', $departmentId)))
             ->with(['allocations' => fn ($q) => $q->when($departmentId, fn ($a) => $a->where('department_id', $departmentId))])
             ->orderBy('code')
-            ->get()
-            ->map(fn (SubBudgetAccounts $b) => [
-                'id' => $b->id,
-                'label' => $b->getSelectLabel(),
-                'allocated' => (float) $b->allocations->sum('amount'),
-            ]);
+            ->get();
+
+        $holds = $departmentId
+            ? PurchaseRequestBudget::onHoldBySubBudgetIds($budgets->pluck('id'), $departmentId, $excludeDetailIds)
+            : [];
+
+        $budgets = $budgets
+            ->map(function (SubBudgetAccounts $budget) use ($holds, $departmentId) {
+                $allocated = (float) $budget->allocations->sum('amount');
+                $onHold = (float) ($holds[$budget->id] ?? 0);
+                $available = $departmentId ? max(0, $allocated - $onHold) : $allocated;
+
+                return [
+                    'id' => $budget->id,
+                    'label' => $budget->getSelectLabel(),
+                    'allocated' => $allocated,
+                    'on_hold' => $onHold,
+                    'available' => $available,
+                ];
+            })
+            ->filter(fn (array $budget) => $budget['available'] > 0.00001 || $alwaysInclude->contains($budget['id']))
+            ->values();
 
         return [
             'locations' => Location::query()->orderBy('name')->get(['id', 'name']),
@@ -533,15 +618,14 @@ class PurchaseRequestController extends Controller
             'financeApprove' => $status === PurchaseRequestsStatus::HODApproved && $user->can('approve_purchase::requests'),
             'financeReject' => $status === PurchaseRequestsStatus::HODApproved && $user->can('approve_purchase::requests'),
             'cancel' => $status === PurchaseRequestsStatus::HODApproved && $user->can('approve_purchase::requests'),
-            'sendBack' => $status === PurchaseRequestsStatus::HODApproved && $user->can('approve_purchase::requests'),
+            'sendBack' => (
+                ($status === PurchaseRequestsStatus::HODApproved && $user->can('approve_purchase::requests'))
+                || ($status === PurchaseRequestsStatus::Submitted && $isHod)
+            ),
             'mdDmdApprove' => $status === PurchaseRequestsStatus::Approved && $user->can('md_dmd_approve_purchase::requests'),
             'mdDmdReject' => $status === PurchaseRequestsStatus::Approved && $user->can('md_dmd_approve_purchase::requests'),
             'close' => $status === PurchaseRequestsStatus::MD_DMD_Approved && $user->can('close_purchase::requests'),
-            'edit' => (
-                ($status === PurchaseRequestsStatus::Draft && $user->can('send_approval_purchase::requests'))
-                || ($status === PurchaseRequestsStatus::HODApproved && $user->can('approve_purchase::requests'))
-                || ($status === PurchaseRequestsStatus::Submitted && $isHod)
-            ),
+            'editHeader' => $status === PurchaseRequestsStatus::Draft && $user->can('send_approval_purchase::requests'),
             'delete' => $status === PurchaseRequestsStatus::Draft && $user->can('delete', $pr),
         ];
     }
@@ -595,6 +679,13 @@ class PurchaseRequestController extends Controller
                 ->where('budget_account_id', $budgetId)
                 ->sum('est_cost');
 
+            // Draft (and other non-holding) PRs are not in on_hold yet — still count them for this screen.
+            $statusValue = $pr->status?->value;
+            $thisPrAlreadyHeld = $statusValue
+                && in_array($statusValue, PurchaseRequestBudget::holdingStatuses(), true);
+            $available = max(0, $allocated - $onHold - ($thisPrAlreadyHeld ? 0 : $thisPr));
+            $committed = $onHold + ($thisPrAlreadyHeld ? 0 : $thisPr);
+
             return [
                 'id' => (int) $budgetId,
                 'label' => $account?->getSelectLabel() ?? 'Budget #'.$budgetId,
@@ -605,9 +696,9 @@ class PurchaseRequestController extends Controller
                 'allocated' => $allocated,
                 'on_hold' => $onHold,
                 'this_pr' => $thisPr,
-                'available' => max(0, $allocated - $onHold),
+                'available' => $available,
                 'usage_percent' => $allocated > 0
-                    ? (int) min(100, round(($onHold / $allocated) * 100))
+                    ? (int) min(100, round(($committed / $allocated) * 100))
                     : 0,
             ];
         })->values()->all();
@@ -625,7 +716,9 @@ class PurchaseRequestController extends Controller
             'cancel_remark' => $pr->cancel_remark,
             'user' => $pr->user?->name,
             'department' => $pr->user?->department?->name,
+            'project_id' => $pr->project_id,
             'project' => $pr->project?->name,
+            'location_ids' => $pr->locations->pluck('id')->values()->all(),
             'locations' => $pr->locations->pluck('name'),
             'supporting_document' => $pr->supporting_document,
             'hod' => $pr->hodapprovedby?->name,
@@ -664,5 +757,11 @@ class PurchaseRequestController extends Controller
             ->visibleTo($request->user())
             ->whereKey($purchaseRequest->id)
             ->exists();
+    }
+
+    private function canEditHeader(User $user, PurchaseRequests $pr): bool
+    {
+        return $pr->status === PurchaseRequestsStatus::Draft
+            && $user->can('send_approval_purchase::requests');
     }
 }

@@ -24,8 +24,11 @@ Livewire::setScriptRoute(function ($handle) {
 */
 
 Route::get('/', function () {
-    return redirect('/admin');
+    return redirect('/app');
 });
+
+Route::redirect('/admin', '/app');
+Route::redirect('/admin/{any}', '/app')->where('any', '.*');
 
 Route::redirect('/app-entry', '/app')->name('app.entry');
 Route::get('pr/{record}/preview', function (PurchaseRequests $record) {

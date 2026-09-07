@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\AdvanceForm;
+use App\Models\ChartTemplate;
 use App\Models\PurchaseOrders;
 use App\Models\PurchaseRequestDetails;
 use App\Models\PurchaseRequests;
@@ -11,6 +12,7 @@ use App\Observers\PurchaseOrdersObserver;
 use App\Observers\PurchaseRequestDetailsObserver;
 use App\Observers\PurchaseRequestsObserver;
 use App\Policies\ActivityPolicy;
+use App\Policies\ChartTemplatePolicy;
 use App\Policies\PurchaseRequestsPolicy;
 use App\Policies\RolePolicy;
 use Illuminate\Auth\Events\Login;
@@ -35,6 +37,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Gate::policy(ChartTemplate::class, ChartTemplatePolicy::class);
         Gate::policy(PurchaseRequests::class, PurchaseRequestsPolicy::class);
         Gate::policy(Activity::class, ActivityPolicy::class);
         Gate::policy(Role::class, RolePolicy::class);

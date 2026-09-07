@@ -27,6 +27,7 @@ class UpsertPurchaseRequestDetail extends Action
             (int) $data['budget_account_id'],
             (float) $data['est_cost'],
             $departmentId,
+            excludeDetailIds: $detail ? [$detail->id] : null,
         );
 
         $payload = [

@@ -47,18 +47,21 @@
                                             </v:rect>
                                             <![endif]-->
                                         </td>
+                                    @elseif($status === 'canceled')
+                                        <td bgcolor="#fff3cd" style="padding: 10px; border-radius: 4px; text-align: center; background-color: #fff3cd !important; border: 1px solid #ffeeba;">
+                                            <p style="margin: 0 0 20px 0; font-family: Arial, sans-serif; text-align: center;">Your {{ $type ?? ''}} has been Canceled @if($by)by {{$by}}@endif</p>
+                                        </td>
                                     @else
-                                        <td bgcolor="#f8d7da" style="padding: 10px; border-radius: 4px; text-align: center; background-color: #f8d7da !important; !important; border: 1px solid #f5c6cb;">
+                                        <td bgcolor="#f8d7da" style="padding: 10px; border-radius: 4px; text-align: center; background-color: #f8d7da !important; border: 1px solid #f5c6cb;">
                                             <!--[if gte mso 9]>
                                             <v:rect xmlns:v="urn:schemas-microsoft-com:vml" fill="true" stroke="false" style="width:540px;">
                                                 <v:fill type="tile" color="#f8d7da" />
                                                 <v:textbox style="mso-fit-shape-to-text:true" inset="0,0,0,0">
                                             <![endif]-->
-                                            <p style="margin: 0 0 20px 0; font-family: Arial, sans-serif; text-align: center;">You are {{ $type ?? ''}} has been Rejected</p>
+                                            <p style="margin: 0 0 20px 0; font-family: Arial, sans-serif; text-align: center;">Your {{ $type ?? ''}} has been Rejected @if($by)by {{$by}}@endif</p>
                                             @if($resubmit == true)
                                                 <p style="margin: 0 0 20px 0; font-family: Arial, sans-serif; text-align: center;">Kindly amend and resubmit your request.</p>
                                             @endif
-                                            {{-- <p style="margin: 0; font-family: Arial, sans-serif; text-align: center;">Status: {{ ucfirst($status) }}</p> --}}
                                             <!--[if gte mso 9]>
                                                 </v:textbox>
                                             </v:rect>

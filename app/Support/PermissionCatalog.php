@@ -104,6 +104,10 @@ class PermissionCatalog
             'label' => 'Report templates',
             'prefixes' => self::CRUD_PREFIXES,
         ],
+        'chart' => [
+            'label' => 'Dashboard charts',
+            'prefixes' => self::CRUD_PREFIXES,
+        ],
         'activity' => [
             'label' => 'Activity log',
             'prefixes' => self::CRUD_PREFIXES,

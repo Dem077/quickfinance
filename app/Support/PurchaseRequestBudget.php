@@ -29,11 +29,16 @@ class PurchaseRequestBudget
 
     /**
      * @param  list<int>|Collection<int, int>  $subBudgetIds
+     * @param  list<int>|Collection<int, int>|null  $excludeDetailIds
      * @return array<int, float>
      */
-    public static function onHoldBySubBudgetIds(array|Collection $subBudgetIds, ?int $departmentId = null): array
-    {
+    public static function onHoldBySubBudgetIds(
+        array|Collection $subBudgetIds,
+        ?int $departmentId = null,
+        array|Collection|null $excludeDetailIds = null,
+    ): array {
         $subBudgetIds = collect($subBudgetIds)->filter()->unique()->values()->all();
+        $excludeDetailIds = collect($excludeDetailIds ?? [])->filter()->unique()->values()->all();
 
         if ($subBudgetIds === []) {
             return [];
@@ -42,6 +47,7 @@ class PurchaseRequestBudget
         return PurchaseRequestDetails::query()
             ->whereIn('budget_account_id', $subBudgetIds)
             ->where('is_utilized', false)
+            ->when($excludeDetailIds !== [], fn ($query) => $query->whereNotIn('id', $excludeDetailIds))
             ->whereHas('purchaseRequest', function ($query) use ($departmentId): void {
                 $query->whereIn('status', self::holdingStatuses());
 
@@ -64,10 +70,13 @@ class PurchaseRequestBudget
             ->sum('amount');
     }
 
-    public static function availableForDepartment(int $subBudgetId, int $departmentId): float
-    {
+    public static function availableForDepartment(
+        int $subBudgetId,
+        int $departmentId,
+        array|Collection|null $excludeDetailIds = null,
+    ): float {
         $allocated = self::allocatedForDepartment($subBudgetId, $departmentId);
-        $onHold = (float) (self::onHoldBySubBudgetIds([$subBudgetId], $departmentId)[$subBudgetId] ?? 0);
+        $onHold = (float) (self::onHoldBySubBudgetIds([$subBudgetId], $departmentId, $excludeDetailIds)[$subBudgetId] ?? 0);
 
         return max(0, $allocated - $onHold);
     }
@@ -149,6 +158,7 @@ class PurchaseRequestBudget
         int $departmentId,
         ?string $estCostErrorKey = 'est_cost',
         ?string $budgetErrorKey = 'budget_account_id',
+        array|Collection|null $excludeDetailIds = null,
     ): void {
         $allocation = SubBudgetDepartmentAllocation::query()
             ->where('sub_budget_account_id', $budgetAccountId)
@@ -157,11 +167,11 @@ class PurchaseRequestBudget
 
         if (! $allocation) {
             throw ValidationException::withMessages([
-                $budgetErrorKey => 'This budget code is not allocated to your department.',
+                $budgetErrorKey => 'This budget code is not allocated to the requester department.',
             ]);
         }
 
-        $available = self::availableForDepartment($budgetAccountId, $departmentId);
+        $available = self::availableForDepartment($budgetAccountId, $departmentId, $excludeDetailIds);
 
         if ($estCost > $available + 0.00001) {
             throw ValidationException::withMessages([

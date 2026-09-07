@@ -17,6 +17,8 @@ class RejectPurchaseRequestByFinance extends Action
             throw ValidationException::withMessages(['status' => 'PR is not awaiting finance approval.']);
         }
 
+        $pr->loadMissing('user');
+
         $pr->update([
             'status' => PurchaseRequestsStatus::Rejected,
             'cancel_remark' => $cancelRemark,

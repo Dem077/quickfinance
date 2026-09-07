@@ -200,7 +200,7 @@ const cardActions = (row) => {
         list.push({ key: 'hod-approve', label: 'Approve', tone: 'success', type: 'post', route: 'hod-approve' });
     }
     if (actions.hodReject) {
-        list.push({ key: 'hod-reject', label: 'Reject', tone: 'danger', type: 'post', route: 'hod-reject' });
+        list.push({ key: 'hod-reject', label: 'Reject', tone: 'danger', type: 'remark', route: 'hod-reject' });
     }
     if (actions.financeApprove) {
         list.push({ key: 'finance-approve', label: 'Approve', tone: 'success', type: 'post', route: 'finance-approve' });
@@ -218,13 +218,13 @@ const cardActions = (row) => {
         list.push({ key: 'md-approve', label: 'Approve', tone: 'success', type: 'post', route: 'md-dmd-approve' });
     }
     if (actions.mdDmdReject) {
-        list.push({ key: 'md-reject', label: 'Reject', tone: 'danger', type: 'post', route: 'md-dmd-reject' });
+        list.push({ key: 'md-reject', label: 'Reject', tone: 'danger', type: 'remark', route: 'md-dmd-reject' });
     }
     if (actions.close) {
         list.push({ key: 'close', label: 'Close', tone: 'primary', type: 'link', href: route('app.purchase-requests.show', row.id) });
     }
-    if (actions.edit) {
-        list.push({ key: 'edit', label: 'Edit', tone: 'secondary', type: 'link', href: route('app.purchase-requests.edit', row.id) });
+    if (actions.editHeader) {
+        list.push({ key: 'edit', label: 'Edit details', tone: 'secondary', type: 'link', href: route('app.purchase-requests.show', row.id) });
     }
     if (actions.delete) {
         list.push({ key: 'delete', label: 'Delete', tone: 'danger', type: 'delete' });
@@ -634,7 +634,9 @@ const submitRemark = () => {
                         <h3 class="text-lg font-semibold text-slate-900 dark:text-white">
                             {{ remarkAction === 'cancel' ? 'Cancel purchase request' : 'Reject purchase request' }}
                         </h3>
-                        <p class="mt-1 text-sm text-slate-500">Provide a clear reason for the record.</p>
+                        <p class="mt-1 text-sm text-slate-500">
+                            Provide a clear reason. It will be saved and emailed to the requester.
+                        </p>
                     </div>
                     <div class="space-y-4 px-6 py-5">
                         <div>

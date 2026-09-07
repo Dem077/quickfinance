@@ -73,11 +73,6 @@ const submit = () => {
                         </button>
                     </form>
                 </div>
-
-                <p class="mt-6 text-center text-sm text-slate-500">
-                    Prefer Filament?
-                    <a href="/admin/login" class="ui-link">Admin login</a>
-                </p>
             </div>
         </div>
     </div>
