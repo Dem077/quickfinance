@@ -1,6 +1,7 @@
 <script setup>
 import AppLayout from '../../Layouts/AppLayout.vue';
 import UiDateRangePicker from '../../Components/UiDateRangePicker.vue';
+import UiIndexTabs from '../../Components/UiIndexTabs.vue';
 import { Link, router, useForm } from '@inertiajs/vue3';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
@@ -8,6 +9,7 @@ const props = defineProps({
     activities: { type: Object, required: true },
     filters: { type: Object, required: true },
     tabs: { type: Array, required: true },
+    pinnedTab: { type: String, default: null },
     filterOptions: { type: Object, required: true },
     can: { type: Object, required: true },
 });
@@ -222,26 +224,6 @@ const logToneClass = (name) => {
     }[key] || 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300';
 };
 
-const tabBadgeClass = (tone, active) => {
-    if (active) {
-        return {
-            neutral: 'bg-brand-100 text-brand-800 dark:bg-brand-950/50 dark:text-brand-200',
-            warn: 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200',
-            success: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200',
-            danger: 'bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-200',
-            brand: 'bg-brand-100 text-brand-800 dark:bg-brand-950/50 dark:text-brand-200',
-        }[tone] || 'bg-brand-100 text-brand-800';
-    }
-
-    return {
-        neutral: 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400',
-        warn: 'bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400',
-        success: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400',
-        danger: 'bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-400',
-        brand: 'bg-brand-50 text-brand-600 dark:bg-brand-950/30 dark:text-brand-400',
-    }[tone] || 'bg-slate-100 text-slate-500';
-};
-
 const summaryLine = (row) => {
     const who = row.causer || 'System';
     const action = (row.event_label || row.description || 'did something').toLowerCase();
@@ -369,30 +351,15 @@ const summaryLine = (row) => {
                 </div>
             </div>
 
-            <div v-if="tabs.length" class="overflow-x-auto border-b border-slate-200 dark:border-slate-800">
-                <div class="flex min-w-max items-end sm:min-w-0 sm:w-full" role="tablist" aria-label="Activity type">
-                    <button
-                        v-for="tab in tabs"
-                        :key="tab.key"
-                        type="button"
-                        role="tab"
-                        :aria-selected="activeTab === tab.key"
-                        class="relative inline-flex items-center gap-2 whitespace-nowrap border-b-2 px-3.5 py-2.5 text-sm transition"
-                        :class="activeTab === tab.key
-                            ? 'border-brand-600 font-semibold text-brand-700 dark:border-brand-400 dark:text-brand-300'
-                            : 'border-transparent font-medium text-slate-500 hover:border-slate-300 hover:text-slate-800 dark:text-slate-400 dark:hover:border-slate-600 dark:hover:text-slate-200'"
-                        @click="selectTab(tab.key)"
-                    >
-                        <span>{{ tab.label }}</span>
-                        <span
-                            class="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-md px-1.5 text-[11px] font-semibold leading-none tabular-nums"
-                            :class="tabBadgeClass(tab.tone, activeTab === tab.key)"
-                        >
-                            {{ tab.badge }}
-                        </span>
-                    </button>
-                </div>
-            </div>
+            <UiIndexTabs
+                v-if="tabs.length"
+                :tabs="tabs"
+                :model-value="activeTab"
+                :pinned="pinnedTab"
+                page="activity"
+                aria-label="Activity type"
+                @select="selectTab"
+            />
 
             <div
                 v-if="rangeLabel || hasActiveFilters"

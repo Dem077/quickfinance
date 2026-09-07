@@ -92,10 +92,12 @@ const detailFields = computed(() => {
         { label: 'Vendor', value: props.order.vendor?.name || '—' },
         { label: 'Payment method', value: props.order.payment_method_label },
         { label: 'Status', value: props.order.status_label },
-        { label: 'GRN', value: props.order.grn_number || '—' },
         { label: 'Tax total', value: `MVR ${formatMoney(props.order.tax_total)}` },
         { label: 'Order total', value: `MVR ${formatMoney(props.order.total_amount)}` },
     ];
+    if (props.order.grn_number) {
+        fields.splice(5, 0, { label: 'GRN number', value: props.order.grn_number });
+    }
     if (props.order.purchase_request?.pr_no) {
         fields.splice(2, 0, { label: 'Purchase request', value: props.order.purchase_request.pr_no });
     }
@@ -351,6 +353,9 @@ watch(() => editLineForm.gst, () => {
                     <div class="flex flex-wrap items-center gap-2">
                         <span :class="badgeClass">{{ order.status_label }}</span>
                         <span class="ui-badge-neutral">{{ order.payment_method_label }}</span>
+                        <span v-if="order.grn_number" class="ui-badge-brand">
+                            GRN {{ order.grn_number }}
+                        </span>
                         <UiAuditLink
                             v-if="can.audit"
                             :href="route('app.purchase-orders.audit', order.id)"

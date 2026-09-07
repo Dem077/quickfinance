@@ -154,19 +154,22 @@ class PurchaseRequests extends Model
             return;
         }
 
-        // Get all details
-        $details = $purchaseRequest->purchaseRequestDetails;
+        $orders = $purchaseRequest->purchaseOrders()->get();
 
-        // Only proceed if there are details
-        if ($details->isEmpty()) {
+        if ($orders->isEmpty()) {
             return;
         }
 
-        // Alternative method to check if all details are utilized
-        $totalDetails = $details->count();
-        $utilizedDetails = PurchaseRequestDetails::where('is_utilized', true)->where('pr_id', $purchaseRequest->id)->count();
+        // PR only auto-closes when every related PO has finished — not when lines are merely ordered.
+        $allFinished = $orders->every(function (PurchaseOrders $purchaseOrder): bool {
+            if ($purchaseOrder->payment_method === 'petty_cash') {
+                return $purchaseOrder->status === PurchaseOrderStatus::Reimbursed;
+            }
 
-        if ($totalDetails === $utilizedDetails) {
+            return $purchaseOrder->status === PurchaseOrderStatus::Closed;
+        });
+
+        if ($allFinished) {
             $purchaseRequest->update([
                 'status' => PurchaseRequestsStatus::Closed->value,
                 'is_closed_by' => 1,

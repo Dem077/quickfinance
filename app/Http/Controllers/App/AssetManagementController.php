@@ -11,6 +11,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AssetReceipt;
 use App\Models\PurchaseOrders;
 use App\Models\Vendors;
+use App\Support\PinnedTabs;
 use App\Services\SnipeIt\SnipeItException;
 use App\Services\SnipeIt\SnipeItService;
 use Illuminate\Http\JsonResponse;
@@ -26,15 +27,19 @@ class AssetManagementController extends Controller
     {
         abort_unless($request->user()->can('view_any_asset::management'), 403);
 
+        $user = $request->user();
         $search = $request->string('search')->trim()->toString();
-        $tab = $request->string('tab')->trim()->toString() ?: 'all';
         $vendorId = $request->integer('vendor_id') ?: null;
         $dateFrom = $request->string('date_from')->trim()->toString() ?: null;
         $dateTo = $request->string('date_to')->trim()->toString() ?: null;
 
-        if (! in_array($tab, ['all', 'pending', 'completed'], true)) {
-            $tab = 'all';
-        }
+        $allowedTabs = ['all', 'pending', 'completed'];
+        $pinnedTab = $user->pinnedTab(PinnedTabs::ASSET_MANAGEMENT);
+        $tab = PinnedTabs::resolve(
+            $request->string('tab')->trim()->toString() ?: null,
+            $pinnedTab,
+            $allowedTabs,
+        );
 
         $baseQuery = fn () => $this->scopedQuery()
             ->when($search !== '', function ($query) use ($search): void {
@@ -123,6 +128,7 @@ class AssetManagementController extends Controller
                 'date_to' => $dateTo,
             ],
             'tabs' => $tabs,
+            'pinnedTab' => $pinnedTab,
             'filterOptions' => [
                 'vendors' => Vendors::query()->orderBy('name')->get(['id', 'name']),
             ],

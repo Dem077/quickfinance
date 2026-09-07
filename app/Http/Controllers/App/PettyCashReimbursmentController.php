@@ -20,6 +20,7 @@ use App\Models\PurchaseOrderDetails;
 use App\Models\PurchaseOrders;
 use App\Models\SubBudgetAccounts;
 use App\Models\Vendors;
+use App\Support\PinnedTabs;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -35,16 +36,19 @@ class PettyCashReimbursmentController extends Controller
 
         $user = $request->user();
         $search = $request->string('search')->trim()->toString();
-        $tab = $request->string('tab')->trim()->toString() ?: 'all';
         $departmentId = $request->integer('department_id') ?: null;
         $dateFrom = $request->string('date_from')->trim()->toString() ?: null;
         $dateTo = $request->string('date_to')->trim()->toString() ?: null;
         $sort = $request->string('sort')->trim()->toString() ?: 'newest';
 
         $validStatuses = collect(PettyCashStatus::cases())->map->value->all();
-        if ($tab !== 'all' && ! in_array($tab, $validStatuses, true)) {
-            $tab = 'all';
-        }
+        $allowedTabs = ['all', ...$validStatuses];
+        $pinnedTab = $user->pinnedTab(PinnedTabs::PETTY_CASH);
+        $tab = PinnedTabs::resolve(
+            $request->string('tab')->trim()->toString() ?: null,
+            $pinnedTab,
+            $allowedTabs,
+        );
 
         $sortMap = [
             'newest' => ['id', 'desc'],
@@ -144,6 +148,7 @@ class PettyCashReimbursmentController extends Controller
                 ],
             ],
             'tabs' => $tabs,
+            'pinnedTab' => $pinnedTab,
             'can' => [
                 'create' => $user->can('create', PettyCashReimbursment::class),
                 'deleteAny' => $user->can('deleteAny', PettyCashReimbursment::class),

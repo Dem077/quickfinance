@@ -36,6 +36,7 @@ class User extends Authenticatable implements FilamentUser, HasAvatar
         'bank_account_name',
         'bank_account_no',
         'signature',
+        'ui_preferences',
     ];
 
     /**
@@ -56,7 +57,31 @@ class User extends Authenticatable implements FilamentUser, HasAvatar
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
+        'ui_preferences' => 'array',
     ];
+
+    public function pinnedTab(string $page): ?string
+    {
+        $value = data_get($this->ui_preferences, "pinned_tabs.{$page}");
+
+        return is_string($value) && $value !== '' ? $value : null;
+    }
+
+    public function setPinnedTab(string $page, ?string $tab): void
+    {
+        $preferences = $this->ui_preferences ?? [];
+        $pinned = $preferences['pinned_tabs'] ?? [];
+
+        if ($tab === null || $tab === '') {
+            unset($pinned[$page]);
+        } else {
+            $pinned[$page] = $tab;
+        }
+
+        $preferences['pinned_tabs'] = $pinned;
+
+        $this->forceFill(['ui_preferences' => $preferences])->save();
+    }
 
     public function getFilamentAvatarUrl(): ?string
     {

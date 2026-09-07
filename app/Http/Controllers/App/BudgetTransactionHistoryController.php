@@ -5,6 +5,7 @@ namespace App\Http\Controllers\App;
 use App\Http\Controllers\Controller;
 use App\Models\BudgetTransactionHistory;
 use App\Models\User;
+use App\Support\PinnedTabs;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -17,8 +18,8 @@ class BudgetTransactionHistoryController extends Controller
     {
         $this->authorize('viewAny', BudgetTransactionHistory::class);
 
+        $user = $request->user();
         $search = $request->string('search')->trim()->toString();
-        $tab = $request->string('tab')->trim()->toString() ?: 'all';
         $userId = $request->integer('user_id') ?: null;
         $dateFrom = $request->string('date_from')->trim()->toString() ?: null;
         $dateTo = $request->string('date_to')->trim()->toString() ?: null;
@@ -47,9 +48,13 @@ class BudgetTransactionHistoryController extends Controller
             ->pluck('transaction_type')
             ->values();
 
-        if ($tab !== 'all' && ! $types->contains($tab)) {
-            $tab = 'all';
-        }
+        $allowedTabs = ['all', ...$types->all()];
+        $pinnedTab = $user->pinnedTab(PinnedTabs::BUDGET_TRANSACTION_HISTORIES);
+        $tab = PinnedTabs::resolve(
+            $request->string('tab')->trim()->toString() ?: null,
+            $pinnedTab,
+            $allowedTabs,
+        );
 
         $tabs = [
             [
@@ -110,6 +115,7 @@ class BudgetTransactionHistoryController extends Controller
                 'date_to' => $dateTo,
             ],
             'tabs' => $tabs,
+            'pinnedTab' => $pinnedTab,
             'filterOptions' => [
                 'users' => User::query()
                     ->whereIn('id', $userIds)

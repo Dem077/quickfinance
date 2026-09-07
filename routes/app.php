@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\App\ActivityController;
 use App\Http\Controllers\App\EmailLogController;
+use App\Http\Controllers\App\UiPreferenceController;
 use App\Http\Controllers\App\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\App\AssetManagementController;
 use App\Http\Controllers\App\BudgetAccountController;
@@ -192,6 +193,8 @@ Route::prefix('app')->name('app.')->group(function () {
         Route::delete('activity-bulk', [ActivityController::class, 'destroyMany'])->name('activity.destroy-many');
 
         Route::get('emails', [EmailLogController::class, 'index'])->name('emails.index');
+
+        Route::put('preferences/pinned-tab', [UiPreferenceController::class, 'updatePinnedTab'])->name('preferences.pinned-tab');
 
         Route::get('modules/{module}', ComingSoonController::class)->name('coming-soon');
     });

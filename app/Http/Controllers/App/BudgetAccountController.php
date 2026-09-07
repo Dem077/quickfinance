@@ -9,6 +9,7 @@ use App\Models\Departments;
 use App\Models\Location;
 use App\Models\PurchaseRequests;
 use App\Models\SubBudgetAccounts;
+use App\Support\PinnedTabs;
 use App\Support\PurchaseRequestBudget;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -23,8 +24,8 @@ class BudgetAccountController extends Controller
     {
         $this->authorize('viewAny', BudgetAccounts::class);
 
+        $user = $request->user();
         $search = $request->string('search')->trim()->toString();
-        $type = $request->string('expenditure_type')->trim()->toString();
 
         $mapAccount = fn (BudgetAccounts $account): array => [
             'id' => $account->id,
@@ -36,6 +37,40 @@ class BudgetAccountController extends Controller
             ),
         ];
 
+        $typeTabs = BudgetAccounts::query()
+            ->select('expenditure_type')
+            ->selectRaw('count(*) as badge')
+            ->groupBy('expenditure_type')
+            ->orderBy('expenditure_type')
+            ->get()
+            ->map(fn ($row): array => [
+                'key' => $row->expenditure_type ?: 'Unspecified',
+                'label' => $row->expenditure_type ?: 'Unspecified',
+                'badge' => (int) $row->badge,
+                'tone' => 'neutral',
+            ])
+            ->values()
+            ->all();
+
+        $tabs = [
+            [
+                'key' => 'all',
+                'label' => 'All',
+                'badge' => BudgetAccounts::query()->count(),
+                'tone' => 'neutral',
+            ],
+            ...$typeTabs,
+        ];
+
+        $allowedTabs = collect($tabs)->pluck('key')->all();
+        $pinnedTab = $user->pinnedTab(PinnedTabs::BUDGET_ACCOUNTS);
+        $resolvedType = PinnedTabs::resolve(
+            $request->string('expenditure_type')->trim()->toString() ?: null,
+            $pinnedTab,
+            $allowedTabs,
+        );
+        $type = $resolvedType === 'all' ? '' : $resolvedType;
+
         $accounts = BudgetAccounts::query()
             ->with(['subBudgetAccounts.allocations'])
             ->when($search !== '', function ($query) use ($search): void {
@@ -45,7 +80,15 @@ class BudgetAccountController extends Controller
                         ->orWhere('name', 'like', "%{$search}%");
                 });
             })
-            ->when($type !== '', fn ($query) => $query->where('expenditure_type', $type))
+            ->when($type !== '', function ($query) use ($type): void {
+                if ($type === 'Unspecified') {
+                    $query->where(function ($query): void {
+                        $query->whereNull('expenditure_type')->orWhere('expenditure_type', '');
+                    });
+                } else {
+                    $query->where('expenditure_type', $type);
+                }
+            })
             ->orderBy('expenditure_type')
             ->orderBy('account')
             ->get()
@@ -62,34 +105,14 @@ class BudgetAccountController extends Controller
             ->values()
             ->all();
 
-        $typeTabs = BudgetAccounts::query()
-            ->select('expenditure_type')
-            ->selectRaw('count(*) as badge')
-            ->groupBy('expenditure_type')
-            ->orderBy('expenditure_type')
-            ->get()
-            ->map(fn ($row): array => [
-                'key' => $row->expenditure_type ?: 'Unspecified',
-                'label' => $row->expenditure_type ?: 'Unspecified',
-                'badge' => (int) $row->badge,
-            ])
-            ->values()
-            ->all();
-
         return Inertia::render('BudgetAccounts/Index', [
             'groups' => $groups,
             'filters' => [
                 'search' => $search,
-                'expenditure_type' => $type,
+                'expenditure_type' => $resolvedType === 'all' ? 'all' : $resolvedType,
             ],
-            'tabs' => [
-                [
-                    'key' => '',
-                    'label' => 'All',
-                    'badge' => BudgetAccounts::query()->count(),
-                ],
-                ...$typeTabs,
-            ],
+            'tabs' => $tabs,
+            'pinnedTab' => $pinnedTab,
             'can' => [
                 'create' => $request->user()->can('create', BudgetAccounts::class),
                 'deleteAny' => $request->user()->can('deleteAny', BudgetAccounts::class),

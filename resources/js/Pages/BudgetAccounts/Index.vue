@@ -1,5 +1,6 @@
 <script setup>
 import AppLayout from '../../Layouts/AppLayout.vue';
+import UiIndexTabs from '../../Components/UiIndexTabs.vue';
 import { Link, router, useForm } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 
@@ -7,6 +8,7 @@ const props = defineProps({
     groups: { type: Array, required: true },
     filters: { type: Object, required: true },
     tabs: { type: Array, required: true },
+    pinnedTab: { type: String, default: null },
     can: { type: Object, required: true },
 });
 
@@ -14,7 +16,7 @@ const search = ref(props.filters.search ?? '');
 const selected = ref([]);
 let searchTimer = null;
 
-const activeType = computed(() => props.filters.expenditure_type ?? '');
+const activeType = computed(() => props.filters.expenditure_type || 'all');
 const hasSearch = computed(() => Boolean((search.value || '').trim()));
 const hasRows = computed(() => props.groups.some((group) => group.accounts.length));
 const allAccountIds = computed(() => props.groups.flatMap((group) => group.accounts.map((row) => row.id)));
@@ -32,9 +34,12 @@ watch(search, (value) => {
 const applyFilters = (overrides = {}) => {
     router.get(route('app.budget-accounts.index'), {
         search: (overrides.search !== undefined ? overrides.search : search.value) || undefined,
-        expenditure_type: overrides.expenditure_type !== undefined
-            ? (overrides.expenditure_type || undefined)
-            : (activeType.value || undefined),
+        expenditure_type: (() => {
+            const next = overrides.expenditure_type !== undefined
+                ? overrides.expenditure_type
+                : activeType.value;
+            return next && next !== 'all' ? next : undefined;
+        })(),
     }, { preserveState: true, replace: true, preserveScroll: true });
 };
 
@@ -134,32 +139,15 @@ const formatMoney = (value) =>
                 </div>
             </div>
 
-            <div v-if="tabs.length" class="overflow-x-auto border-b border-slate-200 dark:border-slate-800">
-                <div class="flex min-w-max items-end" role="tablist" aria-label="Expenditure type">
-                    <button
-                        v-for="tab in tabs"
-                        :key="tab.key"
-                        type="button"
-                        role="tab"
-                        :aria-selected="activeType === tab.key"
-                        class="relative inline-flex items-center gap-2 whitespace-nowrap border-b-2 px-3.5 py-2.5 text-sm transition"
-                        :class="activeType === tab.key
-                            ? 'border-brand-600 font-semibold text-brand-700 dark:border-brand-400 dark:text-brand-300'
-                            : 'border-transparent font-medium text-slate-500 hover:border-slate-300 hover:text-slate-800 dark:text-slate-400'"
-                        @click="selectType(tab.key)"
-                    >
-                        <span>{{ tab.label }}</span>
-                        <span
-                            class="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-md px-1.5 text-[11px] font-semibold tabular-nums"
-                            :class="activeType === tab.key
-                                ? 'bg-brand-100 text-brand-800 dark:bg-brand-950/50 dark:text-brand-200'
-                                : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'"
-                        >
-                            {{ tab.badge }}
-                        </span>
-                    </button>
-                </div>
-            </div>
+            <UiIndexTabs
+                v-if="tabs.length"
+                :tabs="tabs"
+                :model-value="activeType"
+                :pinned="pinnedTab"
+                page="budget_accounts"
+                aria-label="Expenditure type"
+                @select="selectType"
+            />
 
             <div class="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-500 dark:text-slate-400">
                 <p>

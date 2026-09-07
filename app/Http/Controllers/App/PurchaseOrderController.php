@@ -28,6 +28,7 @@ use App\Models\PurchaseRequestDetails;
 use App\Models\PurchaseRequests;
 use App\Models\User;
 use App\Models\Vendors;
+use App\Support\PinnedTabs;
 use App\Support\RecordAudit;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -44,7 +45,6 @@ class PurchaseOrderController extends Controller
 
         $user = $request->user();
         $search = $request->string('search')->trim()->toString();
-        $tab = $request->string('tab')->trim()->toString() ?: 'all';
         $paymentMethod = $request->string('payment_method')->toString();
         $vendorId = $request->integer('vendor_id') ?: null;
         $prId = $request->integer('pr_id') ?: null;
@@ -53,9 +53,13 @@ class PurchaseOrderController extends Controller
         $sort = $request->string('sort')->trim()->toString() ?: 'newest';
 
         $validStatuses = collect(PurchaseOrderStatus::cases())->map->value->all();
-        if ($tab !== 'all' && ! in_array($tab, $validStatuses, true)) {
-            $tab = 'all';
-        }
+        $allowedTabs = ['all', ...$validStatuses];
+        $pinnedTab = $user->pinnedTab(PinnedTabs::PURCHASE_ORDERS);
+        $tab = PinnedTabs::resolve(
+            $request->string('tab')->trim()->toString() ?: null,
+            $pinnedTab,
+            $allowedTabs,
+        );
 
         $sortMap = [
             'newest' => ['id', 'desc'],
@@ -149,6 +153,7 @@ class PurchaseOrderController extends Controller
                 ],
             ],
             'tabs' => $tabs,
+            'pinnedTab' => $pinnedTab,
             'can' => [
                 'create' => $user->can('create', PurchaseOrders::class),
                 'audit' => $user->can('audit', PurchaseOrders::class),
@@ -606,6 +611,7 @@ class PurchaseOrderController extends Controller
             'pr_no' => $order->purchaseRequest?->pr_no,
             'purpose' => $order->purchaseRequest?->purpose,
             'total_amount' => (float) $order->purchaseOrderDetails->sum('amount'),
+            'grn_number' => $order->grn_number,
             'is_advance_form_required' => (bool) $order->is_advance_form_required,
             'advance_form_status' => $order->advanceForm?->status?->value,
             'advance_form_status_label' => $order->advanceForm?->status?->getLabel(),

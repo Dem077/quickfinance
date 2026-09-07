@@ -7,7 +7,6 @@ use App\Enums\PurchaseOrderStatus;
 use App\Models\Item;
 use App\Models\PurchaseOrders;
 use App\Models\PurchaseRequestDetails;
-use App\Models\PurchaseRequests;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -38,8 +37,6 @@ class SubmitPurchaseOrder extends Action
                         ->where('pr_id', $purchaseOrder->pr_id)
                         ->update(['is_utilized' => true]);
                 }
-
-                PurchaseRequests::checkAndUpdateClosedStatus($purchaseOrder->pr_id);
             }
 
             return $purchaseOrder->fresh(['purchaseOrderDetails', 'advanceForm']);

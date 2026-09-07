@@ -5,6 +5,7 @@ namespace App\Http\Controllers\App;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Support\ActivityPresenter;
+use App\Support\PinnedTabs;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -20,7 +21,6 @@ class ActivityController extends Controller
 
         $user = $request->user();
         $search = $request->string('search')->trim()->toString();
-        $logName = $request->string('log_name')->trim()->toString();
         $event = $request->string('event')->trim()->toString();
         $causerId = $request->integer('causer_id') ?: null;
         $dateFrom = $request->string('date_from')->trim()->toString() ?: null;
@@ -49,6 +49,14 @@ class ActivityController extends Controller
             ->filter()
             ->values();
 
+        $allowedTabs = ['all', ...$logNames->all()];
+        $pinnedTab = $user->pinnedTab(PinnedTabs::ACTIVITY);
+        $logName = PinnedTabs::resolve(
+            $request->string('log_name')->trim()->toString() ?: null,
+            $pinnedTab,
+            $allowedTabs,
+        );
+
         $tabs = [
             [
                 'key' => 'all',
@@ -69,10 +77,6 @@ class ActivityController extends Controller
                 },
             ])->all(),
         ];
-
-        if ($logName !== 'all' && $logName !== '' && ! $logNames->contains($logName)) {
-            $logName = 'all';
-        }
 
         $activities = $baseQuery()
             ->with(['causer'])
@@ -101,6 +105,7 @@ class ActivityController extends Controller
                 'date_to' => $dateTo,
             ],
             'tabs' => $tabs,
+            'pinnedTab' => $pinnedTab,
             'filterOptions' => [
                 'events' => Activity::query()
                     ->select('event')

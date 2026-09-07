@@ -27,6 +27,7 @@ use App\Models\PurchaseRequestDetails;
 use App\Models\PurchaseRequests;
 use App\Models\SubBudgetAccounts;
 use App\Models\User;
+use App\Support\PinnedTabs;
 use App\Support\PurchaseRequestBudget;
 use App\Support\PurchaseRequestStatusTabs;
 use App\Support\RecordAudit;
@@ -46,7 +47,12 @@ class PurchaseRequestController extends Controller
         $user = $request->user();
         $search = $request->string('search')->trim()->toString();
         $tabs = PurchaseRequestStatusTabs::forUser($user);
-        $tab = PurchaseRequestStatusTabs::resolveActiveTab($user, $request->string('tab')->trim()->toString() ?: null);
+        $pinnedTab = $user->pinnedTab(PinnedTabs::PURCHASE_REQUESTS);
+        $tab = PurchaseRequestStatusTabs::resolveActiveTab(
+            $user,
+            $request->string('tab')->trim()->toString() ?: null,
+            $pinnedTab,
+        );
 
         $projectId = $request->integer('project_id') ?: null;
         $departmentId = $request->integer('department_id') ?: null;
@@ -119,6 +125,7 @@ class PurchaseRequestController extends Controller
                 ],
             ],
             'tabs' => $tabs,
+            'pinnedTab' => $pinnedTab,
             'can' => [
                 'create' => $user->can('create', PurchaseRequests::class),
                 'audit' => $user->can('audit', PurchaseRequests::class),

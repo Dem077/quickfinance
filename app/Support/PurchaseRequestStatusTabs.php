@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Enums\PurchaseRequestsStatus;
 use App\Models\PurchaseRequests;
 use App\Models\User;
+use App\Support\PinnedTabs;
 use Illuminate\Database\Eloquent\Builder;
 
 class PurchaseRequestStatusTabs
@@ -29,10 +30,10 @@ class PurchaseRequestStatusTabs
                     self::requesterBase($user)->whereIn('status', [
                         PurchaseRequestsStatus::Submitted,
                         PurchaseRequestsStatus::HODApproved,
+                        PurchaseRequestsStatus::Approved,
                     ])->count(),
                     'warn',
                 ),
-                self::tab('awaiting', 'Action Required', self::requesterBase($user)->where('status', PurchaseRequestsStatus::Approved)->count(), 'warn'),
                 self::tab('procurement', 'Pending Procurement', self::requesterBase($user)->where('status', PurchaseRequestsStatus::MD_DMD_Approved)->count(), 'warn'),
                 self::tab('completed', 'Completed', self::requesterBase($user)->where('status', PurchaseRequestsStatus::Closed)->count(), 'success'),
                 self::tab(
@@ -125,9 +126,12 @@ class PurchaseRequestStatusTabs
         return match ($tab) {
             'draft' => $query->where('status', PurchaseRequestsStatus::Draft)->where('user_id', $user->id),
             'submitted' => $query
-                ->whereIn('status', [PurchaseRequestsStatus::Submitted, PurchaseRequestsStatus::HODApproved])
+                ->whereIn('status', [
+                    PurchaseRequestsStatus::Submitted,
+                    PurchaseRequestsStatus::HODApproved,
+                    PurchaseRequestsStatus::Approved,
+                ])
                 ->where('user_id', $user->id),
-            'awaiting' => $query->where('status', PurchaseRequestsStatus::Approved)->where('user_id', $user->id),
             'procurement' => $query->where('status', PurchaseRequestsStatus::MD_DMD_Approved)->where('user_id', $user->id),
             'completed' => $query->where('status', PurchaseRequestsStatus::Closed)->where('user_id', $user->id),
             'rejected' => $query
@@ -165,16 +169,12 @@ class PurchaseRequestStatusTabs
         };
     }
 
-    public static function resolveActiveTab(User $user, ?string $requested): string
+    public static function resolveActiveTab(User $user, ?string $requested, ?string $preferred = null): string
     {
         $tabs = self::forUser($user);
         $keys = collect($tabs)->pluck('key')->all();
 
-        if ($requested && in_array($requested, $keys, true)) {
-            return $requested;
-        }
-
-        return $keys[0] ?? 'all';
+        return PinnedTabs::resolve($requested, $preferred, $keys, $keys[0] ?? 'all');
     }
 
     private static function applyAllScope(Builder $query, User $user): Builder

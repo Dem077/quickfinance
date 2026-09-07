@@ -4,6 +4,7 @@ namespace App\Http\Controllers\App;
 
 use App\Http\Controllers\Controller;
 use App\Models\EmailLog;
+use App\Support\PinnedTabs;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -16,11 +17,13 @@ class EmailLogController extends Controller
         $this->authorize('viewAny', EmailLog::class);
 
         $search = $request->string('search')->trim()->toString();
-        $status = $request->string('status')->trim()->toString() ?: 'all';
-
-        if (! in_array($status, ['all', 'pending', 'sent', 'failed'], true)) {
-            $status = 'all';
-        }
+        $allowedTabs = ['all', 'pending', 'sent', 'failed'];
+        $pinnedTab = $request->user()->pinnedTab(PinnedTabs::EMAILS);
+        $status = PinnedTabs::resolve(
+            $request->string('status')->trim()->toString() ?: null,
+            $pinnedTab,
+            $allowedTabs,
+        );
 
         $baseQuery = fn () => EmailLog::query()
             ->when($search !== '', function ($query) use ($search): void {
@@ -99,6 +102,7 @@ class EmailLogController extends Controller
                 'status' => $status,
             ],
             'tabs' => $tabs,
+            'pinnedTab' => $pinnedTab,
         ]);
     }
 }
