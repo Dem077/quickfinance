@@ -317,7 +317,7 @@ const dissociateMany = () => {
                 </div>
                 <UiSignaturePad
                     v-model="form.signature"
-                    label="Draw signature"
+                    label="Signature"
                     :error="fieldError('signature')"
                 />
             </section>

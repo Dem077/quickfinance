@@ -54,12 +54,12 @@ const submit = () => {
             <form class="ui-panel p-5" @submit.prevent="submit">
                 <h2 class="text-sm font-semibold text-slate-900 dark:text-white">Signature</h2>
                 <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                    Draw your signature the same way as the old portal. It is printed on purchase requests and advance forms.
+                    Draw it here, or upload a photo of your signature. Paper and other light backgrounds are removed automatically. It is printed on purchase requests and advance forms.
                 </p>
                 <div class="mt-4">
                     <UiSignaturePad
                         v-model="form.signature"
-                        label="Draw signature"
+                        label="Signature"
                         :error="form.errors.signature"
                     />
                 </div>
