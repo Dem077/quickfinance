@@ -14,6 +14,7 @@ const search = ref(props.filters.search ?? '');
 const departmentId = ref(props.filters.department_id ? String(props.filters.department_id) : '');
 const role = ref(props.filters.role ?? '');
 const signature = ref(props.filters.signature ?? '');
+const status = ref(props.filters.status ?? '');
 const sort = ref(props.filters.sort || 'newest');
 const filtersOpen = ref(false);
 const filterPanel = ref(null);
@@ -22,7 +23,7 @@ let searchTimer = null;
 const hasRows = computed(() => (props.users.data?.length || 0) > 0);
 const hasSearch = computed(() => Boolean((search.value || '').trim()));
 const activeFilterCount = computed(() =>
-    [departmentId.value, role.value, signature.value].filter(Boolean).length,
+    [departmentId.value, role.value, signature.value, status.value].filter(Boolean).length,
 );
 const hasExtraFilters = computed(() => activeFilterCount.value > 0);
 const hasNonDefaultSort = computed(() => sort.value && sort.value !== 'newest');
@@ -41,6 +42,7 @@ const applyFilters = (overrides = {}) => {
         department_id: (overrides.department_id !== undefined ? overrides.department_id : departmentId.value) || undefined,
         role: (overrides.role !== undefined ? overrides.role : role.value) || undefined,
         signature: (overrides.signature !== undefined ? overrides.signature : signature.value) || undefined,
+        status: (overrides.status !== undefined ? overrides.status : status.value) || undefined,
         sort: (() => {
             const nextSort = overrides.sort !== undefined ? overrides.sort : sort.value;
             return nextSort && nextSort !== 'newest' ? nextSort : undefined;
@@ -58,7 +60,7 @@ watch(search, (value) => {
     }, 280);
 });
 
-watch([departmentId, role, signature, sort], () => {
+watch([departmentId, role, signature, status, sort], () => {
     applyFilters();
 });
 
@@ -74,6 +76,7 @@ const clearExtraFilters = () => {
     departmentId.value = '';
     role.value = '';
     signature.value = '';
+    status.value = '';
     sort.value = 'newest';
 };
 
@@ -115,6 +118,12 @@ const initials = (name) => {
 const destroy = (user) => {
     if (! confirm(`Delete ${user.name}?`)) return;
     router.delete(route('app.users.destroy', user.id), { preserveScroll: true });
+};
+
+const toggleActive = (user) => {
+    const next = user.is_active ? 'deactivate' : 'activate';
+    if (! confirm(`${next === 'activate' ? 'Activate' : 'Deactivate'} ${user.name}?`)) return;
+    router.post(route('app.users.toggle-active', user.id), {}, { preserveScroll: true });
 };
 </script>
 
@@ -208,6 +217,14 @@ const destroy = (user) => {
                                     </select>
                                 </div>
                                 <div>
+                                    <label class="ui-label">Status</label>
+                                    <select v-model="status" class="ui-input">
+                                        <option value="">Any</option>
+                                        <option value="active">Active</option>
+                                        <option value="inactive">Inactive</option>
+                                    </select>
+                                </div>
+                                <div>
                                     <label class="ui-label">Sort</label>
                                     <select v-model="sort" class="ui-input">
                                         <option v-for="option in filterOptions.sorts" :key="option.value" :value="option.value">
@@ -263,6 +280,7 @@ const destroy = (user) => {
                         <div class="min-w-0 flex-1">
                             <h2 class="truncate text-base font-semibold tracking-tight text-slate-900 dark:text-white">
                                 {{ user.name }}
+                                <span v-if="user.employee_num" class="font-normal text-slate-500">({{ user.employee_num }})</span>
                             </h2>
                             <p class="truncate text-sm text-slate-500 dark:text-slate-400">
                                 {{ user.designation || 'No designation' }}
@@ -270,9 +288,9 @@ const destroy = (user) => {
                         </div>
                         <span
                             class="shrink-0"
-                            :class="user.has_signature ? 'ui-badge-success' : 'ui-badge-warn'"
+                            :class="user.is_active ? 'ui-badge-success' : 'ui-badge-warn'"
                         >
-                            {{ user.has_signature ? 'Signed' : 'No signature' }}
+                            {{ user.is_active ? 'Active' : 'Inactive' }}
                         </span>
                     </component>
 
@@ -314,6 +332,17 @@ const destroy = (user) => {
                         >
                             Edit
                         </Link>
+                        <button
+                            v-if="user.actions?.toggle_active"
+                            type="button"
+                            class="inline-flex items-center justify-center rounded-lg border px-2.5 py-1.5 text-xs font-medium transition"
+                            :class="user.is_active
+                                ? 'border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200'
+                                : 'border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-200'"
+                            @click="toggleActive(user)"
+                        >
+                            {{ user.is_active ? 'Deactivate' : 'Activate' }}
+                        </button>
                         <button
                             v-if="user.actions?.delete"
                             type="button"

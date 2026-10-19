@@ -158,10 +158,10 @@
             </thead>
             <tbody>
                 <tr>
-                    <td style="padding: 0%; text-align:center; width:25%;  height:30px; border-right: 1px solid #000"><strong>{{$record->user->name ?? 'N/A'}}</strong></td>
-                    <td style="padding: 0%; text-align:center; width:25%;  height:30px; border-right: 1px solid #000"><strong>{{$record->user->department->user->name?? 'N/A'}}</strong></td>
-                    <td style="padding: 0%; text-align:center; width:25%;  height:30px; border-right: 1px solid #000"><strong>{{$record->VerifiedBy->name?? 'N/A'}}</strong></td>
-                    <td style="padding: 0%; text-align:center; width:25%;  height:30px;"><strong>{{$record->ApprovedBy->name?? 'N/A'}}</strong></td>
+                    <td style="padding: 0%; text-align:center; width:25%;  height:30px; border-right: 1px solid #000"><strong>{{ $record->user?->nameWithEmployeeNum('N/A') ?? 'N/A' }}</strong></td>
+                    <td style="padding: 0%; text-align:center; width:25%;  height:30px; border-right: 1px solid #000"><strong>{{ $record->user?->department?->user?->nameWithEmployeeNum('N/A') ?? 'N/A' }}</strong></td>
+                    <td style="padding: 0%; text-align:center; width:25%;  height:30px; border-right: 1px solid #000"><strong>{{ $record->VerifiedBy?->nameWithEmployeeNum('N/A') ?? 'N/A' }}</strong></td>
+                    <td style="padding: 0%; text-align:center; width:25%;  height:30px;"><strong>{{ $record->ApprovedBy?->nameWithEmployeeNum('N/A') ?? 'N/A' }}</strong></td>
 
                 </tr>
                 <tr>
@@ -211,7 +211,7 @@
                         </tr>
                         <tr>
                             <td style="background-color: #b9b9b9; text-align:center;"><strong>Custodian:</strong></td>
-                            <td >{{$record->user->name??'N/A'}}</td>
+                            <td >{{ $record->user?->nameWithEmployeeNum('N/A') ?? 'N/A' }}</td>
                         </tr>
                         <tr>
                             <td style="background-color: #b9b9b9; text-align:center;"><strong>Account Name:</strong></td>

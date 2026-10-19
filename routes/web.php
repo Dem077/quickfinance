@@ -52,8 +52,8 @@ Route::get('pr/{record}/preview', function (PurchaseRequests $record) {
         // repeating header logo appears on page 2+.
         'margin_top' => 15,
         // Room for purpose + signature box + page number on every page.
-        'margin_bottom' => 68,
-        'margin_footer' => 8,
+        'margin_bottom' => 62,
+        'margin_footer' => 6,
     ]);
     $mpdf->setAutoTopMargin = 'stretch';
     $mpdf->setAutoBottomMargin = 'stretch';

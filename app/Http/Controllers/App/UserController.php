@@ -25,10 +25,15 @@ class UserController extends Controller
         $departmentId = $request->integer('department_id') ?: null;
         $role = $request->string('role')->trim()->toString();
         $signature = $request->string('signature')->trim()->toString();
+        $status = $request->string('status')->trim()->toString();
         $sort = $request->string('sort')->trim()->toString() ?: 'newest';
 
         if (! in_array($signature, ['has', 'missing'], true)) {
             $signature = '';
+        }
+
+        if (! in_array($status, ['active', 'inactive'], true)) {
+            $status = '';
         }
 
         $sortMap = [
@@ -62,6 +67,8 @@ class UserController extends Controller
                     $query->whereNull('signature')->orWhere('signature', '');
                 });
             })
+            ->when($status === 'active', fn ($query) => $query->where('is_active', true))
+            ->when($status === 'inactive', fn ($query) => $query->where('is_active', false))
             ->orderBy($sortColumn, $sortDirection)
             ->when($sortColumn !== 'id', fn ($query) => $query->orderByDesc('id'))
             ->paginate(20)
@@ -69,6 +76,7 @@ class UserController extends Controller
             ->through(fn (User $user): array => [
                 'id' => $user->id,
                 'name' => $user->name,
+                'employee_num' => $user->employee_num,
                 'email' => $user->email,
                 'mobile' => $user->mobile,
                 'designation' => $user->designation,
@@ -76,9 +84,11 @@ class UserController extends Controller
                 'location' => $user->location?->name,
                 'avatar_url' => $user->getFilamentAvatarUrl(),
                 'has_signature' => filled($user->signature),
+                'is_active' => (bool) $user->is_active,
                 'roles' => $user->roles->pluck('name')->all(),
                 'actions' => [
                     'edit' => $authUser->can('update', $user),
+                    'toggle_active' => $authUser->can('update', $user) && (int) $authUser->id !== (int) $user->id,
                     'delete' => $authUser->can('delete', $user),
                 ],
             ]);
@@ -90,6 +100,7 @@ class UserController extends Controller
                 'department_id' => $departmentId,
                 'role' => $role,
                 'signature' => $signature,
+                'status' => $status,
                 'sort' => $sort,
             ],
             'filterOptions' => [
@@ -146,6 +157,8 @@ class UserController extends Controller
             'user' => [
                 'id' => $user->id,
                 'name' => $user->name,
+                'employee_num' => $user->employee_num,
+                'is_active' => (bool) $user->is_active,
                 'email' => $user->email,
                 'mobile' => $user->mobile,
                 'designation' => $user->designation,
@@ -184,12 +197,36 @@ class UserController extends Controller
             $data['signature'] = filled($data['signature']) ? $data['signature'] : null;
         }
 
+        if (
+            array_key_exists('is_active', $data)
+            && ! $data['is_active']
+            && (int) $request->user()->id === (int) $user->id
+        ) {
+            return back()->with('error', 'You cannot deactivate your own account.');
+        }
+
         $user->update($data);
         $user->syncRoles($roles);
 
         return redirect()
             ->route('app.users.index')
             ->with('success', 'User updated.');
+    }
+
+    public function toggleActive(Request $request, User $user): RedirectResponse
+    {
+        $this->authorize('update', $user);
+
+        if ((int) $request->user()->id === (int) $user->id) {
+            return back()->with('error', 'You cannot deactivate your own account.');
+        }
+
+        $user->update(['is_active' => ! $user->is_active]);
+
+        return back()->with(
+            'success',
+            $user->is_active ? 'User activated.' : 'User deactivated.'
+        );
     }
 
     public function destroy(User $user): RedirectResponse
@@ -252,6 +289,8 @@ class UserController extends Controller
     {
         return $request->validate([
             'name' => ['required', 'string', 'min:2', 'max:255'],
+            'employee_num' => ['nullable', 'string', 'max:50'],
+            'is_active' => ['sometimes', 'boolean'],
             'designation' => ['required', 'string', 'min:2', 'max:255'],
             'department_id' => ['required', 'exists:departments,id'],
             'location_id' => ['required', 'exists:locations,id'],

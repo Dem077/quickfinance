@@ -227,9 +227,9 @@
                     </td>
                 </tr>
                 <tr>
-                    <td style="padding: 0%; text-align:center; width:33%; border-right: 1px solid #000"><strong>{{ $record->user?->name }}</strong></td>
-                    <td style="padding: 0%; text-align:center; width:33%; border-right: 1px solid #000"><strong>{{ $record->hodApprovedBy?->name }}</strong></td>
-                    <td style="padding: 0%; text-align:center; width:33%;"><strong>{{ $record->mdDmdApprovedBy?->name }}</strong></td>
+                    <td style="padding: 0%; text-align:center; width:33%; border-right: 1px solid #000"><strong>{{ $record->user?->nameWithEmployeeNum() }}</strong></td>
+                    <td style="padding: 0%; text-align:center; width:33%; border-right: 1px solid #000"><strong>{{ $record->hodApprovedBy?->nameWithEmployeeNum() }}</strong></td>
+                    <td style="padding: 0%; text-align:center; width:33%;"><strong>{{ $record->mdDmdApprovedBy?->nameWithEmployeeNum() }}</strong></td>
                 </tr>
                 <tr>
                     <td style="padding: 0%; text-align:center; height:30px; width:33%; border-right: 1px solid #000">{{ $record->user?->designation }}</td>

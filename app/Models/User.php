@@ -25,6 +25,8 @@ class User extends Authenticatable implements FilamentUser, HasAvatar
      */
     protected $fillable = [
         'name',
+        'employee_num',
+        'is_active',
         'email',
         'mobile',
         'avatar_url',
@@ -58,6 +60,7 @@ class User extends Authenticatable implements FilamentUser, HasAvatar
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
         'ui_preferences' => 'array',
+        'is_active' => 'boolean',
     ];
 
     public function pinnedTab(string $page): ?string
@@ -92,6 +95,24 @@ class User extends Authenticatable implements FilamentUser, HasAvatar
 
             return 'https://www.gravatar.com/avatar/'.$hash.'?d=mp&r=g&s=250';
         }
+    }
+
+    /**
+     * Display name with employee number for PDFs, e.g. "Jane Doe (102)".
+     */
+    public function nameWithEmployeeNum(?string $fallback = ''): string
+    {
+        $name = filled($this->name) ? (string) $this->name : ($fallback ?? '');
+
+        if ($name === '') {
+            return $fallback ?? '';
+        }
+
+        if (filled($this->employee_num)) {
+            return $name.' ('.$this->employee_num.')';
+        }
+
+        return $name;
     }
 
     public function canAccessPanel(Panel $panel): bool

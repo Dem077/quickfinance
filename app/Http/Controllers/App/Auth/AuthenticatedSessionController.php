@@ -34,6 +34,14 @@ class AuthenticatedSessionController extends Controller
             ]);
         }
 
+        if (! Auth::user()?->is_active) {
+            Auth::logout();
+
+            throw ValidationException::withMessages([
+                'email' => __('This account is inactive. Contact an administrator.'),
+            ]);
+        }
+
         $request->session()->regenerate();
 
         return redirect()->intended(route('app.dashboard'));

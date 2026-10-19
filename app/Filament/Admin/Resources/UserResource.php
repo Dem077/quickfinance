@@ -54,8 +54,16 @@ class UserResource extends Resource
                         Forms\Components\TextInput::make('name')
                             ->minLength(2)
                             ->maxLength(255)
-                            ->columnSpan('full')
                             ->required(),
+                        Forms\Components\TextInput::make('employee_num')
+                            ->label('Employee number')
+                            ->maxLength(50)
+                            ->nullable(),
+                        Forms\Components\Toggle::make('is_active')
+                            ->label('Active')
+                            ->default(true)
+                            ->inline(false)
+                            ->helperText('Inactive users cannot sign in.'),
                         Forms\Components\TextInput::make('designation')
                             ->minLength(2)
                             ->maxLength(255)

@@ -65,6 +65,7 @@ Route::prefix('app')->name('app.')->group(function () {
         Route::post('users', [UserController::class, 'store'])->name('users.store');
         Route::get('users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
         Route::put('users/{user}', [UserController::class, 'update'])->name('users.update');
+        Route::post('users/{user}/toggle-active', [UserController::class, 'toggleActive'])->name('users.toggle-active');
         Route::delete('users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
         Route::post('users/{user}/hod', [UserController::class, 'associateHod'])->name('users.hod.associate');
         Route::delete('users/{user}/hod/{department}', [UserController::class, 'dissociateHod'])->name('users.hod.dissociate');

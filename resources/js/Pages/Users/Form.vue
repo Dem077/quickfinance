@@ -17,6 +17,8 @@ const isEdit = !!props.user;
 
 const form = useForm({
     name: props.user?.name ?? '',
+    employee_num: props.user?.employee_num ?? '',
+    is_active: props.user?.is_active ?? true,
     designation: props.user?.designation ?? '',
     department_id: props.user?.department_id ?? '',
     location_id: props.user?.location_id ?? '',
@@ -137,6 +139,25 @@ const dissociateMany = () => {
                         <p v-if="fieldError('name')" class="mt-1 text-xs text-red-600">{{ fieldError('name') }}</p>
                     </div>
                     <div class="lg:col-span-6">
+                        <label class="ui-label">Employee number</label>
+                        <input v-model="form.employee_num" type="text" maxlength="50" class="ui-input" placeholder="Optional · e.g. 102" />
+                        <p v-if="fieldError('employee_num')" class="mt-1 text-xs text-red-600">{{ fieldError('employee_num') }}</p>
+                    </div>
+                    <div class="lg:col-span-6 flex items-end">
+                        <label class="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 px-3 py-2.5 dark:border-slate-700">
+                            <input
+                                v-model="form.is_active"
+                                type="checkbox"
+                                class="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                            />
+                            <span class="text-sm font-medium text-slate-800 dark:text-slate-100">
+                                {{ form.is_active ? 'Active' : 'Inactive' }}
+                            </span>
+                            <span class="text-xs text-slate-500">Inactive users cannot sign in</span>
+                        </label>
+                        <p v-if="fieldError('is_active')" class="mt-1 text-xs text-red-600">{{ fieldError('is_active') }}</p>
+                    </div>
+                    <div class="lg:col-span-6">
                         <label class="ui-label">Designation</label>
                         <input v-model="form.designation" type="text" required class="ui-input" />
                         <p v-if="fieldError('designation')" class="mt-1 text-xs text-red-600">{{ fieldError('designation') }}</p>
@@ -238,7 +259,12 @@ const dissociateMany = () => {
             </section>
 
             <section class="ui-panel p-4">
-                <h2 class="mb-3 text-sm font-semibold text-slate-900 dark:text-white">Petty cash</h2>
+                <div class="mb-3">
+                    <h2 class="text-sm font-semibold text-slate-900 dark:text-white">Petty cash</h2>
+                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                        Update the petty cash limit from the department edit page.
+                    </p>
+                </div>
                 <div class="grid gap-3 lg:grid-cols-12">
                     <div class="lg:col-span-12">
                         <label class="ui-label">Petty cash assigned</label>
