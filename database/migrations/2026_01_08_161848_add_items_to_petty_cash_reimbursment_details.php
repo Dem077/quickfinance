@@ -11,20 +11,25 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('petty_cash_reimbursment_details', function (Blueprint $table) {
-            $table->foreignId('item_id')
-                ->nullable()
-                ->constrained('items')
-                ->nullOnDelete()
-                ->after('sub_budget_id');
-        });
-        Schema::table('purchase_order_details', function (Blueprint $table) {
-            $table->foreignId('item_id')
-                ->nullable()
-                ->constrained('items')
-                ->nullOnDelete()
-                ->after('po_id');
-        });
+        if (! Schema::hasColumn('petty_cash_reimbursment_details', 'item_id')) {
+            Schema::table('petty_cash_reimbursment_details', function (Blueprint $table) {
+                $table->foreignId('item_id')
+                    ->nullable()
+                    ->constrained('items')
+                    ->nullOnDelete()
+                    ->after('sub_budget_id');
+            });
+        }
+
+        if (! Schema::hasColumn('purchase_order_details', 'item_id')) {
+            Schema::table('purchase_order_details', function (Blueprint $table) {
+                $table->foreignId('item_id')
+                    ->nullable()
+                    ->constrained('items')
+                    ->nullOnDelete()
+                    ->after('po_id');
+            });
+        }
     }
 
     /**
@@ -32,13 +37,16 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('petty_cash_reimbursment_details', function (Blueprint $table) {
-            $table->dropForeign(['item_id']);
-            //
-        });
-        Schema::table('purchase_order_details', function (Blueprint $table) {
-            $table->dropForeign(['item_id']);
-            //
-        });
+        if (Schema::hasColumn('petty_cash_reimbursment_details', 'item_id')) {
+            Schema::table('petty_cash_reimbursment_details', function (Blueprint $table) {
+                $table->dropConstrainedForeignId('item_id');
+            });
+        }
+
+        if (Schema::hasColumn('purchase_order_details', 'item_id')) {
+            Schema::table('purchase_order_details', function (Blueprint $table) {
+                $table->dropConstrainedForeignId('item_id');
+            });
+        }
     }
 };

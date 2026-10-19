@@ -11,12 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('purchase_orders', function (Blueprint $table) {
-            $table->text('grn_number')->nullable()->after('payment_method');
-        });
-        Schema::table('purchase_order_details', function (Blueprint $table) {
-            $table->text('tax_amount')->nullable()->after('unit_price');
-        });
+        if (! Schema::hasColumn('purchase_orders', 'grn_number')) {
+            Schema::table('purchase_orders', function (Blueprint $table) {
+                $table->text('grn_number')->nullable()->after('payment_method');
+            });
+        }
+
+        if (! Schema::hasColumn('purchase_order_details', 'tax_amount')) {
+            Schema::table('purchase_order_details', function (Blueprint $table) {
+                $table->text('tax_amount')->nullable()->after('unit_price');
+            });
+        }
     }
 
     /**
@@ -24,12 +29,16 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('purchase_orders', function (Blueprint $table) {
-            $table->dropColumn('tax_amount');
-            $table->dropColumn('grn_number');
-        });
-        Schema::table('purchase_order_details', function (Blueprint $table) {
-            $table->dropColumn('tax_amount');
-        });
+        if (Schema::hasColumn('purchase_orders', 'grn_number')) {
+            Schema::table('purchase_orders', function (Blueprint $table) {
+                $table->dropColumn('grn_number');
+            });
+        }
+
+        if (Schema::hasColumn('purchase_order_details', 'tax_amount')) {
+            Schema::table('purchase_order_details', function (Blueprint $table) {
+                $table->dropColumn('tax_amount');
+            });
+        }
     }
 };

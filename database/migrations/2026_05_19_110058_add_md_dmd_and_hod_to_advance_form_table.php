@@ -11,10 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('advance_forms', function (Blueprint $table) {
-            $table->foreignId('md_dmd_approved_by')->nullable()->constrained('users')->nullOnDelete();
-            $table->foreignId('hod_approved_by')->nullable()->constrained('users')->nullOnDelete();
-        });
+        if (! Schema::hasColumn('advance_forms', 'md_dmd_approved_by')) {
+            Schema::table('advance_forms', function (Blueprint $table) {
+                $table->foreignId('md_dmd_approved_by')->nullable()->constrained('users')->nullOnDelete();
+            });
+        }
+
+        if (! Schema::hasColumn('advance_forms', 'hod_approved_by')) {
+            Schema::table('advance_forms', function (Blueprint $table) {
+                $table->foreignId('hod_approved_by')->nullable()->constrained('users')->nullOnDelete();
+            });
+        }
     }
 
     /**
@@ -22,9 +29,16 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('advance_forms', function (Blueprint $table) {
-            $table->dropForeign(['md_dmd_approved_by']);
-            $table->dropForeign(['hod_approved_by']);
-        });
+        if (Schema::hasColumn('advance_forms', 'md_dmd_approved_by')) {
+            Schema::table('advance_forms', function (Blueprint $table) {
+                $table->dropConstrainedForeignId('md_dmd_approved_by');
+            });
+        }
+
+        if (Schema::hasColumn('advance_forms', 'hod_approved_by')) {
+            Schema::table('advance_forms', function (Blueprint $table) {
+                $table->dropConstrainedForeignId('hod_approved_by');
+            });
+        }
     }
 };

@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasColumn('petty_cash_reimbursments', 'form_no')) {
+            return;
+        }
+
         Schema::table('petty_cash_reimbursments', function (Blueprint $table) {
             $table->string('form_no')->nullable()->after('date');
         });
@@ -21,8 +25,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('petty_cash_reimbursments', function (Blueprint $table) {
-            $table->dropColumn('form_no');
-        });
+        if (Schema::hasColumn('petty_cash_reimbursments', 'form_no')) {
+            Schema::table('petty_cash_reimbursments', function (Blueprint $table) {
+                $table->dropColumn('form_no');
+            });
+        }
     }
 };

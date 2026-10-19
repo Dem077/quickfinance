@@ -11,12 +11,19 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasColumn('purchase_requests', 'approved_by_md_dmd')) {
+            return;
+        }
+
         Schema::table('purchase_requests', function (Blueprint $table) {
-            $table->foreignId('approved_by_md_dmd')
+            $column = $table->foreignId('approved_by_md_dmd')
                 ->nullable()
-                ->after('approved_by_hod')
                 ->constrained('users')
                 ->nullOnDelete();
+
+            if (Schema::hasColumn('purchase_requests', 'approved_by_hod')) {
+                $column->after('approved_by_hod');
+            }
         });
     }
 
@@ -25,6 +32,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (! Schema::hasColumn('purchase_requests', 'approved_by_md_dmd')) {
+            return;
+        }
+
         Schema::table('purchase_requests', function (Blueprint $table) {
             $table->dropConstrainedForeignId('approved_by_md_dmd');
         });
