@@ -13,7 +13,7 @@ defineProps({
 });
 
 const page = usePage();
-const { can, hasRole, roles } = usePermissions();
+const { can, roles } = usePermissions();
 const {
     collapsed,
     mobileOpen,
@@ -63,28 +63,28 @@ const primaryNavItems = computed(() => [
         label: 'Purchase Requests',
         href: route('app.purchase-requests.index'),
         icon: icon.pr,
-        show: can('view_any_purchase::requests') || hasRole('super_admin'),
+        show: can('view_any_purchase::requests'),
         match: (url) => url.startsWith('/app/purchase-requests'),
     },
     {
         label: 'Procure',
         href: route('app.purchase-orders.index'),
         icon: icon.po,
-        show: can('view_any_purchase::orders') || hasRole('super_admin'),
+        show: can('view_any_purchase::orders'),
         match: (url) => url.startsWith('/app/purchase-orders'),
     },
     {
         label: 'Petty Cash',
         href: route('app.petty-cash.index'),
         icon: icon.cash,
-        show: can('view_any_petty::cash::reimbursment') || hasRole('super_admin'),
+        show: can('view_any_petty::cash::reimbursment'),
         match: (url) => url.startsWith('/app/petty-cash'),
     },
     {
         label: 'Assets',
         href: route('app.asset-management.index'),
         icon: icon.asset,
-        show: can('view_any_asset::management') || hasRole('super_admin'),
+        show: can('view_any_asset::management'),
         match: (url) => url.startsWith('/app/asset-management'),
     },
 ].filter((item) => item.show));
@@ -95,38 +95,38 @@ const navGroups = computed(() =>
             key: 'money',
             label: 'Budgets',
             items: [
-                { label: 'Budget Accounts', href: route('app.budget-accounts.index'), icon: icon.budget, show: can('view_any_budget::accounts') || hasRole('super_admin'), match: (url) => url.startsWith('/app/budget-accounts') },
-                { label: 'Transfers', href: route('app.budget-transfers.index'), icon: icon.transfer, show: can('view_any_budget::transfer') || hasRole('super_admin'), match: (url) => url.startsWith('/app/budget-transfers') },
-                { label: 'History', href: route('app.budget-transaction-histories.index'), icon: icon.history, show: can('view_any_budget::transaction::history') || hasRole('super_admin'), match: (url) => url.startsWith('/app/budget-transaction-histories') },
+                { label: 'Budget Accounts', href: route('app.budget-accounts.index'), icon: icon.budget, show: can('view_any_budget::accounts'), match: (url) => url.startsWith('/app/budget-accounts') },
+                { label: 'Transfers', href: route('app.budget-transfers.index'), icon: icon.transfer, show: can('view_any_budget::transfer'), match: (url) => url.startsWith('/app/budget-transfers') },
+                { label: 'History', href: route('app.budget-transaction-histories.index'), icon: icon.history, show: can('view_any_budget::transaction::history'), match: (url) => url.startsWith('/app/budget-transaction-histories') },
             ].filter((item) => item.show),
         },
         {
             key: 'insights',
             label: 'Reports',
             items: [
-                { label: 'Report Templates', href: route('app.reports.index'), icon: icon.report, show: can('view_any_report') || hasRole('super_admin'), match: (url) => url.startsWith('/app/reports') },
-                { label: 'Dashboard Charts', href: route('app.charts.index'), icon: icon.chart, show: can('view_any_chart') || hasRole('super_admin'), match: (url) => url.startsWith('/app/charts') },
-                { label: 'Activity', href: route('app.activity.index'), icon: icon.activity, show: can('view_any_activity') || hasRole('super_admin'), match: (url) => url.startsWith('/app/activity') },
-                { label: 'Email Status', href: route('app.emails.index'), icon: icon.email, show: can('view_any_email::log') || hasRole('super_admin'), match: (url) => url.startsWith('/app/emails') },
+                { label: 'Report Templates', href: route('app.reports.index'), icon: icon.report, show: can('view_any_report'), match: (url) => url.startsWith('/app/reports') },
+                { label: 'Dashboard Charts', href: route('app.charts.index'), icon: icon.chart, show: can('view_any_chart'), match: (url) => url.startsWith('/app/charts') },
+                { label: 'Activity', href: route('app.activity.index'), icon: icon.activity, show: can('view_any_activity'), match: (url) => url.startsWith('/app/activity') },
+                { label: 'Email Status', href: route('app.emails.index'), icon: icon.email, show: can('view_any_email::log'), match: (url) => url.startsWith('/app/emails') },
             ].filter((item) => item.show),
         },
         {
             key: 'catalog',
             label: 'Master Data',
             items: [
-                { label: 'Items', href: route('app.items.index'), icon: icon.item, show: can('view_any_item') || hasRole('super_admin'), match: (url) => url.startsWith('/app/items') },
-                { label: 'Vendors', href: route('app.vendors.index'), icon: icon.vendor, show: can('view_any_vendors') || hasRole('super_admin'), match: (url) => url.startsWith('/app/vendors') },
-                { label: 'Locations', href: route('app.locations.index'), icon: icon.location, show: can('view_any_location') || hasRole('super_admin'), match: (url) => url.startsWith('/app/locations') },
-                { label: 'Projects', href: route('app.projects.index'), icon: icon.project, show: can('view_any_project') || hasRole('super_admin'), match: (url) => url.startsWith('/app/projects') },
-                { label: 'Departments', href: route('app.departments.index'), icon: icon.dept, show: can('view_any_departments') || hasRole('super_admin'), match: (url) => url.startsWith('/app/departments') },
+                { label: 'Items', href: route('app.items.index'), icon: icon.item, show: can('view_any_item'), match: (url) => url.startsWith('/app/items') },
+                { label: 'Vendors', href: route('app.vendors.index'), icon: icon.vendor, show: can('view_any_vendors'), match: (url) => url.startsWith('/app/vendors') },
+                { label: 'Locations', href: route('app.locations.index'), icon: icon.location, show: can('view_any_location'), match: (url) => url.startsWith('/app/locations') },
+                { label: 'Projects', href: route('app.projects.index'), icon: icon.project, show: can('view_any_project'), match: (url) => url.startsWith('/app/projects') },
+                { label: 'Departments', href: route('app.departments.index'), icon: icon.dept, show: can('view_any_departments'), match: (url) => url.startsWith('/app/departments') },
             ].filter((item) => item.show),
         },
         {
             key: 'access',
             label: 'Configurations',
             items: [
-                { label: 'Users', href: route('app.users.index'), icon: icon.user, show: can('view_any_user') || hasRole('super_admin'), match: (url) => url.startsWith('/app/users') },
-                { label: 'Roles', href: route('app.roles.index'), icon: icon.role, show: can('view_any_role') || hasRole('super_admin'), match: (url) => url.startsWith('/app/roles') },
+                { label: 'Users', href: route('app.users.index'), icon: icon.user, show: can('view_any_user'), match: (url) => url.startsWith('/app/users') },
+                { label: 'Roles', href: route('app.roles.index'), icon: icon.role, show: can('view_any_role'), match: (url) => url.startsWith('/app/roles') },
                 { label: 'Profile', href: route('app.profile'), icon: icon.profile, show: true, match: (url) => url.startsWith('/app/profile') },
             ].filter((item) => item.show),
         },

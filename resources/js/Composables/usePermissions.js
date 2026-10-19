@@ -7,13 +7,7 @@ export function usePermissions() {
     const permissions = computed(() => page.props.auth?.permissions ?? []);
     const roles = computed(() => page.props.auth?.roles ?? []);
 
-    const can = (permission) => {
-        if (roles.value.includes('super_admin')) {
-            return true;
-        }
-
-        return permissions.value.includes(permission);
-    };
+    const can = (permission) => permissions.value.includes(permission);
 
     const canAny = (list) => list.some((permission) => can(permission));
 

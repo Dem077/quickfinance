@@ -13,50 +13,50 @@ const props = defineProps({
 
 const page = usePage();
 const user = computed(() => page.props.auth?.user);
-const { can, hasRole } = usePermissions();
+const { can } = usePermissions();
 
 const modules = computed(() => [
     {
         title: 'Purchase Requests',
         blurb: 'Create, route, and close PRs',
         href: route('app.purchase-requests.index'),
-        show: can('view_any_purchase::requests') || hasRole('super_admin'),
+        show: can('view_any_purchase::requests'),
     },
     {
         title: 'Procure',
         blurb: 'Orders and advance forms',
         href: route('app.purchase-orders.index'),
-        show: can('view_any_purchase::orders') || hasRole('super_admin'),
+        show: can('view_any_purchase::orders'),
     },
     {
         title: 'Petty Cash',
         blurb: 'Reimburse and approve',
         href: route('app.petty-cash.index'),
-        show: can('view_any_petty::cash::reimbursment') || hasRole('super_admin'),
+        show: can('view_any_petty::cash::reimbursment'),
     },
     {
         title: 'Assets',
         blurb: 'Receive and serial sync',
         href: route('app.asset-management.index'),
-        show: can('view_any_asset::management') || hasRole('super_admin'),
+        show: can('view_any_asset::management'),
     },
     {
         title: 'Reports',
         blurb: 'Templates and CSV export',
         href: route('app.reports.index'),
-        show: can('view_any_report') || hasRole('super_admin'),
+        show: can('view_any_report'),
     },
     {
         title: 'Dashboard charts',
         blurb: 'Build the charts on this page',
         href: route('app.charts.index'),
-        show: can('view_any_chart') || hasRole('super_admin'),
+        show: can('view_any_chart'),
     },
     {
         title: 'Budgets',
         blurb: 'Accounts and top-ups',
         href: route('app.budget-accounts.index'),
-        show: can('view_any_budget::accounts') || hasRole('super_admin'),
+        show: can('view_any_budget::accounts'),
     },
 ].filter((mod) => mod.show));
 
