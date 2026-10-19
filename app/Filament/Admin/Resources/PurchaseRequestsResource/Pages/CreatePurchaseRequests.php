@@ -13,18 +13,7 @@ class CreatePurchaseRequests extends CreateRecord
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        $year = date('Y');
-        $count = PurchaseRequests::whereYear('created_at', $year)->count() + 1;
-
-        do {
-            $pr_no = sprintf('PR/AGRO/%s/%04d', $year, $count);
-            $exists = PurchaseRequests::where('pr_no', $pr_no)->exists();
-            if ($exists) {
-                $count++;
-            }
-        } while ($exists);
-
-        $data['pr_no'] = $pr_no;
+        $data['pr_no'] = PurchaseRequests::generateNextPrNo();
 
         return $data;
     }

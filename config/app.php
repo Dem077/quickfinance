@@ -123,4 +123,21 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Purchase request sequence
+    |--------------------------------------------------------------------------
+    |
+    | First sequence used for PR/AGRO/{year}/{sequence}. The start number
+    | applies only to PR_SEQUENCE_START_YEAR; other years begin at 0001.
+    | Later numbers continue from the higher of this value and existing PRs.
+    |
+    */
+
+    'pr_sequence_start' => max(1, (int) env('PR_SEQUENCE_START', 1)),
+
+    'pr_sequence_start_year' => env('PR_SEQUENCE_START_YEAR') !== null && env('PR_SEQUENCE_START_YEAR') !== ''
+        ? (int) env('PR_SEQUENCE_START_YEAR')
+        : null,
+
 ];

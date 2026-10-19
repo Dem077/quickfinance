@@ -43,6 +43,44 @@ class PurchaseRequests extends Model
         'status' => PurchaseRequestsStatus::class,
     ];
 
+    public static function generateNextPrNo(): string
+    {
+        $year = (int) date('Y');
+        $prefix = "PR/AGRO/{$year}/";
+        $start = max(1, (int) config('app.pr_sequence_start', 1));
+        $startYear = config('app.pr_sequence_start_year');
+
+        if ($startYear !== null && (int) $startYear !== $year) {
+            $start = 1;
+        }
+
+        $maxSequence = self::query()
+            ->where('pr_no', 'like', $prefix.'%')
+            ->pluck('pr_no')
+            ->map(function (?string $prNo) use ($prefix): int {
+                if (! $prNo || ! str_starts_with($prNo, $prefix)) {
+                    return 0;
+                }
+
+                $sequence = substr($prNo, strlen($prefix));
+
+                return is_numeric($sequence) ? (int) $sequence : 0;
+            })
+            ->max() ?? 0;
+
+        $count = max($maxSequence + 1, $start);
+
+        do {
+            $prNo = sprintf('PR/AGRO/%s/%04d', $year, $count);
+            $exists = self::where('pr_no', $prNo)->exists();
+            if ($exists) {
+                $count++;
+            }
+        } while ($exists);
+
+        return $prNo;
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

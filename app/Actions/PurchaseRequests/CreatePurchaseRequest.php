@@ -63,7 +63,7 @@ class CreatePurchaseRequest extends Action
 
         return DB::transaction(function () use ($data, $userId): PurchaseRequests {
             $pr = PurchaseRequests::create([
-                'pr_no' => $this->nextPrNo(),
+                'pr_no' => PurchaseRequests::generateNextPrNo(),
                 'date' => $data['date'],
                 'purpose' => $data['purpose'],
                 'project_id' => $data['project_id'] ?? null,
@@ -87,22 +87,6 @@ class CreatePurchaseRequest extends Action
 
             return $pr->fresh(['purchaseRequestDetails', 'locations']);
         });
-    }
-
-    private function nextPrNo(): string
-    {
-        $year = date('Y');
-        $count = PurchaseRequests::whereYear('created_at', $year)->count() + 1;
-
-        do {
-            $prNo = sprintf('PR/AGRO/%s/%04d', $year, $count);
-            $exists = PurchaseRequests::where('pr_no', $prNo)->exists();
-            if ($exists) {
-                $count++;
-            }
-        } while ($exists);
-
-        return $prNo;
     }
 
     /**
