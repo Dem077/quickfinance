@@ -564,9 +564,24 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                     ->label('View Document')
                     ->button()
                     ->icon('heroicon-o-arrow-down-on-square')
-                    ->visible(fn ($record) => filled($record->uploaded_document)
-                        && Storage::disk('public')->exists($record->uploaded_document))
-                    ->url(fn ($record) => asset('storage/'.$record->uploaded_document))
+                    ->visible(function ($record) {
+                        foreach ([$record->supporting_document, $record->uploaded_document] as $path) {
+                            if (filled($path) && Storage::disk('public')->exists($path)) {
+                                return true;
+                            }
+                        }
+
+                        return false;
+                    })
+                    ->url(function ($record) {
+                        foreach ([$record->supporting_document, $record->uploaded_document] as $path) {
+                            if (filled($path) && Storage::disk('public')->exists($path)) {
+                                return asset('storage/'.$path);
+                            }
+                        }
+
+                        return null;
+                    })
                     ->openUrlInNewTab(),
 
                 Tables\Actions\Action::make('download_pdf')

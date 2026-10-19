@@ -14,6 +14,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 
 class ViewPurchaseRequests extends ViewRecord
 {
@@ -194,8 +195,24 @@ class ViewPurchaseRequests extends ViewRecord
             Actions\Action::make('view_document')
                 ->label('View Document')
                 ->icon('heroicon-o-eye')
-                ->visible(fn ($record) => $record->uploaded_document)
-                ->url(fn ($record) => asset('storage/'.$record->uploaded_document))
+                ->visible(function ($record) {
+                    foreach ([$record->supporting_document, $record->uploaded_document] as $path) {
+                        if (filled($path) && Storage::disk('public')->exists($path)) {
+                            return true;
+                        }
+                    }
+
+                    return false;
+                })
+                ->url(function ($record) {
+                    foreach ([$record->supporting_document, $record->uploaded_document] as $path) {
+                        if (filled($path) && Storage::disk('public')->exists($path)) {
+                            return asset('storage/'.$path);
+                        }
+                    }
+
+                    return null;
+                })
                 ->openUrlInNewTab(),
 
             Actions\Action::make('download_pdf')

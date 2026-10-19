@@ -181,6 +181,13 @@ const detailFields = computed(() => {
     if (props.record.project) {
         fields.splice(4, 0, { label: 'Project', value: props.record.project });
     }
+    if (props.record.supporting_document_url) {
+        fields.push({
+            label: 'Supporting document',
+            value: props.record.supporting_document_name || 'View document',
+            href: props.record.supporting_document_url,
+        });
+    }
     if (props.record.hod) fields.push({ label: 'HOD approved by', value: props.record.hod });
     if (props.record.finance) fields.push({ label: 'Finance approved by', value: props.record.finance });
     if (props.record.md_dmd) fields.push({ label: 'MD/DMD approved by', value: props.record.md_dmd });
@@ -465,8 +472,17 @@ const openPurchaseOrder = (order) => {
                                     class="ui-input"
                                     @change="onHeaderFileChange"
                                 />
-                                <p v-if="record.supporting_document" class="mt-1 text-xs text-slate-500">
-                                    Current file kept unless you choose a new one.
+                                <p v-if="record.supporting_document_url" class="mt-1 text-xs text-slate-500">
+                                    Current:
+                                    <a
+                                        :href="record.supporting_document_url"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        class="font-medium text-brand-700 underline underline-offset-2 dark:text-brand-400"
+                                    >
+                                        {{ record.supporting_document_name || 'View document' }}
+                                    </a>
+                                    — kept unless you choose a new one.
                                 </p>
                                 <p v-if="headerForm.errors.supporting_document" class="mt-1 text-xs text-red-600">
                                     {{ headerForm.errors.supporting_document }}
@@ -488,7 +504,18 @@ const openPurchaseOrder = (order) => {
                             class="border-b border-slate-100 px-4 py-3.5 text-sm dark:border-slate-800 sm:px-5"
                         >
                             <dt class="text-xs text-slate-500">{{ field.label }}</dt>
-                            <dd class="mt-1 font-medium text-slate-900 dark:text-slate-100">{{ field.value }}</dd>
+                            <dd class="mt-1 font-medium text-slate-900 dark:text-slate-100">
+                                <a
+                                    v-if="field.href"
+                                    :href="field.href"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="text-brand-700 underline decoration-brand-300 underline-offset-2 hover:text-brand-800 dark:text-brand-400 dark:decoration-brand-700 dark:hover:text-brand-300"
+                                >
+                                    {{ field.value }}
+                                </a>
+                                <template v-else>{{ field.value }}</template>
+                            </dd>
                         </div>
                         <div class="border-b border-slate-100 px-4 py-3.5 text-sm dark:border-slate-800 sm:col-span-2 sm:px-5">
                             <dt class="text-xs text-slate-500">Purpose</dt>

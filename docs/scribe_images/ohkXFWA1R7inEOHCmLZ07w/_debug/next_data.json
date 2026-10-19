@@ -1,0 +1,30 @@
+{
+  "props": {
+    "pageProps": {
+      "pageId": "How_to_Create_and_Submit_a_New_Purchase_Request__ohkXFWA1R7inEOHCmLZ07w",
+      "backendPID": "2a2191715-6035-47b8-a710-e1c298b674ef",
+      "result": {
+        "detail": "Authentication credentials were not provided."
+      },
+      "initialVisibleActions": [],
+      "error": 401,
+      "errorMessage": "Authentication credentials were not provided.",
+      "isAuthError": true,
+      "actionsStatus": 401
+    },
+    "route": "/embed/[pid]",
+    "tokens": {},
+    "__N_SSP": true
+  },
+  "page": "/embed/[pid]",
+  "query": {
+    "skipIntro": "true",
+    "pid": "How_to_Create_and_Submit_a_New_Purchase_Request__ohkXFWA1R7inEOHCmLZ07w"
+  },
+  "buildId": "c5y64OeU8jCgdVg9ALj6a",
+  "isFallback": false,
+  "isExperimentalCompile": false,
+  "gssp": true,
+  "appGip": true,
+  "scriptLoader": []
+}

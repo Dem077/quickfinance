@@ -30,6 +30,9 @@
             width: 120px;
            
         }
+        .header {
+            padding: 0 20px;
+        }
         .logo {
             padding: 0;
             width: 120px;
@@ -106,18 +109,18 @@
     <!--mpdf
     <htmlpageheader name="custom-header">
             <div class="header">
-               <img class="logo" src="images/agro/agrologo.png" alt="Logo">
+               <img class="logo" src="images/agro/agrologo.png" alt="Logo" width="100">
             </div>
         </htmlpageheader>
-    <sethtmlpageheader name="custom-header" value="on" show-this-page="1" />
+    <sethtmlpageheader name="custom-header" value="on" show-this-page="0" />
     mpdf-->
     <div class="container">
         <table style="width: 100%">
             <tr>
-                <td class="logo-cell" >
-                    
+                <td class="logo-cell">
+                    <img class="logo" src="images/agro/agrologo.png" alt="Logo" width="120">
                 </td>
-                <td class="name-cell"> 
+                <td class="name-cell">
                     <table class="name-table">
                         <tr>
                             <td><h1>PURCHASE REQUEST</h1></td>
@@ -202,55 +205,6 @@
                     <td><strong>{{$items->sum('est_cost')}}</strong></td>
                 </tr>
         </table>
-
-        <!--mpdf
-    <htmlpagefooter name="custom-footer">
-        <table style="width: 100%; border: 2px solid #000; margin-bottom: 20px; ">
-            <tr>
-                <td style="height: 20px;"><strong>Purpose:</strong>  {{$record->purpose}}</td>
-            </tr>
-        </table>
-        <table class="footer-table">
-            <thead>
-                <tr>
-                    <th>Checked By:</th>
-                    <th>Budget Verified By:</th>
-                    <th>Approved By:</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr > 
-                    <td style="height: 70px;text-align: center; border-right: 1px solid #000">
-                        @if($record->hodapprovedby?->signature)
-                            <img src="{{ $record->hodapprovedby->signature }}" alt="Signature" style="width: 30%; height: 10%;">
-                        @endif
-                    </td>
-                    <td style="height: 70px;text-align: center; border-right: 1px solid #000">
-                        @if($record->approvedby?->signature)
-                            <img src="{{ $record->approvedby->signature }}" alt="Signature" style="width: 30%; height: 10%;">
-                        @endif
-                    </td>
-                    <td style="height: 70px; text-align: center;">
-                        @if($record->mdDmdApprovedBy?->signature)
-                            <img src="{{ $record->mdDmdApprovedBy->signature }}" alt="Signature" style="width: 30%; height: 10%;">
-                        @endif
-                    </td>
-                </tr>
-                <tr>
-                    <td style="padding: 0%; text-align:center; width:33%; border-right: 1px solid #000"><strong>{{ $record->hodapprovedby?->name }}</strong></td>
-                    <td style="padding: 0%; text-align:center; width:33%; border-right: 1px solid #000"><strong>{{ $record->approvedby?->name }}</strong></td>
-                    <td style="padding: 0%; text-align:center; width:33%;"><strong>{{ $record->mdDmdApprovedBy?->name }}</strong></td>
-                </tr>
-                <tr>
-                    <td style="padding: 0%; text-align:center; height:30px; width:33%; border-right: 1px solid #000">{{ $record->hodapprovedby?->designation }}</td>
-                    <td style="padding: 0%; text-align:center; height:30px; width:33%; border-right: 1px solid #000">{{ $record->approvedby?->designation }}</td>
-                    <td style="padding: 0%; text-align:center; height:30px; width:33%;">{{ $record->mdDmdApprovedBy?->designation }}</td>
-                </tr>
-        </table>
     </div>
-      
-    </htmlpagefooter>
-    <sethtmlpagefooter name="custom-footer" value="on" />
-    mpdf-->
 </body>
 </html>

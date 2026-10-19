@@ -250,10 +250,26 @@ const cancelHref = isEdit
                         <label class="ui-label">Document</label>
                         <div class="flex items-center gap-2">
                             <button type="button" class="ui-btn-secondary shrink-0" @click="fileInputRef?.click()">
-                                {{ form.supporting_document ? 'Replace' : 'Attach' }}
+                                {{ form.supporting_document ? 'Replace' : (record?.supporting_document_url ? 'Replace' : 'Attach') }}
                             </button>
                             <p class="min-w-0 truncate text-xs text-slate-500 dark:text-slate-400">
-                                {{ form.supporting_document?.name || 'Optional · max 10 MB' }}
+                                <template v-if="form.supporting_document">
+                                    {{ form.supporting_document.name }}
+                                </template>
+                                <template v-else-if="record?.supporting_document_url">
+                                    Current:
+                                    <a
+                                        :href="record.supporting_document_url"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        class="font-medium text-brand-700 underline underline-offset-2 dark:text-brand-400"
+                                    >
+                                        {{ record.supporting_document_name || 'View document' }}
+                                    </a>
+                                </template>
+                                <template v-else>
+                                    Optional · max 10 MB
+                                </template>
                             </p>
                             <button
                                 v-if="form.supporting_document"

@@ -231,17 +231,14 @@ class PurchaseRequestController extends Controller
                 ...$actions,
                 'downloadPdf' => in_array($status, [PurchaseRequestsStatus::Approved, PurchaseRequestsStatus::MD_DMD_Approved], true)
                     && $user->can('send_approval_purchase::requests'),
-                'viewDocument' => filled($purchaseRequest->uploaded_document)
-                    && Storage::disk('public')->exists($purchaseRequest->uploaded_document),
+                'viewDocument' => $this->documentPath($purchaseRequest) !== null,
                 'manageLines' => $status === PurchaseRequestsStatus::Draft && $user->can('send_approval_purchase::requests'),
                 'editLineBudget' => $status === PurchaseRequestsStatus::HODApproved
                     && $user->can('approve_purchase::requests'),
                 'audit' => $user->can('audit', PurchaseRequests::class),
             ],
             'pdfUrl' => route('purchase-requests.download', $purchaseRequest),
-            'documentUrl' => $purchaseRequest->uploaded_document
-                ? asset('storage/'.$purchaseRequest->uploaded_document)
-                : null,
+            'documentUrl' => $this->documentUrl($purchaseRequest),
         ]);
     }
 
@@ -281,6 +278,8 @@ class PurchaseRequestController extends Controller
                 'project_id' => $purchaseRequest->project_id,
                 'locations' => $purchaseRequest->locations->pluck('id'),
                 'supporting_document' => $purchaseRequest->supporting_document,
+                'supporting_document_url' => $this->documentUrl($purchaseRequest),
+                'supporting_document_name' => $this->documentName($purchaseRequest),
                 'details' => $purchaseRequest->purchaseRequestDetails->map(fn ($detail) => [
                     'id' => $detail->id,
                     'item_id' => $detail->item_id,
@@ -734,6 +733,8 @@ class PurchaseRequestController extends Controller
             'location_ids' => $pr->locations->pluck('id')->values()->all(),
             'locations' => $pr->locations->pluck('name'),
             'supporting_document' => $pr->supporting_document,
+            'supporting_document_url' => $this->documentUrl($pr),
+            'supporting_document_name' => $this->documentName($pr),
             'hod' => $pr->hodapprovedby?->name,
             'finance' => $pr->approvedby?->name,
             'md_dmd' => $pr->mdDmdApprovedBy?->name,
@@ -776,5 +777,33 @@ class PurchaseRequestController extends Controller
     {
         return $pr->status === PurchaseRequestsStatus::Draft
             && $user->can('send_approval_purchase::requests');
+    }
+
+    /**
+     * Prefer the user-uploaded supporting document; fall back to legacy uploaded_document.
+     */
+    private function documentPath(PurchaseRequests $pr): ?string
+    {
+        foreach ([$pr->supporting_document, $pr->uploaded_document] as $path) {
+            if (filled($path) && Storage::disk('public')->exists($path)) {
+                return $path;
+            }
+        }
+
+        return null;
+    }
+
+    private function documentUrl(PurchaseRequests $pr): ?string
+    {
+        $path = $this->documentPath($pr);
+
+        return $path ? asset('storage/'.$path) : null;
+    }
+
+    private function documentName(PurchaseRequests $pr): ?string
+    {
+        $path = $this->documentPath($pr);
+
+        return $path ? basename($path) : null;
     }
 }

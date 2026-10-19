@@ -42,16 +42,24 @@ Route::get('pr/{record}/preview', function (PurchaseRequests $record) {
     $items = $record->purchaseRequestDetails()->with('item')->get();
 
     $html = view('pdf.purchase-request', ['record' => $record, 'items' => $items])->render();
+    $footer = view('pdf.partials.purchase-request-footer', ['record' => $record])->render();
 
     $mpdf = new Mpdf([
         'mode' => 'utf-8',
         'format' => 'A4',
-        'margin_header' => '0',
-        'margin_top' => '15',
-        'margin_bottom' => '30',
-        'margin_footer' => '20',
+        'margin_header' => 8,
+        // Keep the original tight first-page spacing; stretch only when the
+        // repeating header logo appears on page 2+.
+        'margin_top' => 15,
+        // Room for purpose + signature box + page number on every page.
+        'margin_bottom' => 68,
+        'margin_footer' => 8,
     ]);
+    $mpdf->setAutoTopMargin = 'stretch';
+    $mpdf->setAutoBottomMargin = 'stretch';
 
+    // Set before WriteHTML so page 1 reserves footer space and shows it.
+    $mpdf->SetHTMLFooter($footer);
     $mpdf->WriteHTML($html);
 
     return response($mpdf->Output('', Destination::INLINE))
