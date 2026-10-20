@@ -15,12 +15,8 @@ class EditPurchaseOrders extends EditRecord
 
     protected function mutateFormDataBeforeSave(array $data): array
     {
-        if (($data['payment_method'] ?? '') === 'petty_cash' && ! empty($data['po_no'])) {
-            $selected = $data['po_no'];
-
-            if ($selected === PettyCashReimbursment::GENERATE_FORM_NO_OPTION) {
-                $data['po_no'] = PettyCashReimbursment::resolveFormNoForProcure($selected);
-            }
+        if (($data['payment_method'] ?? '') === 'petty_cash') {
+            $data['po_no'] = PettyCashReimbursment::resolveFormNoForProcure($data['po_no'] ?? null);
         }
 
         return $data;

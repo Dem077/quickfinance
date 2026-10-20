@@ -81,7 +81,8 @@ class PurchaseOrdersResource extends Resource implements HasShieldPermissions
                     ->default(fn (Get $get, string $operation) => $operation === 'create' && $get('payment_method') === 'petty_cash'
                         ? PettyCashReimbursment::GENERATE_FORM_NO_OPTION
                         : null)
-                    ->required(fn (Get $get) => $get('payment_method') === 'petty_cash')
+                    ->helperText('Leave as “Assign when petty cash is submitted” unless you are attaching this order to an existing draft reimbursement.')
+                    ->required(false)
                     ->visible(fn (Get $get) => $get('payment_method') === 'petty_cash')
                     ->native(false)
                     ->searchable()

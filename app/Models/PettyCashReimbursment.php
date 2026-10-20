@@ -73,6 +73,7 @@ class PettyCashReimbursment extends Model
             ->where('status', PettyCashStatus::Draft)
             ->whereNotNull('form_no')
             ->where('form_no', '!=', '')
+            ->whereHas('pettyCashReimbursmentDetails')
             ->whereNotIn('form_no', $usedFormNos)
             ->orderBy('form_no')
             ->get()
@@ -96,8 +97,7 @@ class PettyCashReimbursment extends Model
             );
         }
 
-        $next = self::generateNextFormNo();
-        $drafts[self::GENERATE_FORM_NO_OPTION] = "Generate new ({$next})";
+        $drafts[self::GENERATE_FORM_NO_OPTION] = 'Assign when petty cash is submitted';
 
         return $drafts;
     }
@@ -121,10 +121,10 @@ class PettyCashReimbursment extends Model
         ]);
     }
 
-    public static function resolveFormNoForProcure(string $selected): string
+    public static function resolveFormNoForProcure(?string $selected): ?string
     {
-        if ($selected === self::GENERATE_FORM_NO_OPTION) {
-            return self::createDraftWithFormNo()->form_no;
+        if ($selected === null || $selected === '' || $selected === self::GENERATE_FORM_NO_OPTION) {
+            return null;
         }
 
         return $selected;

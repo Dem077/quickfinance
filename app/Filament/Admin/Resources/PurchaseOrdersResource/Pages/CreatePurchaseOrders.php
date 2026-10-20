@@ -15,8 +15,8 @@ class CreatePurchaseOrders extends CreateRecord
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        if (($data['payment_method'] ?? '') === 'petty_cash' && ! empty($data['po_no'])) {
-            $data['po_no'] = PettyCashReimbursment::resolveFormNoForProcure($data['po_no']);
+        if (($data['payment_method'] ?? '') === 'petty_cash') {
+            $data['po_no'] = PettyCashReimbursment::resolveFormNoForProcure($data['po_no'] ?? null);
         }
 
         return $data;

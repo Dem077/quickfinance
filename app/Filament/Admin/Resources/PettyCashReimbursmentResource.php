@@ -51,26 +51,30 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
     {
         $user = Auth::user();
 
+        $query = parent::getEloquentQuery()
+            ->where(function (Builder $query): void {
+                $query->where('status', '!=', PettyCashStatus::Draft->value)
+                    ->orWhereHas('pettyCashReimbursmentDetails');
+            });
+
         if ($user->hasRole('super_admin')) {
-            return parent::getEloquentQuery(); // Super admin sees all records
+            return $query;
         }
 
         // Check if user is HOD of any department
         $isHod = Departments::where('hod', $user->id)->exists();
 
         if ($isHod) {
-            return parent::getEloquentQuery()
-                ->where('status', '!=', PettyCashStatus::Draft->value);
+            return $query->where('status', '!=', PettyCashStatus::Draft->value);
         }
 
         if ($user->can('pv_approve_petty::cash::reimbursment')) {
-            return parent::getEloquentQuery()
+            return $query
                 ->where('status', '!=', PettyCashStatus::Draft->value)
                 ->where('status', '!=', PettyCashStatus::Submitted->value);
         }
 
-        return parent::getEloquentQuery()
-            ->where('user_id', $user->id);
+        return $query->where('user_id', $user->id);
     }
 
     public static function form(Form $form): Form

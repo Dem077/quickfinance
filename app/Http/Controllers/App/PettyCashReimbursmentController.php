@@ -403,7 +403,11 @@ class PettyCashReimbursmentController extends Controller
 
     private function scopedQuery($user): Builder
     {
-        $query = PettyCashReimbursment::query();
+        $query = PettyCashReimbursment::query()
+            ->where(function (Builder $query): void {
+                $query->where('status', '!=', PettyCashStatus::Draft->value)
+                    ->orWhereHas('pettyCashReimbursmentDetails');
+            });
 
         if ($user->hasRole('super_admin')) {
             return $query;
