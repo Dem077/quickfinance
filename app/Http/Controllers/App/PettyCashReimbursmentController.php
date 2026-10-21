@@ -20,7 +20,10 @@ use App\Models\PurchaseOrderDetails;
 use App\Models\PurchaseOrders;
 use App\Models\SubBudgetAccounts;
 use App\Models\Vendors;
+use App\Support\DepartmentBudgetOptions;
+use App\Support\PettyCashClaimedPrItems;
 use App\Support\PinnedTabs;
+use App\Support\PurchaseRequestBudget;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -173,6 +176,7 @@ class PettyCashReimbursmentController extends Controller
 
         $header = $this->validatedHeader($request, creating: true);
         $details = $this->validatedDetails($request);
+        PettyCashClaimedPrItems::assertDetailsAvailable($details['details']);
 
         $reimbursment = CreatePettyCashReimbursment::run([
             'date' => $header['date'],
@@ -202,9 +206,23 @@ class PettyCashReimbursmentController extends Controller
 
         $user = $request->user();
 
+        $includePoIds = $pettyCashReimbursment->pettyCashReimbursmentDetails
+            ->pluck('po_id')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
         return Inertia::render('PettyCash/Show', [
             'reimbursment' => $this->showPayload($pettyCashReimbursment),
-            'options' => $this->formOptions($request),
+            'budgetSummary' => $this->budgetSummary($pettyCashReimbursment, $user),
+            'options' => $this->formOptions(
+                $request,
+                $includePoIds,
+                $pettyCashReimbursment->user?->department_id,
+                $pettyCashReimbursment->pettyCashReimbursmentDetails->pluck('sub_budget_id')->filter()->all(),
+                $pettyCashReimbursment->id,
+            ),
             'can' => $this->actionCapabilities($user, $pettyCashReimbursment),
         ]);
     }
@@ -214,7 +232,7 @@ class PettyCashReimbursmentController extends Controller
         $this->authorize('update', $pettyCashReimbursment);
         $this->ensureInScopedQuery($request, $pettyCashReimbursment);
 
-        $pettyCashReimbursment->load(['pettyCashReimbursmentDetails']);
+        $pettyCashReimbursment->load(['pettyCashReimbursmentDetails', 'user']);
         $includePoIds = $pettyCashReimbursment->pettyCashReimbursmentDetails
             ->pluck('po_id')
             ->filter()
@@ -244,7 +262,13 @@ class PettyCashReimbursmentController extends Controller
                 ])->values(),
             ],
             'formNoPreview' => $pettyCashReimbursment->form_no,
-            'options' => $this->formOptions($request, $includePoIds),
+            'options' => $this->formOptions(
+                $request,
+                $includePoIds,
+                $pettyCashReimbursment->user?->department_id,
+                $pettyCashReimbursment->pettyCashReimbursmentDetails->pluck('sub_budget_id')->filter()->all(),
+                $pettyCashReimbursment->id,
+            ),
         ]);
     }
 
@@ -261,6 +285,10 @@ class PettyCashReimbursmentController extends Controller
 
         if ($pettyCashReimbursment->status === PettyCashStatus::Draft) {
             $data['details'] = $this->validatedDetails($request)['details'];
+            PettyCashClaimedPrItems::assertDetailsAvailable(
+                $data['details'],
+                $pettyCashReimbursment->id,
+            );
         }
 
         UpdatePettyCashReimbursment::run($pettyCashReimbursment, $data);
@@ -366,6 +394,10 @@ class PettyCashReimbursmentController extends Controller
 
         $detail = $this->validatedSingleDetail($request);
 
+        if (! empty($detail['po_id']) && ! empty($detail['item_id'])) {
+            PettyCashClaimedPrItems::assertAvailable((int) $detail['po_id'], (int) $detail['item_id']);
+        }
+
         PettyCashReimbursmentDetail::create([
             'petty_cash_reimb_id' => $pettyCashReimbursment->id,
             ...$detail,
@@ -383,7 +415,17 @@ class PettyCashReimbursmentController extends Controller
         $this->assertDraft($pettyCashReimbursment);
         $this->ensureDetailBelongs($pettyCashReimbursment, $detail);
 
-        $detail->update($this->validatedSingleDetail($request));
+        $payload = $this->validatedSingleDetail($request);
+
+        if (! empty($payload['po_id']) && ! empty($payload['item_id'])) {
+            PettyCashClaimedPrItems::assertAvailable(
+                (int) $payload['po_id'],
+                (int) $payload['item_id'],
+                exceptDetailId: $detail->id,
+            );
+        }
+
+        $detail->update($payload);
 
         return back()->with('success', 'Line item updated.');
     }
@@ -573,33 +615,25 @@ class PettyCashReimbursmentController extends Controller
         return $request->file('supporting_documents')->store('petty-cash-supporting', 'public');
     }
 
-    private function formOptions(Request $request, array $includePoIds = []): array
-    {
-        $departmentId = $request->user()?->department_id;
+    /**
+     * @param  list<int|string>  $includePoIds
+     * @param  list<int|string>|null  $alwaysIncludeBudgetIds
+     */
+    private function formOptions(
+        Request $request,
+        array $includePoIds = [],
+        ?int $departmentId = null,
+        ?array $alwaysIncludeBudgetIds = null,
+        ?int $exceptReimbursmentId = null,
+    ): array {
+        $departmentId ??= $request->user()?->department_id;
+        $claimedKeys = PettyCashClaimedPrItems::keys($exceptReimbursmentId);
 
-        $budgets = SubBudgetAccounts::with(['allocations' => function ($query) use ($departmentId): void {
-            if ($departmentId) {
-                $query->where('department_id', $departmentId);
-            }
-        }])
-            ->get()
-            ->filter(function ($row) use ($departmentId) {
-                return $departmentId
-                    ? $row->allocations->firstWhere('department_id', $departmentId)
-                    : $row->allocations->isNotEmpty();
-            })
-            ->map(function (SubBudgetAccounts $row) use ($departmentId): array {
-                $allocation = $departmentId
-                    ? $row->allocations->firstWhere('department_id', $departmentId)
-                    : $row->allocations->first();
-
-                return [
-                    'id' => $row->id,
-                    'label' => $row->getSelectLabel(),
-                    'allocated_amount' => $allocation?->amount,
-                ];
-            })
-            ->values();
+        $budgets = DepartmentBudgetOptions::forDepartment(
+            $departmentId,
+            $alwaysIncludeBudgetIds,
+            requireAvailable: false,
+        );
 
         $purchaseOrders = PurchaseOrders::query()
             ->where('payment_method', 'petty_cash')
@@ -609,9 +643,21 @@ class PettyCashReimbursmentController extends Controller
                     $query->orWhereIn('id', $includePoIds);
                 }
             })
+            ->when(
+                $departmentId,
+                fn ($query) => $query->where(function ($query) use ($departmentId, $includePoIds): void {
+                    $query->whereHas(
+                        'purchaseRequest.user',
+                        fn ($userQuery) => $userQuery->where('department_id', $departmentId),
+                    );
+                    if ($includePoIds !== []) {
+                        $query->orWhereIn('id', $includePoIds);
+                    }
+                }),
+            )
             ->with(['purchaseRequest', 'purchaseOrderDetails.items'])
             ->get()
-            ->map(function (PurchaseOrders $po): array {
+            ->map(function (PurchaseOrders $po) use ($claimedKeys): array {
                 $prNo = $po->purchaseRequest?->pr_no ?? 'N/A';
 
                 return [
@@ -623,6 +669,9 @@ class PettyCashReimbursmentController extends Controller
                     'receipt_url' => $this->publicUrl($po->supporting_document),
                     'items' => $po->purchaseOrderDetails
                         ->filter(fn ($d) => $d->items !== null)
+                        ->reject(fn (PurchaseOrderDetails $d) => $claimedKeys->contains(
+                            PettyCashClaimedPrItems::key((int) $po->id, (int) $d->item_id),
+                        ))
                         ->map(fn (PurchaseOrderDetails $d): array => [
                             'item_id' => $d->item_id,
                             'name' => $d->items?->name,
@@ -632,6 +681,7 @@ class PettyCashReimbursmentController extends Controller
                         ->values(),
                 ];
             })
+            ->filter(fn (array $po): bool => $po['items']->isNotEmpty() || in_array($po['id'], $includePoIds, false))
             ->values();
 
         $vendors = Vendors::query()
@@ -647,6 +697,80 @@ class PettyCashReimbursmentController extends Controller
             'purchaseOrders' => $purchaseOrders,
             'vendors' => $vendors,
         ];
+    }
+
+    /**
+     * @return list<array{
+     *     id: int,
+     *     label: string,
+     *     department: string|null,
+     *     budget_account_id: int|null,
+     *     can_open: bool,
+     *     allocated: float,
+     *     on_hold: float,
+     *     this_record: float,
+     *     available: float,
+     *     usage_percent: int
+     * }>
+     */
+    private function budgetSummary(PettyCashReimbursment $record, $user): array
+    {
+        $departmentId = $record->user?->department_id;
+        $budgetIds = $record->pettyCashReimbursmentDetails
+            ->pluck('sub_budget_id')
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($budgetIds->isEmpty()) {
+            return [];
+        }
+
+        $accounts = SubBudgetAccounts::query()
+            ->whereIn('id', $budgetIds)
+            ->with([
+                'budgetAccount',
+                'allocations' => fn ($query) => $query->when(
+                    $departmentId,
+                    fn ($allocationQuery) => $allocationQuery->where('department_id', $departmentId),
+                ),
+            ])
+            ->get()
+            ->keyBy('id');
+
+        $holdsByBudget = $departmentId
+            ? PurchaseRequestBudget::onHoldBySubBudgetIds($budgetIds->all(), $departmentId)
+            : [];
+
+        return $budgetIds->map(function ($budgetId) use ($record, $accounts, $holdsByBudget, $user): array {
+            $account = $accounts->get($budgetId);
+            $parent = $account?->budgetAccount;
+            $allocated = (float) ($account?->allocations->sum('amount') ?? 0);
+            $onHold = (float) ($holdsByBudget[$budgetId] ?? 0);
+            $thisRecord = (float) $record->pettyCashReimbursmentDetails
+                ->where('sub_budget_id', $budgetId)
+                ->sum('amount');
+            $alreadyDeducted = $record->hasBudgetBeenDeducted();
+            $available = max(0, $allocated - $onHold - ($alreadyDeducted ? 0 : $thisRecord));
+            $committed = $onHold + ($alreadyDeducted ? 0 : $thisRecord);
+
+            return [
+                'id' => (int) $budgetId,
+                'label' => $account?->getSelectLabel() ?? 'Budget #'.$budgetId,
+                'department' => $record->user?->department?->name,
+                'budget_account_id' => $parent?->id,
+                'can_open' => $parent
+                    ? ($user->can('view', $parent) || $user->can('update', $parent))
+                    : false,
+                'allocated' => $allocated,
+                'on_hold' => $onHold,
+                'this_record' => $thisRecord,
+                'available' => $available,
+                'usage_percent' => $allocated > 0
+                    ? (int) min(100, round(($committed / $allocated) * 100))
+                    : 0,
+            ];
+        })->values()->all();
     }
 
     private function listPayload(PettyCashReimbursment $record, $user): array

@@ -27,6 +27,7 @@ use App\Models\PurchaseRequestDetails;
 use App\Models\PurchaseRequests;
 use App\Models\SubBudgetAccounts;
 use App\Models\User;
+use App\Support\DepartmentBudgetOptions;
 use App\Support\PinnedTabs;
 use App\Support\PurchaseRequestBudget;
 use App\Support\PurchaseRequestStatusTabs;
@@ -539,38 +540,12 @@ class PurchaseRequestController extends Controller
         ?array $excludeDetailIds = null,
     ): array {
         $departmentId ??= $request->user()->department_id;
-        $alwaysInclude = collect($alwaysIncludeBudgetIds ?? [])
-            ->map(fn ($id) => (int) $id)
-            ->filter()
-            ->unique()
-            ->values();
 
-        $budgets = SubBudgetAccounts::query()
-            ->when($departmentId, fn ($q) => $q->whereHas('allocations', fn ($a) => $a->where('department_id', $departmentId)))
-            ->with(['allocations' => fn ($q) => $q->when($departmentId, fn ($a) => $a->where('department_id', $departmentId))])
-            ->orderBy('code')
-            ->get();
-
-        $holds = $departmentId
-            ? PurchaseRequestBudget::onHoldBySubBudgetIds($budgets->pluck('id'), $departmentId, $excludeDetailIds)
-            : [];
-
-        $budgets = $budgets
-            ->map(function (SubBudgetAccounts $budget) use ($holds, $departmentId) {
-                $allocated = (float) $budget->allocations->sum('amount');
-                $onHold = (float) ($holds[$budget->id] ?? 0);
-                $available = $departmentId ? max(0, $allocated - $onHold) : $allocated;
-
-                return [
-                    'id' => $budget->id,
-                    'label' => $budget->getSelectLabel(),
-                    'allocated' => $allocated,
-                    'on_hold' => $onHold,
-                    'available' => $available,
-                ];
-            })
-            ->filter(fn (array $budget) => $budget['available'] > 0.00001 || $alwaysInclude->contains($budget['id']))
-            ->values();
+        $budgets = DepartmentBudgetOptions::forDepartment(
+            $departmentId,
+            $alwaysIncludeBudgetIds,
+            $excludeDetailIds,
+        );
 
         return [
             'locations' => Location::query()->orderBy('name')->get(['id', 'name']),
@@ -646,6 +621,7 @@ class PurchaseRequestController extends Controller
      * @return list<array{
      *     id: int,
      *     label: string,
+     *     department: string|null,
      *     budget_account_id: int|null,
      *     can_open: bool,
      *     allocated: float,
@@ -701,6 +677,7 @@ class PurchaseRequestController extends Controller
             return [
                 'id' => (int) $budgetId,
                 'label' => $account?->getSelectLabel() ?? 'Budget #'.$budgetId,
+                'department' => $pr->user?->department?->name,
                 'budget_account_id' => $parent?->id,
                 'can_open' => $parent
                     ? ($user->can('view', $parent) || $user->can('update', $parent))

@@ -6,6 +6,7 @@ use App\Actions\Action;
 use App\Enums\PettyCashStatus;
 use App\Models\PettyCashReimbursment;
 use App\Models\PettyCashReimbursmentDetail;
+use App\Support\PettyCashClaimedPrItems;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -50,6 +51,8 @@ class UpdatePettyCashReimbursment extends Action
                         'details' => 'At least one reimbursement item is required.',
                     ]);
                 }
+
+                PettyCashClaimedPrItems::assertDetailsAvailable($data['details'], $reimbursment->id);
 
                 $reimbursment->pettyCashReimbursmentDetails()->delete();
 

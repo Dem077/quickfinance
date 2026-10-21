@@ -13,6 +13,7 @@ use App\Models\PurchaseOrders;
 use App\Models\PurchaseRequests;
 use App\Models\SubBudgetAccounts;
 use App\Models\User;
+use App\Support\DepartmentBudgetOptions;
 use App\Support\PurchaseRequestBudget;
 use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
 use Closure;
@@ -160,47 +161,13 @@ class PurchaseRequestsResource extends Resource implements HasShieldPermissions
                                             ->columnSpan(2),
                                         Forms\Components\Select::make('budget_account')
                                             ->label('Budget Account')
-                                            ->options(function () {
-                                                $departmentId = Auth::user()?->department_id;
-
-                                                return SubBudgetAccounts::with(['allocations' => function ($query) use ($departmentId) {
-                                                    if ($departmentId) {
-                                                        $query->where('department_id', $departmentId);
-                                                    }
-                                                }, 'allocations.department'])
-                                                    ->get()
-                                                    ->filter(function ($row) use ($departmentId) {
-                                                        return $departmentId
-                                                            ? $row->allocations->firstWhere('department_id', $departmentId)
-                                                            : $row->allocations->isNotEmpty();
-                                                    })
-                                                    ->mapWithKeys(fn ($row) => [
-                                                        $row->id => $row->getSelectLabel(),
-                                                    ])
-                                                    ->toArray();
-                                            })
+                                            ->options(fn () => DepartmentBudgetOptions::filamentOptions(Auth::user()?->department_id))
                                             ->searchable()
                                             ->reactive()
-                                            ->helperText(function (Forms\Get $get): string {
-                                                $budgetAccountId = $get('budget_account');
-                                                $departmentId = Auth::user()?->department_id;
-
-                                                if (! $budgetAccountId || ! $departmentId) {
-                                                    return 'Select a budget account to view your department allocation.';
-                                                }
-
-                                                $account = SubBudgetAccounts::with([
-                                                    'allocations' => fn ($query) => $query->where('department_id', $departmentId),
-                                                ])->find($budgetAccountId);
-
-                                                $allocatedAmount = $account?->allocations->first()?->amount;
-
-                                                if ($allocatedAmount === null) {
-                                                    return 'No allocation found for your department.';
-                                                }
-
-                                                return 'Allocated budget: MVR '.number_format((float) $allocatedAmount, 2);
-                                            })
+                                            ->helperText(fn (Forms\Get $get): string => DepartmentBudgetOptions::helperText(
+                                                $get('budget_account') ? (int) $get('budget_account') : null,
+                                                Auth::user()?->department_id,
+                                            ))
                                             ->required()
                                             ->columnSpan(2),
                                         Forms\Components\TextInput::make('amount')

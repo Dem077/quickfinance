@@ -51,10 +51,14 @@ const vendorOptions = computed(() =>
 );
 
 const budgetOptions = computed(() =>
-    (props.options.budgets || []).map((budget) => ({
-        value: budget.id,
-        label: budget.label,
-    })),
+    (props.options.budgets || []).map((budget) => {
+        const available = Number(budget.available ?? budget.allocated_amount ?? 0);
+
+        return {
+            value: budget.id,
+            label: `${budget.label}${budget.department ? ` — ${budget.department}` : ''} (MVR ${formatMoney(available)} available)`,
+        };
+    }),
 );
 
 const itemKey = (poId, itemId) => `${poId}:${itemId}`;
@@ -164,9 +168,12 @@ const lineFromPo = (poId) => {
 
 const budgetHint = (subBudgetId) => {
     const budget = (props.options.budgets || []).find((row) => Number(row.id) === Number(subBudgetId));
-    if (! budget) return '';
-    if (budget.allocated_amount == null) return 'No allocation found for your department.';
-    return `Allocated: MVR ${formatMoney(budget.allocated_amount)}`;
+    if (! budget) return 'Select a budget account allocated to the department.';
+    if (budget.allocated_amount == null && budget.allocated == null) {
+        return 'No allocation found for this department.';
+    }
+    const department = budget.department ? `${budget.department} — ` : '';
+    return `${department}allocated MVR ${formatMoney(budget.allocated ?? budget.allocated_amount)}, available MVR ${formatMoney(budget.available)}`;
 };
 
 const setFromPr = (line, fromPr) => {

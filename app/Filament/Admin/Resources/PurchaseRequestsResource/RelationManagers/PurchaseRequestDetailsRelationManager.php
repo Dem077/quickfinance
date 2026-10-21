@@ -3,7 +3,7 @@
 namespace App\Filament\Admin\Resources\PurchaseRequestsResource\RelationManagers;
 
 use App\Enums\UnitsEnum;
-use App\Models\SubBudgetAccounts;
+use App\Support\DepartmentBudgetOptions;
 use App\Support\PurchaseRequestBudget;
 use Closure;
 use Filament\Forms;
@@ -50,36 +50,24 @@ class PurchaseRequestDetailsRelationManager extends RelationManager
                             ->columnSpan(2),
                         Forms\Components\Select::make('budget_account_id')
                             ->label('Budget Account')
-                            ->options(function () {
-                                $departmentId = Auth::user()?->department_id;
+                            ->options(function (): array {
+                                $this->getOwnerRecord()?->loadMissing('user');
 
-                                return SubBudgetAccounts::with(['allocations' => function ($query) use ($departmentId) {
-                                    if ($departmentId) {
-                                        $query->where('department_id', $departmentId);
-                                    }
-                                }, 'allocations.department', 'allocations.location'])
-                                    ->get()
-                                    ->filter(function ($row) use ($departmentId) {
-                                        return $departmentId
-                                            ? $row->allocations->firstWhere('department_id', $departmentId)
-                                            : $row->allocations->isNotEmpty();
-                                    })
-                                    ->mapWithKeys(function ($row) {
-                                        $allocation = $row->allocations->first();
-                                        $deptName = $allocation?->department?->name;
-                                        $amount = $allocation?->amount ?? 0;
-                                        $location = $allocation?->location?->name ? ' / '.$allocation->location->name : '';
+                                $departmentId = $this->getOwnerRecord()?->user?->department_id
+                                    ?? Auth::user()?->department_id;
 
-                                        $label = $row->code.' - '.$row->name;
-                                        if ($deptName) {
-                                            $label .= ' ('.$deptName.': '.number_format($amount, 2).$location.')';
-                                        } elseif ($location) {
-                                            $label .= ' ('.$location.')';
-                                        }
+                                return DepartmentBudgetOptions::filamentOptions($departmentId);
+                            })
+                            ->helperText(function (Forms\Get $get): string {
+                                $this->getOwnerRecord()?->loadMissing('user');
 
-                                        return [$row->id => $label];
-                                    })
-                                    ->toArray();
+                                $departmentId = $this->getOwnerRecord()?->user?->department_id
+                                    ?? Auth::user()?->department_id;
+
+                                return DepartmentBudgetOptions::helperText(
+                                    $get('budget_account_id') ? (int) $get('budget_account_id') : null,
+                                    $departmentId,
+                                );
                             })
                             ->searchable()
                             ->disabled(function ($record) use ($ownerRequestUserId): bool {
@@ -118,16 +106,18 @@ class PurchaseRequestDetailsRelationManager extends RelationManager
                                     }
                                     $budgetAccountId = $get('budget_account_id');
                                     if ($budgetAccountId) {
-                                        $departmentId = Auth::user()?->department_id;
+                                        $this->getOwnerRecord()?->loadMissing('user');
+                                        $departmentId = $this->getOwnerRecord()?->user?->department_id
+                                            ?? Auth::user()?->department_id;
 
-                                        $account = SubBudgetAccounts::with([
-                                            'allocations' => fn ($query) => $query->where('department_id', $departmentId),
-                                        ])->find($budgetAccountId);
+                                        if (! $departmentId) {
+                                            $fail('Requester has no department for budget allocation.');
 
-                                        $departmentAllocation = $account?->allocations->first();
+                                            return;
+                                        }
 
-                                        if (! $departmentAllocation) {
-                                            $fail('This budget code is not allocated to your department.');
+                                        if (PurchaseRequestBudget::allocatedForDepartment((int) $budgetAccountId, (int) $departmentId) <= 0) {
+                                            $fail('This budget code is not allocated to the requester department.');
 
                                             return;
                                         }

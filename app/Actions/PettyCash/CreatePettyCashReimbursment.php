@@ -6,6 +6,7 @@ use App\Actions\Action;
 use App\Enums\PettyCashStatus;
 use App\Models\PettyCashReimbursment;
 use App\Models\PettyCashReimbursmentDetail;
+use App\Support\PettyCashClaimedPrItems;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -34,6 +35,8 @@ class CreatePettyCashReimbursment extends Action
                 'details' => 'At least one reimbursement item is required.',
             ]);
         }
+
+        PettyCashClaimedPrItems::assertDetailsAvailable($data['details']);
 
         return DB::transaction(function () use ($data, $userId): PettyCashReimbursment {
             $reimbursment = PettyCashReimbursment::create([

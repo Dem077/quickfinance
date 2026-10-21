@@ -5,7 +5,8 @@ namespace App\Filament\Admin\Resources\PettyCashReimbursmentResource\RelationMan
 use App\Enums\PurchaseOrderStatus;
 use App\Models\PurchaseOrderDetails;
 use App\Models\PurchaseOrders;
-use App\Models\SubBudgetAccounts;
+use App\Support\DepartmentBudgetOptions;
+use App\Support\PettyCashClaimedPrItems;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
@@ -41,18 +42,36 @@ class PettyCashReimbursmentDetailRelationManager extends RelationManager
                     ->columnSpan(1),
                 Forms\Components\Select::make('po_id')
                     ->label('Record ID')
-                    ->options(
-                        PurchaseOrders::where('status', PurchaseOrderStatus::WaitingReimbursement->value)
+                    ->options(function (): array {
+                        $this->getOwnerRecord()?->loadMissing('user');
+                        $departmentId = $this->getOwnerRecord()?->user?->department_id
+                            ?? Auth::user()?->department_id;
+                        $ownerId = $this->getOwnerRecord()?->id;
+                        $claimedKeys = PettyCashClaimedPrItems::keys($ownerId ? (int) $ownerId : null);
+
+                        return PurchaseOrders::query()
+                            ->where('status', PurchaseOrderStatus::WaitingReimbursement->value)
                             ->where('payment_method', 'petty_cash')
-                            ->with('purchaseRequest')
+                            ->when(
+                                $departmentId,
+                                fn ($query) => $query->whereHas(
+                                    'purchaseRequest.user',
+                                    fn ($userQuery) => $userQuery->where('department_id', $departmentId),
+                                ),
+                            )
+                            ->with(['purchaseRequest', 'purchaseOrderDetails'])
                             ->get()
+                            ->filter(fn ($po) => $po->purchaseOrderDetails->contains(
+                                fn ($detail) => $detail->item_id
+                                    && ! $claimedKeys->contains(PettyCashClaimedPrItems::key((int) $po->id, (int) $detail->item_id)),
+                            ))
                             ->mapWithKeys(function ($po) {
                                 $prNo = $po->purchaseRequest?->pr_no ?? 'N/A';
 
                                 return [$po->id => "{$prNo} ({$po->po_no})"];
                             })
-                            ->toArray()
-                    )
+                            ->toArray();
+                    })
                     ->native(false)
                     ->searchable()
                     ->reactive()
@@ -87,8 +106,16 @@ class PettyCashReimbursmentDetailRelationManager extends RelationManager
                             ->pluck('item_id')
                             ->toArray() ?? [];
 
+                        $ownerId = $record?->petty_cash_reimb_id ?? $this->getOwnerRecord()?->id;
+
+                        $claimedItems = PettyCashClaimedPrItems::itemIdsForPo(
+                            (int) $poId,
+                            exceptReimbursmentId: $ownerId ? (int) $ownerId : null,
+                            exceptDetailId: $record?->id,
+                        );
+
                         return PurchaseOrderDetails::where('po_id', $poId)
-                            ->whereNotIn('item_id', $selectedItems)
+                            ->whereNotIn('item_id', [...$selectedItems, ...$claimedItems])
                             ->with('items')
                             ->get()
                             ->filter(fn ($detail) => $detail->items !== null && $detail->items->name !== null)
@@ -106,6 +133,9 @@ class PettyCashReimbursmentDetailRelationManager extends RelationManager
                                     ->first();
                                 if ($poDetail) {
                                     $set('amount', $poDetail->amount);
+                                    if ($poDetail->budget_account_id) {
+                                        $set('sub_budget_id', $poDetail->budget_account_id);
+                                    }
                                 }
                             }
                         }
@@ -120,46 +150,25 @@ class PettyCashReimbursmentDetailRelationManager extends RelationManager
                     ->required(),
                 Forms\Components\Select::make('sub_budget_id')
                     ->label('Budget Account')
-                    ->options(function () {
-                        $departmentId = Auth::user()?->department_id;
+                    ->options(function (): array {
+                        $this->getOwnerRecord()?->loadMissing('user');
 
-                        return SubBudgetAccounts::with(['allocations' => function ($query) use ($departmentId) {
-                            if ($departmentId) {
-                                $query->where('department_id', $departmentId);
-                            }
-                        }, 'allocations.department'])
-                            ->get()
-                            ->filter(function ($row) use ($departmentId) {
-                                return $departmentId
-                                    ? $row->allocations->firstWhere('department_id', $departmentId)
-                                    : $row->allocations->isNotEmpty();
-                            })
-                            ->mapWithKeys(fn ($row) => [
-                                $row->id => $row->getSelectLabel(),
-                            ])
-                            ->toArray();
+                        $departmentId = $this->getOwnerRecord()?->user?->department_id
+                            ?? Auth::user()?->department_id;
+
+                        return DepartmentBudgetOptions::filamentOptions($departmentId);
                     })
                     ->searchable()
                     ->reactive()
                     ->helperText(function (Get $get): string {
-                        $budgetAccountId = $get('sub_budget_id');
-                        $departmentId = Auth::user()?->department_id;
+                        $this->getOwnerRecord()?->loadMissing('user');
+                        $departmentId = $this->getOwnerRecord()?->user?->department_id
+                            ?? Auth::user()?->department_id;
 
-                        if (! $budgetAccountId || ! $departmentId) {
-                            return 'Select a budget account to view your department allocation.';
-                        }
-
-                        $account = SubBudgetAccounts::with([
-                            'allocations' => fn ($query) => $query->where('department_id', $departmentId),
-                        ])->find($budgetAccountId);
-
-                        $allocatedAmount = $account?->allocations->first()?->amount;
-
-                        if ($allocatedAmount === null) {
-                            return 'No allocation found for your department.';
-                        }
-
-                        return 'Allocated budget: MVR '.number_format((float) $allocatedAmount, 2);
+                        return DepartmentBudgetOptions::helperText(
+                            $get('sub_budget_id') ? (int) $get('sub_budget_id') : null,
+                            $departmentId,
+                        );
                     })
                     ->native(false)
                     ->required()
@@ -202,8 +211,14 @@ class PettyCashReimbursmentDetailRelationManager extends RelationManager
                 //
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make(),
-                // ->visible(fn ($record) => ! Auth::user()->can('fin_hod_approve_petty::cash::reimbursment')),
+                Tables\Actions\CreateAction::make()
+                    ->mutateFormDataUsing(function (array $data): array {
+                        if (! empty($data['po_id']) && ! empty($data['item_id'])) {
+                            PettyCashClaimedPrItems::assertAvailable((int) $data['po_id'], (int) $data['item_id']);
+                        }
+
+                        return $data;
+                    }),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),

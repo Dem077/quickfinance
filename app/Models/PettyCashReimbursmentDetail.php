@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Support\PettyCashClaimedPrItems;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Validation\ValidationException;
 
 class PettyCashReimbursmentDetail extends Model
 {
@@ -18,6 +20,25 @@ class PettyCashReimbursmentDetail extends Model
         'sub_budget_id',
         'petty_cash_reimb_id',
     ];
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $detail): void {
+            if (! $detail->po_id || ! $detail->item_id) {
+                return;
+            }
+
+            if (PettyCashClaimedPrItems::isClaimed(
+                (int) $detail->po_id,
+                (int) $detail->item_id,
+                exceptDetailId: $detail->exists ? $detail->id : null,
+            )) {
+                throw ValidationException::withMessages([
+                    'item_id' => 'This purchase request item is already on another petty cash reimbursement.',
+                ]);
+            }
+        });
+    }
 
     public function vendor()
     {

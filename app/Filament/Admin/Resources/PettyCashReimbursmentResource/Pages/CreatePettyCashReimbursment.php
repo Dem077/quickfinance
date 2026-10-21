@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Resources\PettyCashReimbursmentResource\Pages;
 use App\Filament\Admin\Resources\PettyCashReimbursmentResource;
 use App\Models\PettyCashReimbursment;
 use App\Models\PettyCashReimbursmentDetail;
+use App\Support\PettyCashClaimedPrItems;
 use Filament\Resources\Pages\CreateRecord;
 
 class CreatePettyCashReimbursment extends CreateRecord
@@ -13,6 +14,11 @@ class CreatePettyCashReimbursment extends CreateRecord
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
+        PettyCashClaimedPrItems::assertDetailsAvailable(
+            $this->data['reimbursementsitems'] ?? [],
+            keyPrefix: 'reimbursementsitems',
+        );
+
         $data['form_no'] = PettyCashReimbursment::generateNextFormNo();
 
         return $data;

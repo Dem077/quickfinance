@@ -7,6 +7,7 @@ import { computed, ref } from 'vue';
 
 const props = defineProps({
     reimbursment: { type: Object, required: true },
+    budgetSummary: { type: Array, default: () => [] },
     options: { type: Object, required: true },
     can: { type: Object, required: true },
 });
@@ -51,10 +52,14 @@ const vendorOptions = computed(() =>
 );
 
 const budgetOptions = computed(() =>
-    (props.options.budgets || []).map((budget) => ({
-        value: budget.id,
-        label: budget.label,
-    })),
+    (props.options.budgets || []).map((budget) => {
+        const available = Number(budget.available ?? budget.allocated_amount ?? 0);
+
+        return {
+            value: budget.id,
+            label: `${budget.label}${budget.department ? ` — ${budget.department}` : ''} (MVR ${formatMoney(available)} available)`,
+        };
+    }),
 );
 
 const itemKey = (poId, itemId) => `${poId}:${itemId}`;
@@ -120,13 +125,24 @@ const itemOptions = computed(() => {
 const budgetHint = (subBudgetId) => {
     const budget = (props.options.budgets || []).find((row) => Number(row.id) === Number(subBudgetId));
     if (! budget) {
-        return 'Select a budget account to view your department allocation.';
+        return 'Select a budget account allocated to the department.';
     }
-    if (budget.allocated_amount == null) {
-        return 'No allocation found for your department.';
+    if (budget.allocated_amount == null && budget.allocated == null) {
+        return 'No allocation found for this department.';
     }
-    return `Allocated budget: MVR ${formatMoney(budget.allocated_amount)}`;
+    const department = budget.department ? `${budget.department} — ` : '';
+    return `${department}allocated MVR ${formatMoney(budget.allocated ?? budget.allocated_amount)}, available MVR ${formatMoney(budget.available)}`;
 };
+
+const budgetOpen = ref(false);
+const budgetSummaryCollapsed = computed(() => {
+    const rows = props.budgetSummary || [];
+    if (! rows.length) return '';
+    if (rows.length === 1) {
+        return `${rows[0].label}${rows[0].department ? ` — ${rows[0].department}` : ''} · MVR ${formatMoney(rows[0].available)} available`;
+    }
+    return `${rows.length} department budgets`;
+});
 
 const statusTone = computed(() => {
     const map = {
@@ -469,6 +485,86 @@ const destroyRecord = () => {
                         </div>
                     </dl>
                 </div>
+            </section>
+
+            <section
+                v-if="budgetSummary.length"
+                class="overflow-hidden rounded-xl border border-slate-200/90 bg-surface dark:border-slate-800"
+            >
+                <button
+                    type="button"
+                    class="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition hover:bg-slate-50/80 dark:hover:bg-surface-elevated/40 sm:px-5"
+                    :aria-expanded="budgetOpen"
+                    @click="budgetOpen = !budgetOpen"
+                >
+                    <div class="min-w-0">
+                        <p class="text-sm font-semibold text-slate-900 dark:text-white">Budget</p>
+                        <p class="mt-0.5 truncate text-xs text-slate-500">
+                            {{ budgetOpen ? 'Hide department budget usage' : budgetSummaryCollapsed }}
+                        </p>
+                    </div>
+                    <span
+                        class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition"
+                        :class="budgetOpen ? 'rotate-180 bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300' : ''"
+                        aria-hidden="true"
+                    >
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </span>
+                </button>
+
+                <ul
+                    v-show="budgetOpen"
+                    class="divide-y divide-slate-100 border-t border-slate-100 dark:divide-slate-800 dark:border-slate-800"
+                >
+                    <li
+                        v-for="budget in budgetSummary"
+                        :key="budget.id"
+                        class="px-4 py-3.5 sm:px-5"
+                    >
+                        <div class="flex flex-wrap items-start justify-between gap-2">
+                            <Link
+                                v-if="budget.can_open && budget.budget_account_id"
+                                :href="route('app.budget-accounts.edit', budget.budget_account_id)"
+                                class="min-w-0 text-sm font-medium text-brand-700 transition hover:text-brand-800 hover:underline dark:text-brand-300 dark:hover:text-brand-200"
+                            >
+                                {{ budget.label }}<template v-if="budget.department"> — {{ budget.department }}</template>
+                            </Link>
+                            <p
+                                v-else
+                                class="min-w-0 text-sm font-medium text-slate-800 dark:text-slate-100"
+                            >
+                                {{ budget.label }}<template v-if="budget.department"> — {{ budget.department }}</template>
+                            </p>
+                            <p class="text-xs tabular-nums text-slate-500 dark:text-slate-400">
+                                Available
+                                <span class="ml-1 font-semibold text-slate-800 dark:text-slate-100">
+                                    MVR {{ formatMoney(budget.available) }}
+                                </span>
+                            </p>
+                        </div>
+                        <div class="mt-2.5">
+                            <div class="mb-1 flex items-center justify-between gap-3 text-[11px] text-slate-500 dark:text-slate-400">
+                                <span>Usage {{ budget.usage_percent }}%</span>
+                                <span class="tabular-nums">
+                                    This claim MVR {{ formatMoney(budget.this_record) }}
+                                </span>
+                            </div>
+                            <div class="h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                                <div
+                                    class="h-full rounded-full transition-all"
+                                    :class="budget.usage_percent >= 100
+                                        ? 'bg-amber-500'
+                                        : budget.usage_percent >= 80
+                                            ? 'bg-brand-500'
+                                            : 'bg-emerald-500'"
+                                    :style="{ width: `${Math.min(budget.usage_percent, 100)}%` }"
+                                />
+                            </div>
+                        </div>
+                    </li>
+                </ul>
             </section>
 
             <section class="overflow-hidden rounded-xl border border-slate-200/90 bg-surface dark:border-slate-800">

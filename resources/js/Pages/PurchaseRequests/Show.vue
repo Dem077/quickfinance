@@ -577,13 +577,13 @@ const openPurchaseOrder = (order) => {
                                 :href="route('app.budget-accounts.edit', budget.budget_account_id)"
                                 class="min-w-0 text-sm font-medium text-brand-700 transition hover:text-brand-800 hover:underline dark:text-brand-300 dark:hover:text-brand-200"
                             >
-                                {{ budget.label }}
+                                {{ budget.label }}<template v-if="budget.department"> — {{ budget.department }}</template>
                             </Link>
                             <p
                                 v-else
                                 class="min-w-0 text-sm font-medium text-slate-800 dark:text-slate-100"
                             >
-                                {{ budget.label }}
+                                {{ budget.label }}<template v-if="budget.department"> — {{ budget.department }}</template>
                             </p>
                             <p class="text-xs tabular-nums text-slate-500 dark:text-slate-400">
                                 Available
@@ -950,7 +950,7 @@ const openPurchaseOrder = (order) => {
                             <select v-model="lineForm.budget_account_id" required class="ui-select">
                                 <option value="" disabled>Select budget…</option>
                                 <option v-for="b in options.budgets" :key="b.id" :value="b.id">
-                                    {{ b.label }}
+                                    {{ b.label }}<template v-if="b.department"> — {{ b.department }}</template>
                                     (MVR {{ Number(b.available).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }} available)
                                 </option>
                             </select>

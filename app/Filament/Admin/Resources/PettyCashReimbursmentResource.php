@@ -12,9 +12,10 @@ use App\Models\Departments;
 use App\Models\PettyCashReimbursment;
 use App\Models\PurchaseOrderDetails;
 use App\Models\PurchaseOrders;
-use App\Models\SubBudgetAccounts;
 use App\Models\User;
 use App\Models\Vendors;
+use App\Support\DepartmentBudgetOptions;
+use App\Support\PettyCashClaimedPrItems;
 use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -138,11 +139,26 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                                             ->columnSpan(1),
                                         Forms\Components\Select::make('po_id')
                                             ->label('Record ID')
-                                            ->options(
-                                                PurchaseOrders::where('status', PurchaseOrderStatus::WaitingReimbursement->value)
+                                            ->options(function (): array {
+                                                $departmentId = Auth::user()?->department_id;
+                                                $claimedKeys = PettyCashClaimedPrItems::keys();
+
+                                                return PurchaseOrders::query()
+                                                    ->where('status', PurchaseOrderStatus::WaitingReimbursement->value)
                                                     ->where('payment_method', 'petty_cash')
-                                                    ->with('purchaseRequest')
+                                                    ->when(
+                                                        $departmentId,
+                                                        fn ($query) => $query->whereHas(
+                                                            'purchaseRequest.user',
+                                                            fn ($userQuery) => $userQuery->where('department_id', $departmentId),
+                                                        ),
+                                                    )
+                                                    ->with(['purchaseRequest', 'purchaseOrderDetails'])
                                                     ->get()
+                                                    ->filter(fn ($po) => $po->purchaseOrderDetails->contains(
+                                                        fn ($detail) => $detail->item_id
+                                                            && ! $claimedKeys->contains(PettyCashClaimedPrItems::key((int) $po->id, (int) $detail->item_id)),
+                                                    ))
                                                     ->mapWithKeys(function ($po) {
                                                         $prNo = $po->purchaseRequest?->pr_no ?? 'N/A';
 
@@ -150,8 +166,8 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                                                             $po->id => "{$prNo} ({$po->po_no})",
                                                         ];
                                                     })
-                                                    ->toArray()
-                                            )
+                                                    ->toArray();
+                                            })
                                             ->native(false)
                                             ->searchable()
                                             ->reactive()
@@ -200,8 +216,10 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                                                     ->filter()
                                                     ->toArray();
 
+                                                $claimedItems = PettyCashClaimedPrItems::itemIdsForPo((int) $poId);
+
                                                 return PurchaseOrderDetails::where('po_id', $poId)
-                                                    ->whereNotIn('item_id', $selectedItems)
+                                                    ->whereNotIn('item_id', [...$selectedItems, ...$claimedItems])
                                                     ->with('items')
                                                     ->get()
                                                     ->filter(fn ($detail) => $detail->items !== null && $detail->items->name !== null)
@@ -221,6 +239,9 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
 
                                                         if ($poDetail) {
                                                             $set('amount', $poDetail->amount);
+                                                            if ($poDetail->budget_account_id) {
+                                                                $set('sub_budget_id', $poDetail->budget_account_id);
+                                                            }
                                                         }
                                                     }
                                                 }
@@ -233,47 +254,13 @@ class PettyCashReimbursmentResource extends Resource implements HasShieldPermiss
                                             ->required(),
                                         Forms\Components\Select::make('sub_budget_id')
                                             ->label('Budget Account')
-                                            ->options(function () {
-                                                $departmentId = Auth::user()?->department_id;
-
-                                                return SubBudgetAccounts::with(['allocations' => function ($query) use ($departmentId) {
-                                                    if ($departmentId) {
-                                                        $query->where('department_id', $departmentId);
-                                                    }
-                                                }, 'allocations.department'])
-                                                    ->get()
-                                                    ->filter(function ($row) use ($departmentId) {
-                                                        return $departmentId
-                                                            ? $row->allocations->firstWhere('department_id', $departmentId)
-                                                            : $row->allocations->isNotEmpty();
-                                                    })
-                                                    ->mapWithKeys(fn ($row) => [
-                                                        $row->id => $row->getSelectLabel(),
-                                                    ])
-                                                    ->toArray();
-                                            })
+                                            ->options(fn () => DepartmentBudgetOptions::filamentOptions(Auth::user()?->department_id))
                                             ->searchable()
                                             ->reactive()
-                                            ->helperText(function (Get $get): string {
-                                                $budgetAccountId = $get('sub_budget_id');
-                                                $departmentId = Auth::user()?->department_id;
-
-                                                if (! $budgetAccountId || ! $departmentId) {
-                                                    return 'Select a budget account to view your department allocation.';
-                                                }
-
-                                                $account = SubBudgetAccounts::with([
-                                                    'allocations' => fn ($query) => $query->where('department_id', $departmentId),
-                                                ])->find($budgetAccountId);
-
-                                                $allocatedAmount = $account?->allocations->first()?->amount;
-
-                                                if ($allocatedAmount === null) {
-                                                    return 'No allocation found for your department.';
-                                                }
-
-                                                return 'Allocated budget: MVR '.number_format((float) $allocatedAmount, 2);
-                                            })
+                                            ->helperText(fn (Get $get): string => DepartmentBudgetOptions::helperText(
+                                                $get('sub_budget_id') ? (int) $get('sub_budget_id') : null,
+                                                Auth::user()?->department_id,
+                                            ))
                                             ->native(false)
                                             ->required()
                                             ->columnSpan(1)

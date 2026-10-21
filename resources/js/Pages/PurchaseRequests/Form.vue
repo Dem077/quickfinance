@@ -58,7 +58,7 @@ const itemOptions = computed(() =>
 const budgetOptions = computed(() =>
     props.options.budgets.map((budget) => ({
         value: budget.id,
-        label: `${budget.label} (MVR ${Number(budget.available).toLocaleString(undefined, {
+        label: `${budget.label}${budget.department ? ` — ${budget.department}` : ''} (MVR ${Number(budget.available).toLocaleString(undefined, {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
         })} available)`,
