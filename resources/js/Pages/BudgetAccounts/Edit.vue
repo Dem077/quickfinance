@@ -125,6 +125,7 @@ const topUpForm = useForm({
 });
 
 const openTopUp = () => {
+    topUpForm.clearErrors();
     topUpForm.allocations = props.subBudgets.flatMap((sub) =>
         sub.allocations.map((a) => ({
             id: a.id,
@@ -133,7 +134,8 @@ const openTopUp = () => {
             name: sub.name,
             department: a.department,
             location: a.location,
-            amount: a.amount,
+            current_amount: a.amount,
+            amount: 0,
         })),
     );
     showTopUp.value = true;
@@ -449,10 +451,11 @@ const deleteAccount = () => {
                         <button type="button" class="text-slate-500" @click="showTopUp = false">Close</button>
                     </div>
                     <p v-if="!topUpForm.allocations.length" class="text-sm text-slate-500">No allocations to top up.</p>
+                    <p v-if="topUpForm.errors.allocations" class="text-sm text-rose-600">{{ topUpForm.errors.allocations }}</p>
                     <div
                         v-for="(row, index) in topUpForm.allocations"
                         :key="row.id"
-                        class="grid gap-3 rounded-lg border border-slate-200 p-3 sm:grid-cols-5"
+                        class="grid gap-3 rounded-lg border border-slate-200 p-3 sm:grid-cols-6"
                     >
                         <div>
                             <label class="mb-1 block text-xs text-slate-500">Code</label>
@@ -471,8 +474,12 @@ const deleteAccount = () => {
                             <input :value="row.location" type="text" disabled class="w-full rounded-md border-slate-200 bg-slate-50" />
                         </div>
                         <div>
-                            <label class="mb-1 block text-xs text-slate-500">New amount</label>
-                            <input v-model="topUpForm.allocations[index].amount" type="number" step="0.01" required class="w-full rounded-md border-slate-300 shadow-sm" />
+                            <label class="mb-1 block text-xs text-slate-500">Current amount</label>
+                            <input :value="row.current_amount" type="text" disabled class="w-full rounded-md border-slate-200 bg-slate-50" />
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-xs text-slate-500">Amount to add</label>
+                            <input v-model="topUpForm.allocations[index].amount" type="number" min="0" step="0.01" required class="w-full rounded-md border-slate-300 shadow-sm" />
                         </div>
                     </div>
                     <div class="flex justify-end gap-2">

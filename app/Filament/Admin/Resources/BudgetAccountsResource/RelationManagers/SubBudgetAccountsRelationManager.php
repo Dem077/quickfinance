@@ -2,16 +2,14 @@
 
 namespace App\Filament\Admin\Resources\BudgetAccountsResource\RelationManagers;
 
-use App\Models\BudgetTransactionHistory;
+use App\Actions\Budgets\TopUpBudgetAccount;
 use App\Models\SubBudgetAccounts;
-use App\Models\SubBudgetDepartmentAllocation;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 
 class SubBudgetAccountsRelationManager extends RelationManager
@@ -118,10 +116,16 @@ class SubBudgetAccountsRelationManager extends RelationManager
                                 Forms\Components\TextInput::make('location')
                                     ->label('Location')
                                     ->disabled(),
+                                Forms\Components\TextInput::make('current_amount')
+                                    ->label('Current amount')
+                                    ->disabled()
+                                    ->dehydrated(false),
                                 Forms\Components\TextInput::make('amount')
-                                    ->label('New Amount')
+                                    ->label('Amount to add')
                                     ->required()
                                     ->numeric()
+                                    ->minValue(0)
+                                    ->default(0)
                                     ->inputMode('decimal'),
                             ])
                             ->default(function ($livewire) {
@@ -138,7 +142,8 @@ class SubBudgetAccountsRelationManager extends RelationManager
                                                 'name' => $subBudget->name,
                                                 'department' => $allocation->department?->name,
                                                 'location' => $allocation->location?->name,
-                                                'amount' => $allocation->amount,
+                                                'current_amount' => number_format((float) $allocation->amount, 2, '.', ''),
+                                                'amount' => 0,
                                             ];
                                         });
                                     })
@@ -147,28 +152,11 @@ class SubBudgetAccountsRelationManager extends RelationManager
                             }),
                     ])
                     ->action(function (array $data) {
-                        $allocations = collect($data['allocations'] ?? []);
-
-                        $allocations->each(function (array $row) {
-                            if (! empty($row['id'])) {
-                                SubBudgetDepartmentAllocation::find($row['id'])
-                                    ?->update(['amount' => $row['amount']]);
-                            }
-                        });
-
-                        $allocations
-                            ->groupBy('sub_budget_account_id')
-                            ->each(function (Collection $group, $subBudgetId) {
-                                $total = (int) $group->sum('amount');
-                                BudgetTransactionHistory::createtransaction(
-                                    $subBudgetId,
-                                    'Top UP',
-                                    $total,
-                                    $total,
-                                    'Funds added to account',
-                                    Auth::id()
-                                );
-                            });
+                        TopUpBudgetAccount::run(
+                            $this->getOwnerRecord(),
+                            $data['allocations'] ?? [],
+                            Auth::id(),
+                        );
 
                         Notification::make()
                             ->title('Top Up Successful')

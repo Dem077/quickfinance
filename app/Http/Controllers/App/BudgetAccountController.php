@@ -387,7 +387,7 @@ class BudgetAccountController extends Controller
             'allocations' => ['required', 'array', 'min:1'],
             'allocations.*.id' => ['required', 'integer'],
             'allocations.*.sub_budget_account_id' => ['required', 'integer'],
-            'allocations.*.amount' => ['required', 'numeric'],
+            'allocations.*.amount' => ['required', 'numeric', 'min:0'],
         ]);
 
         TopUpBudgetAccount::run($budgetAccount, $data['allocations'], $request->user()->id);
